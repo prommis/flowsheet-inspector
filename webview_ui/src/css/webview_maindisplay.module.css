@@ -1,0 +1,38 @@
+.main_display_container{
+    width:100vw;
+    height:100vh;
+    overflow: scroll;
+    padding:0px 20px;
+}
+
+.nav{
+    display:flex;
+    justify-content: flex-end;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    align-items: center;
+    gap:5px;
+    margin-bottom: 20px;
+    background-color: var(--vscode-editor-background);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.nav_item{
+    padding:5px 10px;
+    list-style: none;
+    color:var(--vscode-editor-foreground);
+    border:1px solid var(--vscode-button-background);
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.nav_item:hover{
+    background:var(--vscode-button-hoverBackground);
+}
+
+.nav_item_active{
+    background:var(--vscode-button-background);
+    color:var(--vscode-button-foreground);
+}

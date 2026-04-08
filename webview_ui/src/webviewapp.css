@@ -1,0 +1,91 @@
+/* #root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+} */
+
+.toggle-switch{
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 34px;
+}
+
+.toggle-switch-slider{
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: .4s;
+  border-radius: 34px;
+}
+
+.toggle-switch-slider:before{
+  position: absolute;
+  content: "";
+  height: 26px;
+  width: 26px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+@keyframes flashBlueBorder {
+    0% { outline: 3px solid transparent; outline-offset: -3px; }
+    50% { outline: 3px solid var(--vscode-focusBorder, #007acc); outline-offset: -3px; }
+    100% { outline: 3px solid transparent; outline-offset: -3px; }
+}
+
+.flash-highlight {
+    animation: flashBlueBorder 0.5s ease-in-out 3;
+}
+@keyframes flashRedBorder {
+    0% { outline: 3px solid transparent; outline-offset: -3px; }
+    50% { outline: 3px solid var(--vscode-errorForeground, red); outline-offset: -3px; }
+    100% { outline: 3px solid transparent; outline-offset: -3px; }
+}
+
+.flash-red-highlight {
+    animation: flashRedBorder 0.6s ease-in-out 5;
+}

@@ -1,0 +1,186 @@
+/* ─── Container ─── */
+.container {
+    padding: 16px 24px;
+    font-family: var(--vscode-font-family, sans-serif);
+    color: var(--vscode-foreground);
+    max-width: 900px;
+}
+
+.page_title {
+    font-size: 1.4rem;
+    font-weight: 600;
+    margin: 0 0 16px 0;
+}
+
+.empty_msg {
+    color: var(--vscode-descriptionForeground, #888);
+    font-style: italic;
+}
+
+/* ─── Tabs ─── */
+.tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid var(--vscode-panel-border, #444);
+    margin-bottom: 16px;
+}
+
+.tab {
+    padding: 8px 20px;
+    background: transparent;
+    color: var(--vscode-foreground);
+    font-size: 0.9rem;
+    cursor: pointer;
+    border-top: 2px solid transparent;
+    transition: border-color 0.15s, color 0.15s;
+    user-select: none;
+}
+
+.tab:hover {
+    color: var(--vscode-textLink-foreground, #3794ff);
+}
+
+.tab_active {
+    border-top-color: var(--vscode-textLink-foreground, #3794ff);
+    color: var(--vscode-textLink-foreground, #3794ff);
+    font-weight: 600;
+}
+
+.tab_content {
+    padding-top: 4px;
+}
+
+/* ─── Warnings / Cautions Group ─── */
+.group {
+    margin-bottom: 20px;
+}
+
+.group_header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.group_title {
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+
+.badge_warning {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 22px;
+    border-radius: 11px;
+    background: #e6a817;
+    color: #000;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0 6px;
+}
+
+.badge_caution {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 22px;
+    border-radius: 11px;
+    background: #d32f2f;
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0 6px;
+}
+
+/* ─── Expand / Collapse toggle ─── */
+.toggle_btns {
+    margin-left: 12px;
+    font-size: 0.8rem;
+    color: var(--vscode-descriptionForeground, #888);
+}
+
+.toggle_btn {
+    cursor: pointer;
+    user-select: none;
+    color: var(--vscode-textLink-foreground, #3794ff);
+}
+
+.toggle_btn:hover {
+    text-decoration: underline;
+}
+
+.toggle_sep {
+    margin: 0 6px;
+    color: var(--vscode-descriptionForeground, #666);
+}
+
+/* ─── Summary Lines ─── */
+.group_body {
+    padding-left: 28px;
+    border-left: 2px solid var(--vscode-panel-border, #444);
+    margin-left: 10px;
+}
+
+.summary_item {
+    margin-bottom: 2px;
+}
+
+.summary_line {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    padding: 4px 0;
+    font-size: 0.88rem;
+    line-height: 1.4;
+}
+
+.summary_line.clickable {
+    cursor: pointer;
+    user-select: none;
+}
+
+.summary_line.clickable:hover {
+    color: var(--vscode-textLink-foreground, #3794ff);
+}
+
+.arrow {
+    font-size: 0.7rem;
+    width: 14px;
+    flex-shrink: 0;
+    color: var(--vscode-descriptionForeground, #888);
+}
+
+.summary_count {
+    font-weight: 700;
+    min-width: 28px;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.summary_text {
+    color: var(--vscode-foreground);
+}
+
+/* ─── Detail List (expanded) ─── */
+.detail_list {
+    list-style: none;
+    padding: 0;
+    margin: 2px 0 8px 42px;
+    border-left: 1px solid var(--vscode-panel-border, #555);
+    padding-left: 12px;
+}
+
+.detail_list li {
+    font-family: var(--vscode-editor-font-family, monospace);
+    font-size: 0.78rem;
+    padding: 1px 0;
+    color: var(--vscode-descriptionForeground, #aaa);
+    word-break: break-all;
+}
+
+.detail_list li:hover {
+    color: var(--vscode-foreground);
+}

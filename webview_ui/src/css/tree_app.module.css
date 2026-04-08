@@ -1,0 +1,82 @@
+.tree_app_container {
+    width: 100vw;
+    min-height: 100vh;
+    overflow-x: hidden;
+    overflow-y: scroll;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px;
+}
+
+.flowsheet_steps_main_container{
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.flowsheet_steps_container{
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.step_selector_container{
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+}
+
+.open_results_view_label{
+    display:block;
+    font-size: 18px;
+    margin-bottom: 10px;
+    color: var(--vscode-editor-foreground);
+}
+
+.step_selector_checkbox{
+    -webkit-appearance: none;
+    appearance: none;
+    
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+    cursor: pointer;
+    position: relative;
+
+    background-color: var(--vscode-editor-background);
+    border: 1px solid var(--vscode-editor-foreground);
+}
+
+.step_selector_checkbox:checked {
+    background-color: var(--vscode-editor-foreground);
+}
+
+.step_selector_checkbox:checked::after {
+    content: "✔";
+    color: var(--vscode-editor-background);
+    font-size: 12px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.open_results_view_container{
+    width: 100%;
+}
+
+.open_results_view_select{
+    width: 100%;
+    min-width: 200px;
+    height: 40px;
+    padding: 5px 30px 5px 10px;
+    border: 1px solid #05d868;
+    border-radius: 5px;
+    color: #05d868;
+    background-color: var(--vscode-editor-background);
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2305d868' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+}
