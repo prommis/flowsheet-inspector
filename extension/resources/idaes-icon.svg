@@ -1,0 +1,10 @@
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <mask id="text-mask" x="0" y="0" width="128" height="128">
+      <rect x="0" y="0" width="128" height="128" fill="white" />
+      <text x="64" y="76" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="30" fill="black">IDAES</text>
+    </mask>
+  </defs>
+  <!-- Hexagon path -->
+  <path d="M64 12 L112 40 V88 L64 116 L16 88 V40 Z" fill="currentColor" mask="url(#text-mask)"/>
+</svg>

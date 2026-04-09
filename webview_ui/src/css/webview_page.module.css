@@ -1,0 +1,15 @@
+.webview_page_container {
+    width: 100vw;
+    min-height: 100vh;
+    overflow-x: hidden;
+    overflow-y: scroll;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px;
+}
+
+.variable_container{
+    width:100%;
+    padding:20px;
+}

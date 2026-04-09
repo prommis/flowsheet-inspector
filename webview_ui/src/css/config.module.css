@@ -1,0 +1,23 @@
+.config_title{
+    font-size: 18px;
+    font-weight: medium;
+    margin-bottom: 20px;
+}
+
+.config_control{
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 10px;
+}
+
+.config_control > label{
+    font-size: 14px;
+    font-weight: medium;
+    text-transform: capitalize;
+}
+
+.update_button{
+    background-color: var(--vscode-button-background);
+    color: var(--vscode-button-foreground);
+}
