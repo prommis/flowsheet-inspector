@@ -22,8 +22,8 @@
                 "title": "IDAES Start"
             },
             {
-                "command": "idaes-extension.openVariableView",
-                "title": "Open idaes variable view",
+                "command": "idaes-extension.openWebView",
+                "title": "Open IDAES Flowsheet Inspector",
                 "icon": "$(open-preview)"
             },
             {
@@ -45,7 +45,7 @@
         "menus": {
             "editor/title": [
                 {
-                    "command": "idaes-extension.openVariableView",
+                    "command": "idaes-extension.openWebView",
                     "when": "!editorReadonly && resourceLangId == python",
                     "group": "navigation"
                 }

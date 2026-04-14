@@ -5,7 +5,7 @@ import * as path from 'path';
 import { reloadCurrentWebview } from './util/reload_window';
 import { brodcastMessage } from './util/webview_handler';
 import { setDefaultConfig } from './util/setDefaultExtensionConfig';
-import variableView from './varibale_view/variable_view';
+import openWebView from './web_view/web_view_panel';
 import treeview from './tree_view/treeview';
 import activateTabListener from './util/activate_tab_handler';
 
@@ -92,9 +92,9 @@ export function activate(context: vscode.ExtensionContext) {
 	 * 1. beside the current editor a text editor view show code
 	 * 2. the webview window show diagram, button nasted var etc.
 	 */
-	const registerVariableView = vscode.commands.registerCommand(
-		'idaes-extension.openVariableView',
-		() => variableView(context)
+	const registerWebView = vscode.commands.registerCommand(
+		'idaes-extension.openWebView',
+		() => openWebView(context)
 	);
 
 	/**
@@ -108,7 +108,7 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 
 
-	context.subscriptions.push(initialExtensionCommand, registerVariableView, treeView, reloadWebviewCommand);
+	context.subscriptions.push(initialExtensionCommand, registerWebView, treeView, reloadWebviewCommand);
 }
 
 // This method is called when your extension is deactivated

@@ -78,14 +78,8 @@ function focusView(webViewName: string) {
     let openCommand = '';
     
     if (webViewName === 'webview') {
-        internalName = 'variableView';
-        openCommand = 'idaes-extension.openVariableView';
-    } else if (webViewName === 'mermaid') {
         internalName = 'webView';
-        openCommand = 'idaes.webView.focus';
-    } else {
-        console.error(`Unknown view name: ${webViewName}`);
-        return;
+        openCommand = 'idaes-extension.openWebView';
     }
 
     const webviewPanel = getWebview(internalName);
@@ -105,7 +99,7 @@ function focusView(webViewName: string) {
     }
 
     // It's open, focus it
-    if (internalName === 'variableView') {
+    if (internalName === 'webView') {
         (webviewPanel as vscode.WebviewPanel).reveal();
     } else {
         vscode.commands.executeCommand(openCommand);

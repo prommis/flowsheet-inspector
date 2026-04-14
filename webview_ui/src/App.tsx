@@ -39,9 +39,8 @@ export default function App() {
       case 'editor':
         loadedApp = <EditorPage />
         break;
-      case 'variableView':
-        console.log('loading variable view page');
-        // loadedApp = <VariableView />
+      case 'webView':
+        console.log('loading web view page');
         loadedApp = <WebView />
         break;
       case 'treeView':

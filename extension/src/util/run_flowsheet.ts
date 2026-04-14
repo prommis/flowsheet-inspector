@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { activateWebviews, brodcastMessage } from "./webview_handler";
 import { IExtensionConfig, IFlowsheetRunResult } from '../interface';
 import runTerminalCommand from "./run_terminal_command";
-import variableView from '../varibale_view/variable_view';
+import openWebView from '../web_view/web_view_panel';
 
 export default async function runFlowsheet(context: vscode.ExtensionContext, webview: vscode.Webview, selectedStep: string | undefined) {
     try {
@@ -39,8 +39,8 @@ export default async function runFlowsheet(context: vscode.ExtensionContext, web
         }
 
         // if webview is closed then open it to prevent extension cant find webview
-        if (!activateWebviews.get('variableView')) {
-            await variableView(context);
+        if (!activateWebviews.get('webView')) {
+            await openWebView(context);
         }
 
         // GUARD: Prevent arbitrary file overwriting (e.g. wiping out ~/.zshrc)
@@ -66,12 +66,12 @@ export default async function runFlowsheet(context: vscode.ExtensionContext, web
         await runTerminalCommand(context, command, shell, outputFileName, vscodeContextStateName);
 
 
-        let variableViewPanel = activateWebviews.get('variableView');
+        let webViewPanel = activateWebviews.get('webView');
         let treePanel = activateWebviews.get('treeView');
         let flowsheetRunResult = context.globalState.get<IFlowsheetRunResult>(vscodeContextStateName);
 
-        if (!variableViewPanel) {
-            console.error('variable view panel not found - user may not have opened the variable view tab');
+        if (!webViewPanel) {
+            console.error('web view panel not found - user may not have opened the web view tab');
             return;
         }
 
@@ -82,7 +82,7 @@ export default async function runFlowsheet(context: vscode.ExtensionContext, web
 
         if (!flowsheetRunResult) {
             console.error('flowsheet run result not found');
-            variableViewPanel.webview.postMessage({
+            webViewPanel.webview.postMessage({
                 type: 'error',
                 message: 'finished running the flowsheet, but flowsheet run result not found'
             });
@@ -90,8 +90,8 @@ export default async function runFlowsheet(context: vscode.ExtensionContext, web
         }
 
         console.log('Start post run flowsheet done to all panels');
-        // post flowsheet result to variable view
-        variableViewPanel.webview.postMessage({
+        // post flowsheet result to web view
+        webViewPanel.webview.postMessage({
             type: "flowsheet_runner_result",
             data: flowsheetRunResult
         });
@@ -124,21 +124,21 @@ export default async function runFlowsheet(context: vscode.ExtensionContext, web
             ${e}
         `);
 
-        let variableViewPanel = activateWebviews.get('variableView');
+        let webViewPanel = activateWebviews.get('webView');
 
-        // if not variable view panel, try to open it 
-        if (!variableViewPanel) {
-            await variableView(context);
-            variableViewPanel = activateWebviews.get('variableView');
+        // if not web view panel, try to open it 
+        if (!webViewPanel) {
+            await openWebView(context);
+            webViewPanel = activateWebviews.get('webView');
         }
 
-        if (variableViewPanel) {
-            variableViewPanel.webview.postMessage({
+        if (webViewPanel) {
+            webViewPanel.webview.postMessage({
                 type: 'error',
                 message: errorMessage
             });
         } else {
-            console.error('variable view panel not found to report error');
+            console.error('web view panel not found to report error');
         }
 
         // Inform the tree panel that the run failed so it stops the timer/spinner
