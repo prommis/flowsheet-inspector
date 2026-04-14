@@ -3,7 +3,11 @@ import { AppContext } from "../context";
 import css from "../css/ipopt.module.css";
 
 /** Strip the Ipopt banner (everything up to and including the 2nd **** line) */
-function stripIpoptBanner(text: string): string {
+function stripIpoptBanner(text: string | null | undefined): string {
+    if (!text) {
+        return "No solver output available for this step.";
+    }
+
     const lines = text.split('\n');
     let starCount = 0;
     for (let i = 0; i < lines.length; i++) {
