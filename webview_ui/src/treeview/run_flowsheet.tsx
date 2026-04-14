@@ -103,9 +103,18 @@ export default function RunFlowsheet(
     };
 
     return (
-        <section className="run-flowsheet-section">
+        <section className={`${css.run_flowsheet_section}`}>
             <div className={`${css.run_flowsheet_button_container}`}>
-                <button className={`${css.run_flowsheet_button}`} onClick={() => runFlowsheetHandler()}>Run</button>
+                <button
+                    className={`${css.run_flowsheet_button} ${isRunningFlowsheet ? css.cancel_flowsheet_run_btn_hidden : ''}`}
+                    onClick={() => runFlowsheetHandler()}
+                >
+                    Run
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.2" />
+                        <path d="M6 5L11 8L6 11V5Z" fill="currentColor" />
+                    </svg>
+                </button>
                 <button
                     onClick={() => cancelFlowsheetRunHandler()}
                     className={`

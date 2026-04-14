@@ -1,9 +1,6 @@
 .navContainer{
     display: flex;
     flex-direction: row;
-    justify-content: flex-end;
     align-items: center;
-    gap:10px;
-    padding: 10px;
-    margin-bottom: 20px;
+    width: 100%;
 }

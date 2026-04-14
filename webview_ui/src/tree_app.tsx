@@ -26,12 +26,11 @@ export default function TreePage() {
         <div className={`${css.tree_app_container}`}>
             <h2>Current Files is: {activateFileName}</h2>
             {/* <AiChat /> */}
-            <TreeNavBar setShowConfig={setShowConfig} />
             <div style={{ display: showConfig ? "block" : "none" }}>
                 <ConfigView setShowConfig={setShowConfig} />
             </div>
             <div style={{ display: showConfig ? "none" : "block" }}>
-                <FlowsheetSteps idaesRunInfo={idaesRunInfo} />
+                <FlowsheetSteps idaesRunInfo={idaesRunInfo} setShowConfig={setShowConfig} />
             </div>
         </div>
     );

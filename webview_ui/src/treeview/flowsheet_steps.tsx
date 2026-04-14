@@ -1,23 +1,21 @@
-import { useEffect, useState, useRef, useContext } from "react";
+import { useEffect, useState, useContext } from "react";
 import type { idaesRunInfo } from "../interface/interface";
 import { AppContext } from "../context";
 import { vscode } from '../vscode';
+import TreeNavBar from "./treeviewNav";
 import css from "../css/tree_app.module.css";
 
-export default function FlowsheetSteps({ idaesRunInfo }: { idaesRunInfo: idaesRunInfo }) {
+export default function FlowsheetSteps({ idaesRunInfo, setShowConfig }: { idaesRunInfo: idaesRunInfo, setShowConfig: React.Dispatch<React.SetStateAction<boolean>> }) {
     const { setSelectedSteps, isLoading, initError } = useContext(AppContext);
     const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
-    const focuseView = useRef<HTMLSelectElement>(null)
+    // const focuseView = useRef<HTMLSelectElement>(null)
 
-    const handleOpenView = () => {
-        const selected = focuseView.current?.value;
-        if (selected) {
-            vscode.postMessage({
-                frontendInstruction: 'focus_view',
-                fromPanel: 'treeView',
-                target: selected
-            });
-        }
+    const handleOpenView = (target: string) => {
+        vscode.postMessage({
+            frontendInstruction: 'focus_view',
+            fromPanel: 'treeView',
+            target: target
+        });
     };
 
     /**
@@ -120,23 +118,38 @@ export default function FlowsheetSteps({ idaesRunInfo }: { idaesRunInfo: idaesRu
 
     return (
         <div className={`${css.flowsheet_steps_main_container}`}>
+            <p style={{ margin: '0 0 10px 0', fontSize: '13px', color: 'var(--vscode-foreground)' }}>
+                Select Steps to Run:
+            </p>
             <div className={`${css.steps_container}`}>
                 {stepDisplay()}
             </div>
-            <div className={`${css.open_results_view_container}`}>
-                <label
-                    htmlFor="open_results_view"
-                    className={`${css.open_results_view_label}`}
-                >Focus on the view:</label>
-                <select
-                    ref={focuseView}
-                    className={`${css.open_results_view_select}`}
-                    onChange={() => handleOpenView()}
-                >
-                    <option value="">Open Results View</option>
-                    <option value="webview">Flowsheet Variables View</option>
-                    <option value="mermaid">Diagram View</option>
-                </select>
+
+            <div style={{ marginTop: '15px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                <TreeNavBar setShowConfig={setShowConfig} />
+
+                <div className={`${css.open_results_view_container}`}>
+                    <button
+                        className={`${css.open_results_view_select}`}
+                        style={{
+                            width: '100%',
+                            padding: '8px',
+                            backgroundColor: 'transparent',
+                            border: '1px solid var(--vscode-editor-foreground)',
+                            color: 'var(--vscode-editor-foreground)',
+                            cursor: 'pointer',
+                            borderRadius: '4px',
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            gap: '8px',
+                            backgroundImage: 'none'
+                        }}
+                        onClick={() => handleOpenView('webview')}
+                    >
+                        Open Inspector Results Panel ↗
+                    </button>
+                </div>
             </div>
         </div>
     );
