@@ -3,6 +3,7 @@ import { AppContext } from "../context";
 import Mermaid from "./meraid";
 import Ipopt from "./ipopt";
 import Diagnostic from "./diagnostic";
+import Variable from "../variable_view/flowsheet_variable_display";
 import LogsView from "./logs";
 import css from "../css/webview_maindisplay.module.css";
 export default function WebView() {
@@ -40,6 +41,9 @@ export default function WebView() {
         case 'diagram':
             display = <Mermaid />;
             break;
+        case 'variable':
+            display = <Variable />;
+            break;
         case 'ipopt':
             display = <Ipopt />;
             break;
@@ -63,6 +67,11 @@ export default function WebView() {
                     className={`${css.nav_item} ${activeTab === 'diagram' ? css.nav_item_active : ''}`}
                     onClick={() => changeActivateTabHandler('diagram')}>
                     Diagram
+                </li>
+                <li
+                    className={`${css.nav_item} ${activeTab === 'variable' ? css.nav_item_active : ''}`}
+                    onClick={() => changeActivateTabHandler('variable')}>
+                    Variable
                 </li>
                 <li
                     className={`${css.nav_item} ${activeTab === 'ipopt' ? css.nav_item_active : ''}`}
