@@ -17,6 +17,7 @@ import {
     type IExtensionConfig,
     type SetExtensionConfig,
     type SetExtensionErrorLogs,
+    type ExtensionErrorLogsType,
     type TerminalLogsType,
     type SetTerminalLogs,
     type OpenPythonFilesType,

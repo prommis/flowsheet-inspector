@@ -9,7 +9,8 @@ import {
     type IExtensionConfig,
     type ExtensionErrorLogsType,
     type TerminalLogsType,
-    type OpenPythonFilesType
+    type OpenPythonFilesType,
+    type MermaidDiagram
 } from "./interface/interface";
 
 

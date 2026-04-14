@@ -1,7 +1,6 @@
 import FlowsheetSteps from "./treeview/flowsheet_steps";
 import { AppContext } from "./context";
 import { useContext, useState, useEffect } from "react";
-import TreeNavBar from "./treeview/treeviewNav";
 import ConfigView from "./treeview/configView";
 // import AiChat from "./aichat/aichat"; // tempary close the AI chat
 import css from "./css/tree_app.module.css";
