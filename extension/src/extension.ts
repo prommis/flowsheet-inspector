@@ -7,7 +7,6 @@ import { brodcastMessage } from './util/webview_handler';
 import { setDefaultConfig } from './util/setDefaultExtensionConfig';
 import variableView from './varibale_view/variable_view';
 import treeview from './tree_view/treeview';
-import webView from './web_view/web_view';
 import activateTabListener from './util/activate_tab_handler';
 
 // This method is called when your extension is activated
@@ -83,14 +82,7 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	);
 
-	// Register the IDAES Mermaid View in the bottom panel
-	const idaesWebView = vscode.window.registerWebviewViewProvider(
-		'idaes.webView',
-		webView(context),
-		{
-			webviewOptions: { retainContextWhenHidden: true }
-		}
-	);
+	// Removed the bottom panel idaesWebView registration
 
 	/**
 	 * Open new tab command
@@ -116,7 +108,7 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 
 
-	context.subscriptions.push(initialExtensionCommand, registerVariableView, treeView, idaesWebView, reloadWebviewCommand);
+	context.subscriptions.push(initialExtensionCommand, registerVariableView, treeView, reloadWebviewCommand);
 }
 
 // This method is called when your extension is deactivated

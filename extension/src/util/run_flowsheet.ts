@@ -66,7 +66,6 @@ export default async function runFlowsheet(context: vscode.ExtensionContext, web
         await runTerminalCommand(context, command, shell, outputFileName, vscodeContextStateName);
 
 
-        let webViewPanel = activateWebviews.get('webView');
         let variableViewPanel = activateWebviews.get('variableView');
         let treePanel = activateWebviews.get('treeView');
         let flowsheetRunResult = context.globalState.get<IFlowsheetRunResult>(vscodeContextStateName);
@@ -76,17 +75,6 @@ export default async function runFlowsheet(context: vscode.ExtensionContext, web
             return;
         }
 
-        if (!webViewPanel) {
-            console.log('web view panel not found, proactively opening it...');
-            await openWebViewPanel(context);
-            webViewPanel = activateWebviews.get('webView');
-
-            if (!webViewPanel) {
-                console.error('webView panel still not found after attempting to open it');
-                return;
-            }
-        }
-
         if (!treePanel) {
             console.error('tree view not found!');
             return;
@@ -94,9 +82,9 @@ export default async function runFlowsheet(context: vscode.ExtensionContext, web
 
         if (!flowsheetRunResult) {
             console.error('flowsheet run result not found');
-            webViewPanel.webview.postMessage({
+            variableViewPanel.webview.postMessage({
                 type: 'error',
-                message: 'finished running the flowsheet, butflowsheet run result not found'
+                message: 'finished running the flowsheet, but flowsheet run result not found'
             });
             return;
         }
@@ -105,12 +93,6 @@ export default async function runFlowsheet(context: vscode.ExtensionContext, web
         // post flowsheet result to variable view
         variableViewPanel.webview.postMessage({
             type: "flowsheet_runner_result",
-            data: flowsheetRunResult
-        });
-
-        // post flowsheet result to web view
-        webViewPanel.webview.postMessage({
-            type: 'flowsheet_runner_result',
             data: flowsheetRunResult
         });
 
@@ -126,23 +108,6 @@ export default async function runFlowsheet(context: vscode.ExtensionContext, web
         });
         console.log('Done');
 
-
-        // mermaid content handler post mermaid diagram to web view or log error
-        // const mermaidContent = flowsheetRunResult.actions.mermaid_diagram;
-        // if (mermaidContent) {
-        //     console.log(`Find mermaid content from flowsheet run result:`);
-        //     console.log(`mermaid content: ${JSON.stringify(mermaidContent)}`);
-        //     console.log(`Now sending mermaid content back to web view...`);
-        //     webViewPanel.webview.postMessage({
-        //         type: "update_mermaid_diagram",
-        //         data: mermaidContent
-        //     });
-        //     console.log(`Done.`);
-
-        // } else {
-        //     console.error('mermaid content not found');
-        // }
-
     } catch (e) {
         const errorMessage = e instanceof Error ? e.message : String(e);
 
@@ -150,17 +115,7 @@ export default async function runFlowsheet(context: vscode.ExtensionContext, web
             // Silently swallow the rejection and log to console
             console.log(`runFlowsheet was canceled by the user: ${errorMessage}`);
             const pidChunk = errorMessage.split(':')[1] || '';
-            vscode.window.showInformationMessage(`Run flowsheet stopped manually. PID: ${pidChunk}`, 'Click to view').then((selection) => {
-                if (selection === 'Click to view') {
-                    // Focus the webView panel (which contains logs)
-                    vscode.commands.executeCommand('idaes.webView.focus').then(() => {
-                        // Send a broadcast to switch the active tab to 'logs'
-                        setTimeout(() => {
-                            brodcastMessage({ type: 'switch_sub_tab', tab_name: 'logs', sub_tab_name: 'terminal' });
-                        }, 300);
-                    });
-                }
-            });
+            vscode.window.showInformationMessage(`Run flowsheet stopped manually. PID: ${pidChunk}`);
             return;
         }
 
@@ -169,29 +124,22 @@ export default async function runFlowsheet(context: vscode.ExtensionContext, web
             ${e}
         `);
 
-        let webViewPanel = activateWebviews.get('webView');
+        let variableViewPanel = activateWebviews.get('variableView');
 
-        // if not webview panel try to open it, because the error should send to this panel to show in log
-        if (!webViewPanel) {
-            await openWebViewPanel(context);
-            webViewPanel = activateWebviews.get('webView');
-
-            // if still not found then log error
-            if (!webViewPanel) {
-                console.error('web view panel not found');
-                return;
-            }
+        // if not variable view panel, try to open it 
+        if (!variableViewPanel) {
+            await variableView(context);
+            variableViewPanel = activateWebviews.get('variableView');
         }
 
-        webViewPanel.webview.postMessage({
-            type: 'error',
-            message: errorMessage
-        });
-
-        webViewPanel.webview.postMessage({
-            type: 'error',
-            message: errorMessage
-        });
+        if (variableViewPanel) {
+            variableViewPanel.webview.postMessage({
+                type: 'error',
+                message: errorMessage
+            });
+        } else {
+            console.error('variable view panel not found to report error');
+        }
 
         // Inform the tree panel that the run failed so it stops the timer/spinner
         let treePanel = activateWebviews.get('treeView');
@@ -200,43 +148,5 @@ export default async function runFlowsheet(context: vscode.ExtensionContext, web
                 type: 'run_flowsheet_done' // This sets `isRunningFlowsheet = false` in the frontend (though they cancel flowsheet currently resets it too)
             });
         }
-    }
-}
-
-
-async function openWebViewPanel(context: vscode.ExtensionContext) {
-    let webViewPanel = activateWebviews.get('webView');
-    // Step 1: Open the bottom panel area and the specific extension container
-    try {
-        await vscode.commands.executeCommand('workbench.action.focusPanel');
-        await vscode.commands.executeCommand('workbench.view.extension.idaes-web-view-panel');
-    } catch (e) {
-        brodcastMessage({
-            type: 'error',
-            message: `focusPanel command failed: ${e}`
-        });
-    }
-
-    // Step 2: Switch to the idaes web view specifically
-    try {
-        await vscode.commands.executeCommand('idaes.webView.focus');
-    } catch (e) {
-        console.log('idaes.webView.focus command failed', e);
-    }
-
-    // Step 3: Wait until the panel registers itself (retry loop for up to 3 seconds)
-    let retries = 0;
-    while (!webViewPanel && retries < 15) {
-        await new Promise(resolve => setTimeout(resolve, 200));
-        webViewPanel = activateWebviews.get('webView');
-        retries++;
-    }
-
-    // Also give the React app inside the webview an extra 1000ms to boot up and be ready for messages
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    if (!webViewPanel) {
-        console.error('webView panel still not found after attempting to open it for 3 seconds');
-        return;
     }
 }

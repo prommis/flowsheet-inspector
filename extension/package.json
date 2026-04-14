@@ -58,13 +58,6 @@
                     "title": "IDAES Control",
                     "icon": "resources/idaes-icon.svg"
                 }
-            ],
-            "panel": [
-                {
-                    "id": "idaes-web-view-panel",
-                    "title": "IDAES Extension",
-                    "icon": "$(graph)"
-                }
             ]
         },
         "views": {
@@ -73,14 +66,6 @@
                     "id": "idaes.treeView",
                     "name": "Run Control",
                     "icon": "$(list-tree)",
-                    "type": "webview"
-                }
-            ],
-            "idaes-web-view-panel": [
-                {
-                    "id": "idaes.webView",
-                    "name": "IDAES Details",
-                    "icon": "$(graph)",
                     "type": "webview"
                 }
             ]

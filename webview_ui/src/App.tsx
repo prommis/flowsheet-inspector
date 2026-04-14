@@ -5,7 +5,6 @@ import { AppContext } from './context';
 
 import TreePage from './tree_app.tsx'
 import EditorPage from './editor_page';
-import VariableView from './variable_view/variable_view_main';
 import WebView from './web_view/main_display.tsx';
 import './webviewApp.css'
 
@@ -42,15 +41,12 @@ export default function App() {
         break;
       case 'variableView':
         console.log('loading variable view page');
-        loadedApp = <VariableView />
+        // loadedApp = <VariableView />
+        loadedApp = <WebView />
         break;
       case 'treeView':
         console.log('loading tree page');
         loadedApp = <TreePage />
-        break;
-      case 'webView':
-        console.log('loading webview page');
-        loadedApp = <WebView />
         break;
       case 'error':
         console.log(`Encounter an error: ${pageName}`);
@@ -143,8 +139,8 @@ export default function App() {
   }, []);
 
   return (
-    <div 
-      className={isHighlight ? 'flash-highlight' : ''} 
+    <div
+      className={isHighlight ? 'flash-highlight' : ''}
       onAnimationEnd={() => setIsHighlight(false)}
       style={{ height: '100vh', width: '100vw', boxSizing: 'border-box', backgroundColor: 'var(--vscode-editor-background)', color: 'var(--vscode-editor-foreground)' }}
     >
