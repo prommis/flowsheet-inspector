@@ -339,14 +339,14 @@ function TreeContent({ data, searchTerm, defaultOpen, dofInfo, pathPrefix }: {
                     }
                 }
 
-                // Only show DOF badge at unit level (childPath has a dot, e.g. "fs.M101")
-                const dofBadge = (solverDof !== undefined && childPath.includes('.')) ? (
+                // Show DOF badge at unit level or top-level 'fs'
+                const dofBadge = (solverDof !== undefined && (childPath.includes('.') || childPath === 'fs')) ? (
                     <span style={{
                         fontSize: '11px',
                         color: '#888',
-                        marginLeft: '4px',
+                        marginLeft: '2px',
                     }}>
-                        DOF({solverDof})
+                        , Dof({solverDof})
                     </span>
                 ) : undefined;
 

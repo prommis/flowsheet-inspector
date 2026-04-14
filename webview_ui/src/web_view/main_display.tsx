@@ -11,6 +11,10 @@ export default function WebView() {
     const { extensionErrorLogs, setActiveLogTab } = useContext(AppContext);
     const [flashLogs, setFlashLogs] = useState(false);
     const prevLogsLength = useRef(extensionErrorLogs.length);
+    const { flowsheetRunnerResult } = useContext(AppContext);
+    
+    // total model dof
+    const totalDof = flowsheetRunnerResult?.actions?.degrees_of_freedom?.model;
 
     useEffect(() => {
         const handleMessage = (event: MessageEvent) => {
@@ -71,7 +75,7 @@ export default function WebView() {
                 <li
                     className={`${css.nav_item} ${activeTab === 'variable' ? css.nav_item_active : ''}`}
                     onClick={() => changeActivateTabHandler('variable')}>
-                    FLOWSHEET VARIABLES
+                    FLOWSHEET VARIABLES {totalDof !== undefined && <span style={{ textTransform: 'none', fontStyle: 'italic', marginLeft: '4px' }}>Dof({totalDof})</span>}
                 </li>
                 <li
                     className={`${css.nav_item} ${activeTab === 'diagnostics' ? css.nav_item_active : ''}`}
