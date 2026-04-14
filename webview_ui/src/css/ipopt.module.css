@@ -27,3 +27,37 @@
     overflow-x: auto;
     overflow-y: auto;
 }
+
+/* ─── Tabs ─── */
+.tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid var(--vscode-panel-border, #444);
+    margin-bottom: 16px;
+    margin-top: 10px;
+}
+
+.tab {
+    padding: 8px 20px;
+    background: transparent;
+    color: var(--vscode-foreground);
+    font-size: 0.9rem;
+    cursor: pointer;
+    border-top: 2px solid transparent;
+    transition: border-color 0.15s, color 0.15s;
+    user-select: none;
+}
+
+.tab:hover {
+    color: var(--vscode-textLink-foreground, #3794ff);
+}
+
+.tab_active {
+    border-top-color: var(--vscode-textLink-foreground, #3794ff);
+    color: var(--vscode-textLink-foreground, #3794ff);
+    font-weight: 600;
+}
+
+.tab_content {
+    padding-top: 4px;
+}

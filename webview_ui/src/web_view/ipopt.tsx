@@ -1,4 +1,4 @@
-import { useContext } from "react";
+import { useContext, useState } from "react";
 import { AppContext } from "../context";
 import css from "../css/ipopt.module.css";
 
@@ -24,6 +24,7 @@ function stripIpoptBanner(text: string | null | undefined): string {
 
 export default function Ipopt() {
     const { flowsheetRunnerResult } = useContext(AppContext);
+    const [activeTab, setActiveTab] = useState<"initial" | "optimization">("initial");
 
     const solverLogs = flowsheetRunnerResult?.actions?.capture_solver_output?.solver_logs;
 
@@ -39,10 +40,34 @@ export default function Ipopt() {
     return (
         <div className={`${css.ipopt_container}`}>
             <h1>IPOPT</h1>
-            <h2 className={`${css.solver_output_title}`}>Initial Solver Output:</h2>
-            <pre className={`${css.solver_output}`}>{stripIpoptBanner(solverLogs.solve_initial)}</pre>
-            <h2 className={`${css.solver_output_title}`}>Optimization Solver Output:</h2>
-            <pre className={`${css.solver_output}`}>{stripIpoptBanner(solverLogs.solve_optimization)}</pre>
+            
+            <div className={css.tabs}>
+                <span
+                    className={`${css.tab} ${activeTab === 'initial' ? css.tab_active : ''}`}
+                    onClick={() => setActiveTab('initial')}
+                >
+                    Initial Solver Output
+                </span>
+                <span
+                    className={`${css.tab} ${activeTab === 'optimization' ? css.tab_active : ''}`}
+                    onClick={() => setActiveTab('optimization')}
+                >
+                    Optimization Solver Output
+                </span>
+            </div>
+
+            <div className={css.tab_content}>
+                {activeTab === 'initial' && (
+                    <pre className={`${css.solver_output}`}>
+                        {stripIpoptBanner(solverLogs.solve_initial)}
+                    </pre>
+                )}
+                {activeTab === 'optimization' && (
+                    <pre className={`${css.solver_output}`}>
+                        {stripIpoptBanner(solverLogs.solve_optimization)}
+                    </pre>
+                )}
+            </div>
         </div>
     );
 }
