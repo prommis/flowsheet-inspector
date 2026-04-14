@@ -66,22 +66,22 @@ export default function WebView() {
                 <li
                     className={`${css.nav_item} ${activeTab === 'diagram' ? css.nav_item_active : ''}`}
                     onClick={() => changeActivateTabHandler('diagram')}>
-                    Diagram
+                    DIAGRAM
                 </li>
                 <li
                     className={`${css.nav_item} ${activeTab === 'variable' ? css.nav_item_active : ''}`}
                     onClick={() => changeActivateTabHandler('variable')}>
-                    Variable
-                </li>
-                <li
-                    className={`${css.nav_item} ${activeTab === 'ipopt' ? css.nav_item_active : ''}`}
-                    onClick={() => changeActivateTabHandler('ipopt')}>
-                    IPOPT
+                    FLOWSHEET VARIABLES
                 </li>
                 <li
                     className={`${css.nav_item} ${activeTab === 'diagnostics' ? css.nav_item_active : ''}`}
                     onClick={() => changeActivateTabHandler('diagnostics')}>
-                    Diagnostics
+                    DIAGNOSTICS
+                </li>
+                <li
+                    className={`${css.nav_item} ${activeTab === 'ipopt' ? css.nav_item_active : ''}`}
+                    onClick={() => changeActivateTabHandler('ipopt')}>
+                    IPOPT <span className={`${css.blue_dot}`}></span>
                 </li>
                 <li
                     className={`${css.nav_item} ${activeTab === 'logs' ? css.nav_item_active : ''} ${flashLogs ? 'flash-red-highlight' : ''}`}
@@ -89,7 +89,7 @@ export default function WebView() {
                         changeActivateTabHandler('logs');
                         setFlashLogs(false);
                     }}>
-                    Logs
+                    LOGS {flashLogs && <span className={`${css.blue_dot}`}></span>}
                 </li>
             </ul>
             {display}
