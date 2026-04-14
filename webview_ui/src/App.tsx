@@ -18,7 +18,8 @@ export default function App() {
     setExtensionErrorLogs, // the extension error logs
     setTerminalLogs,
     setIsLoading,
-    setInitError
+    setInitError,
+    setOpenPythonFiles
   } = useContext(AppContext);
 
   const [appName, setAppName] = useState('');
@@ -90,6 +91,15 @@ export default function App() {
             setInitError(message.initError);
           } else if (message.initError === null || message.isLoading) {
             setInitError(null);
+          }
+          if (message.open_python_files !== undefined) {
+            setOpenPythonFiles(message.open_python_files);
+          }
+          break;
+        case 'update_open_files':
+          console.log('Received update_open_files event');
+          if (message.open_python_files !== undefined) {
+            setOpenPythonFiles(message.open_python_files);
           }
           break;
         case 'flowsheet_detail':

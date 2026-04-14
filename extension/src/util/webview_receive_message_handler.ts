@@ -45,6 +45,16 @@ export default function webviewReceiveMessageHandler(context: vscode.ExtensionCo
                 focusView(frontendMessage.target);
             }
             break;
+        case 'focus_document':
+            console.log(`User selected a document to focus`);
+            if (frontendMessage.target) {
+                vscode.workspace.openTextDocument(frontendMessage.target).then(
+                    doc => vscode.window.showTextDocument(doc, vscode.ViewColumn.One, false)
+                ).then(undefined, err => {
+                    console.error(`Failed to show document: ${err}`);
+                });
+            }
+            break;
         case 'switch_sub_tab':
             console.log(`Broadcasting switch_sub_tab to all webviews: ${frontendMessage.tab_name}`);
             brodcastMessage({ type: 'switch_sub_tab', tab_name: frontendMessage.tab_name, sub_tab_name: frontendMessage.sub_tab_name });

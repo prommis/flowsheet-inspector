@@ -28,3 +28,7 @@ export type SetExtensionErrorLogs = Dispatch<SetStateAction<ExtensionErrorLogsTy
 
 export type TerminalLogsType = string[];
 export type SetTerminalLogs = Dispatch<SetStateAction<TerminalLogsType>>;
+
+export type OpenPythonFile = { name: string, path: string };
+export type OpenPythonFilesType = OpenPythonFile[];
+export type SetOpenPythonFiles = Dispatch<SetStateAction<OpenPythonFilesType>>;
