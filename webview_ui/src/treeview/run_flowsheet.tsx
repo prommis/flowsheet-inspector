@@ -6,6 +6,7 @@ export default function RunFlowsheet(
     { setShowConfig }: { setShowConfig: React.Dispatch<React.SetStateAction<boolean>> }
 ) {
     const {
+        isLoading,
         isRunningFlowsheet,
         setIsRunningFlowsheet,
         setFlowsheetRunnerResult,
@@ -23,6 +24,7 @@ export default function RunFlowsheet(
      * Also this will set isRunningFlowsheet to true, this will start the loading animation.   
      */
     const runFlowsheetHandler = () => {
+        if (isLoading) return;
         const lastSelectedStep = selectedSteps.length > 0
             ? selectedSteps[selectedSteps.length - 1]
             : "";
@@ -108,6 +110,8 @@ export default function RunFlowsheet(
                 <button
                     className={`${css.run_flowsheet_button} ${isRunningFlowsheet ? css.cancel_flowsheet_run_btn_hidden : ''}`}
                     onClick={() => runFlowsheetHandler()}
+                    disabled={isLoading}
+                    style={{ opacity: isLoading ? 0.5 : 1, cursor: isLoading ? 'not-allowed' : 'pointer' }}
                 >
                     Run
                     <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
