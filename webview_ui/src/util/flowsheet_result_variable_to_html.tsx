@@ -318,10 +318,12 @@ function TreeContent({ data, searchTerm, defaultOpen, dofInfo, pathPrefix }: {
                 </TreeNode>
             )}
 
-            {/* DOF section - only at unit level (pathPrefix has a dot, e.g. "fs.M101") */}
+            {/* Temporarily cancel unit-level DOF details */}
+            {/* 
             {hasDofSection && pathPrefix.includes('.') && (
                 <DofSection dofInfo={dofInfo} pathPrefix={pathPrefix} defaultOpen={defaultOpen} />
             )}
+            */}
 
             {/* Sub-nodes */}
             {subNodes.map(([key, node]) => {
@@ -339,14 +341,14 @@ function TreeContent({ data, searchTerm, defaultOpen, dofInfo, pathPrefix }: {
                     }
                 }
 
-                // Show DOF badge at unit level or top-level 'fs'
-                const dofBadge = (solverDof !== undefined && (childPath.includes('.') || childPath === 'fs')) ? (
+                // Show DOF badge only at top-level 'fs'
+                const dofBadge = (solverDof !== undefined && childPath === 'fs') ? (
                     <span style={{
                         fontSize: '11px',
                         color: '#888',
                         marginLeft: '2px',
                     }}>
-                        , Dof({solverDof})
+                        , DoF({solverDof})
                     </span>
                 ) : undefined;
 

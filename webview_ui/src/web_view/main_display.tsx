@@ -75,7 +75,7 @@ export default function WebView() {
                 <li
                     className={`${css.nav_item} ${activeTab === 'variable' ? css.nav_item_active : ''}`}
                     onClick={() => changeActivateTabHandler('variable')}>
-                    FLOWSHEET VARIABLES {totalDof !== undefined && <span style={{ textTransform: 'none', fontStyle: 'italic', marginLeft: '4px' }}>Dof({totalDof})</span>}
+                    FLOWSHEET VARIABLES {totalDof !== undefined && <span style={{ textTransform: 'none', fontStyle: 'italic', marginLeft: '4px' }}>DoF({totalDof})</span>}
                 </li>
                 <li
                     className={`${css.nav_item} ${activeTab === 'diagnostics' ? css.nav_item_active : ''}`}
