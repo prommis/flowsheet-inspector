@@ -31,7 +31,7 @@ export default function Ipopt() {
     if (!solverLogs) {
         return (
             <div className={`${css.ipopt_container}`}>
-                <h1>IPOPT</h1>
+                <h2 className="page-title">IPOPT:</h2>
                 <p>Please select a flowsheet, and run it with IDAES Extension first.</p>
             </div>
         );
@@ -39,8 +39,8 @@ export default function Ipopt() {
 
     return (
         <div className={`${css.ipopt_container}`}>
-            <h1>IPOPT</h1>
-            
+            <h2 className="page-title">IPOPT</h2>
+
             <div className={css.tabs}>
                 <span
                     className={`${css.tab} ${activeTab === 'initial' ? css.tab_active : ''}`}

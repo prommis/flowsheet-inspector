@@ -362,7 +362,7 @@ export default function Diagnostic() {
     if (!diagnostics) {
         return (
             <div className={css.container}>
-                <h2 className={css.page_title}>Diagnostic:</h2>
+                <h2>Diagnostic:</h2>
                 <p className={css.empty_msg}>
                     Please select a flowsheet and run it with IDAES Extension
                     first.
@@ -373,7 +373,7 @@ export default function Diagnostic() {
 
     return (
         <div className={css.container}>
-            <h2 className={css.page_title}>Diagnostic:</h2>
+            <h2 className="page-title">Diagnostic:</h2>
 
             <div className={css.tabs}>
                 <span

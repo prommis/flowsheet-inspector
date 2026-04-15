@@ -104,7 +104,7 @@ export default function Mermaid() {
 
     return (
         <div className={`${css.mermaid_container}`}>
-            <p className={`${css.mermaid_title}`}>Diagram for: {activateFileName}</p>
+            <h2 className="page-title">Diagram:</h2>
             {/* Leave this div empty — mermaid.run() will inject the SVG via innerHTML */}
             <div className={`${css.diagram_container}`}>
                 <div ref={mermaidRef} className={`${css.diagram}`}></div>

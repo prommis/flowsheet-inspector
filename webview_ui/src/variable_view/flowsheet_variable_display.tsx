@@ -16,7 +16,7 @@ export default function FlowsheetVariableDisplay() {
 
     return (
         <section>
-            <h2>Flowsheet Parameters & Variables:</h2>
+            <h2 className="page-title">Flowsheet Parameters & Variables:</h2>
             <RenderVariableTree data={variables} dofSteps={dofSteps} />
         </section>
     );

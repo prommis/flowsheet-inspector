@@ -56,3 +56,7 @@ body {
   background-color: var(--vscode-editor-background);
   color: var(--vscode-editor-foreground);
 }
+
+.page-title{
+  margin-bottom: 30px;
+}
