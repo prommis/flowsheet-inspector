@@ -15,7 +15,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
 	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "idaes-extension" is now active!');
+	console.log('Congratulations, your extension "flowsheet-inspector" is now active!');
 
 	// Override console.error to automatically broadcast all extension errors to the React frontend
 	const originalConsoleError = console.error;
@@ -66,11 +66,11 @@ export function activate(context: vscode.ExtensionContext) {
 	 * 1. check all required packages and packages commands if not match requirement, will show error
 	 * 2. if all requirements are met, will show information message idaes extension is started
 	 */
-	const initialExtensionCommand = vscode.commands.registerCommand('idaes-extension.start', () => {
+	const initialExtensionCommand = vscode.commands.registerCommand('flowsheet-inspector.start', () => {
 		// The code you place here will be executed every time your command is executed
 		// Display a message box to the user
-		vscode.window.showInformationMessage('Starting idaes_extension!');
-		vscode.window.showInformationMessage('idaes extension is started!');
+		vscode.window.showInformationMessage('Starting flowsheet-inspector!');
+		vscode.window.showInformationMessage('Flowsheet-inspector is started!');
 	});
 
 	// Register the IDAES Tree View in the sidebar
@@ -93,7 +93,7 @@ export function activate(context: vscode.ExtensionContext) {
 	 * 2. the webview window show diagram, button nasted var etc.
 	 */
 	const registerWebView = vscode.commands.registerCommand(
-		'idaes-extension.openWebView',
+		'flowsheet-inspector.openWebView',
 		() => openWebView(context)
 	);
 
@@ -102,7 +102,7 @@ export function activate(context: vscode.ExtensionContext) {
 	 * This command is used for development, it will reload the webview when you change the webview code.
 	 * with this command you have no need to open and close the debug mode every time you change the webview code.
 	 */
-	const reloadWebviewCommand = vscode.commands.registerCommand('idaes-extension.reloadWebview', () => {
+	const reloadWebviewCommand = vscode.commands.registerCommand('flowsheet-inspector.reloadWebview', () => {
 		reloadCurrentWebview();
 		vscode.window.showInformationMessage('🔄 Webview reloaded!');
 	});
