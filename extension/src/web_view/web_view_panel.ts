@@ -41,7 +41,7 @@ export default async function openWebView(context: vscode.ExtensionContext, outp
     // Create a Webview Panel with split layout (top and bottom sections)
     const webViewPanel = vscode.window.createWebviewPanel(
         'idaes web view',
-        `IDAES Flowsheet Inspector - ${fileName.split('/').pop()}`,
+        `Prommis Flowsheet Inspector - ${fileName.split('/').pop()}`,
         // vscode.ViewColumn.Beside, // Open beside current editor
         vscode.ViewColumn.Beside, // Open beside current editor
         // vscode.ViewColumn.Active,
@@ -52,6 +52,8 @@ export default async function openWebView(context: vscode.ExtensionContext, outp
             retainContextWhenHidden: true
         }
     );
+
+    webViewPanel.iconPath = vscode.Uri.file(path.join(context.extensionPath, 'resources', 'prommis_icon.svg'));
 
     registerWebview("webView", webViewPanel);
 
