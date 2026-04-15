@@ -73,7 +73,7 @@
         }
     },
     "scripts": {
-        "package": "npm run compile && cd ../webview_ui && npm run build && cd ../extension && vsce package",
+        "package": "npm run compile && cd ../webview_ui && npm run build && cd ../extension && vsce package --out ../",
         "vscode:prepublish": "npm run compile",
         "compile": "tsc -p ./",
         "watch:build": "tsc -watch -p ./",
