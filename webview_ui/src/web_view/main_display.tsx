@@ -96,7 +96,9 @@ export default function WebView() {
                     LOGS {flashLogs && <span className={`${css.blue_dot}`}></span>}
                 </li>
             </ul>
-            {display}
+            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+                {display}
+            </div>
         </div>
     );
 }

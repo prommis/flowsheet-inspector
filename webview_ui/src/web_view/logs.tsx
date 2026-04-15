@@ -21,7 +21,7 @@ export default function LogsView() {
     }, []);
 
     return (
-        <div>
+        <div className={css.logs_main_container}>
             <div className={css.tabs}>
                 <span
                     className={`${css.tab} ${activeLogTab === "error" ? css.tab_active : ""}`}

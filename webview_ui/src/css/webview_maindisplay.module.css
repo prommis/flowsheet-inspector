@@ -1,8 +1,11 @@
 .main_display_container{
     width:100vw;
     height:100vh;
-    overflow: scroll;
+    overflow: hidden;
     padding:0px 20px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
 }
 
 .nav {
