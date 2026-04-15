@@ -13,7 +13,8 @@ export default function ConfigView({ setShowConfig }: { setShowConfig: Dispatch<
 
     useEffect(() => {
         if (extensionConfig) {
-            setLocalConfig(extensionConfig);
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setLocalConfig({ ...extensionConfig });
         }
     }, [extensionConfig]);
 

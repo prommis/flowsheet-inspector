@@ -89,7 +89,7 @@ function focusView(webViewName: string) {
     
     if (webViewName === 'webview') {
         internalName = 'webView';
-        openCommand = 'idaes-extension.openWebView';
+        openCommand = 'flowsheet-inspector.openWebView';
     }
 
     const webviewPanel = getWebview(internalName);
