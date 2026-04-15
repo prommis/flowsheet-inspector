@@ -1,4 +1,4 @@
-import { useEffect, useContext, useState, useRef } from "react";
+import { useEffect, useContext, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { AppContext } from "../context";
 import { vscode } from "../vscode";

@@ -216,31 +216,31 @@ function nodeMatchesSearch(data: VariableNode, term: string): boolean {
 // ============================================================
 
 /** Renders per-unit DOF breakdown across all steps */
-function DofSection({ dofInfo, pathPrefix, defaultOpen }: {
-    dofInfo: DofInfo;
-    pathPrefix: string;
-    defaultOpen: boolean;
-}) {
-    const stepEntries = Object.entries(dofInfo.steps);
-    if (stepEntries.length === 0) return null;
+// function DofSection({ dofInfo, pathPrefix, defaultOpen }: {
+//     dofInfo: DofInfo;
+//     pathPrefix: string;
+//     defaultOpen: boolean;
+// }) {
+//     const stepEntries = Object.entries(dofInfo.steps);
+//     if (stepEntries.length === 0) return null;
 
-    return (
-        <TreeNode label="DOF" defaultOpen={defaultOpen}>
-            {stepEntries.map(([stepName, components]) => {
-                const selfDof = components[pathPrefix];
-                if (selfDof === undefined) return null;
+//     return (
+//         <TreeNode label="DOF" defaultOpen={defaultOpen}>
+//             {stepEntries.map(([stepName, components]) => {
+//                 const selfDof = components[pathPrefix];
+//                 if (selfDof === undefined) return null;
 
-                return (
-                    <div key={stepName} style={{ paddingLeft: '24px', fontSize: '12px', padding: '2px 24px' }}>
-                        <span style={{ fontFamily: 'monospace', color: '#888' }}>
-                            {stepName}  DOF: {selfDof}
-                        </span>
-                    </div>
-                );
-            })}
-        </TreeNode>
-    );
-}
+//                 return (
+//                     <div key={stepName} style={{ paddingLeft: '24px', fontSize: '12px', padding: '2px 24px' }}>
+//                         <span style={{ fontFamily: 'monospace', color: '#888' }}>
+//                             {stepName}  DOF: {selfDof}
+//                         </span>
+//                     </div>
+//                 );
+//             })}
+//         </TreeNode>
+//     );
+// }
 
 // ============================================================
 // Recursive Tree Content (internal)
@@ -284,7 +284,7 @@ function TreeContent({ data, searchTerm, defaultOpen, dofInfo, pathPrefix }: {
     }
 
     // Check if this node has DOF data (show DOF section for sub-nodes that have it)
-    const hasDofSection = dofInfo && pathPrefix && !searchTerm;
+    // const hasDofSection = dofInfo && pathPrefix && !searchTerm;
 
     return (
         <>

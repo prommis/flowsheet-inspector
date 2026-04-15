@@ -5,7 +5,7 @@ import { postReloadMermaidDone } from '../util/post_message';
 import css from '../css/mermaid.module.css';
 
 export default function Mermaid() {
-    const { flowsheetRunnerResult, activateFileName } = useContext(AppContext);
+    const { flowsheetRunnerResult } = useContext(AppContext);
     const mermaidRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
