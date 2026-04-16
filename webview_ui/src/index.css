@@ -10,7 +10,7 @@
 
   color-scheme: light dark;
   color: var(--vscode-editor-foreground);
-  background-color: var(--vscode-editor-background);
+  background-color: var(--vscode-sideBar-background);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -53,7 +53,7 @@ button:focus-visible {
 }
 
 body {
-  background-color: var(--vscode-editor-background);
+  background-color: var(--vscode-sideBar-background);
   color: var(--vscode-editor-foreground);
 }
 
