@@ -97,10 +97,10 @@ export default function activateTabListener(context: vscode.ExtensionContext) {
                 const sorceCommand = extensionConfigData.sorce_treminal;
                 const activateCommand = extensionConfigData.activate_command;
                 const outputFileName = extensionConfigData.output_file_name;
-                const shellType = "/bin/zsh";
+                const shellType = extensionConfigData.shell;
 
                 const commandIdaesRunInfo = `${sorceCommand} && ${activateCommand} && idaes-run "${currentActivateTabFileName}" "${outputFileName}" --info`;
-                
+
                 let stepsData: any;
                 try {
                     stepsData = await runTerminalCommand(context, commandIdaesRunInfo, shellType, outputFileName, "currentFileInfo");
