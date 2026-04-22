@@ -32,6 +32,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const [activeLogTab, setActiveLogTab] = useState<ActiveLogTab>('error');
     const [initError, setInitError] = useState<string | null>(null);
     const [openPythonFiles, setOpenPythonFiles] = useState<OpenPythonFilesType>([]);
+    const [idaesHistoryList, setIdaesHistoryList] = useState<any[] | null>(null);
 
     return (
         <AppContext.Provider value={{
@@ -62,7 +63,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
             initError,
             setInitError,
             openPythonFiles,
-            setOpenPythonFiles
+            setOpenPythonFiles,
+            idaesHistoryList,
+            setIdaesHistoryList
         }}>
             {children}
         </AppContext.Provider>

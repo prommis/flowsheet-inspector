@@ -56,6 +56,8 @@ interface AppContextType {
     setInitError: React.Dispatch<React.SetStateAction<string | null>>;
     openPythonFiles: OpenPythonFilesType;
     setOpenPythonFiles: SetOpenPythonFiles;
+    idaesHistoryList: any[] | null;
+    setIdaesHistoryList: React.Dispatch<React.SetStateAction<any[] | null>>;
 }
 // Create context with default values
 export const AppContext = createContext({} as AppContextType);

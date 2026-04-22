@@ -72,6 +72,47 @@ export default function webviewReceiveMessageHandler(context: vscode.ExtensionCo
                 console.error('kill_process instruction received but no pid provided.');
             }
             break;
+        case 'pull_flowsheet_history':
+            if (frontendMessage.id || frontendMessage.name) {
+                console.log(`Loading historical run for: ${frontendMessage.id ? 'ID ' + frontendMessage.id : frontendMessage.name}`);
+                const os = require('os');
+                const cp = require('child_process');
+                const dbPath = `${os.homedir()}/.idaes/reportdb.sqlite`;
+                // Securely query just the json report block for this explicit filename/name or exact ID
+                let queryCmd = '';
+                if (frontendMessage.id) {
+                    queryCmd = `sqlite3 ${dbPath} "SELECT report FROM reports WHERE id = ${frontendMessage.id};"`;
+                } else {
+                    queryCmd = `sqlite3 ${dbPath} "SELECT report FROM reports WHERE coalesce(nullif(name, ''), filename) = '${frontendMessage.name}' ORDER BY id DESC LIMIT 1;"`;
+                }
+                
+                cp.exec(queryCmd, { maxBuffer: 1024 * 1024 * 10 }, (err: any, stdout: string, stderr: string) => {
+                    if (err) {
+                        brodcastMessage({ type: 'error', message: `Failed to load historical run: ${err.message || stderr}` });
+                        return;
+                    }
+                    if (stdout && stdout.trim().length > 0) {
+                        try {
+                            // Python's json.dumps() can produce raw Infinity, -Infinity, and NaN which break JS JSON.parse.
+                            // Convert them to null to safely deserialize into JS.
+                            let safeJsonString = stdout.trim()
+                                .replace(/:\s*Infinity/g, ': null')
+                                .replace(/:\s*-Infinity/g, ': null')
+                                .replace(/:\s*NaN/g, ': null');
+                            
+                            const parsedData = JSON.parse(safeJsonString);
+                            console.log('Successfully fetched and parsed historical flowsheet JSON blob.');
+                            // Piggyback onto the existing live-run pipeline!
+                            brodcastMessage({ type: 'flowsheet_runner_result', data: parsedData });
+                        } catch (parse_err) {
+                            brodcastMessage({ type: 'error', message: `Failed to parse historical JSON run data: ${parse_err}` });
+                        }
+                    } else {
+                        brodcastMessage({ type: 'error', message: `No historical data found for ${frontendMessage.id || frontendMessage.name}` });
+                    }
+                });
+            }
+            break;
         default:
             console.log(`receive unknown instruction: ${instruction}`);
     }
