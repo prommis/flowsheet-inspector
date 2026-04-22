@@ -75,6 +75,19 @@ export default function webviewReceiveMessageHandler(context: vscode.ExtensionCo
         case 'pull_flowsheet_history':
             if (frontendMessage.id || frontendMessage.name) {
                 console.log(`Loading historical run for: ${frontendMessage.id ? 'ID ' + frontendMessage.id : frontendMessage.name}`);
+
+                // Check if webView is open. If not, open it before grabbing results!
+                if (!activateWebviews.get('webView')) {
+                    console.log('Main web view not found. Opening it via command flowsheet-inspector.openWebView');
+                    vscode.commands.executeCommand('flowsheet-inspector.openWebView').then(() => {
+                        // Wait for React to mount before continuing
+                        setTimeout(() => {
+                            webviewReceiveMessageHandler(context, frontendMessage);
+                        }, 1200);
+                    });
+                    return; // Exit and let the delayed callback handle it once opened
+                }
+
                 const os = require('os');
                 const cp = require('child_process');
                 const dbPath = `${os.homedir()}/.idaes/reportdb.sqlite`;
