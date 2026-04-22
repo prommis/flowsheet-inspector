@@ -118,7 +118,14 @@ export default function LoadFlowsheetView() {
                                 {run.status ? (
                                     <div className={`${css["status-icon"]} ${css["status-icon--success"]}`}>✓</div>
                                 ) : (
-                                    <div className={`${css["status-icon"]} ${css["status-icon--fail"]}`}>✕</div>
+                                    <div className={`${css["status-icon"]} ${css["status-icon--fail"]}`}
+                                         onClick={(e) => e.stopPropagation()} /* Prevent clicking from re-opening the run if they just wanted to inspect the error */
+                                    >
+                                        ✕
+                                        <span className={css.cssTooltip}>
+                                            {run.solverError ? `Solver Output: ${run.solverError}` : "Run failed. No solver output available."}
+                                        </span>
+                                    </div>
                                 )}
                             </div>
                             <div className={css.colTime}>{timeSince(run.created)}</div>

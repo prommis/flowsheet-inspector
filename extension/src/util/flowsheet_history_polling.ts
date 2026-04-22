@@ -54,8 +54,8 @@ export function startHistoryPolling(context: vscode.ExtensionContext) {
 
                 console.log(`Detected SQLite changes. New Max ID: ${currentMaxId}. Fetching recent runs...`);
 
-                // Fetch the list of history, delimited by | natively by sqlite3
-                const fetchCommand = `sqlite3 ${dbPath} "SELECT id, created, name, filename, status FROM reports ORDER BY id DESC LIMIT 100;"`;
+                // Fetch the list of history, delimited by | natively by sqlite3. We extract a quick 100 char snippet of the error message inside the blob directly!
+                const fetchCommand = `sqlite3 ${dbPath} "SELECT id, created, name, filename, status, SUBSTR(report, INSTR(report, 'EXIT:'), 100) FROM reports ORDER BY id DESC LIMIT 100;"`;
 
                 cp.exec(fetchCommand, (err2, stdout2, stderr2) => {
                     if (err2) {
@@ -68,14 +68,24 @@ export function startHistoryPolling(context: vscode.ExtensionContext) {
 
                     const lines = stdout2.trim().split('\n').filter(l => l.trim().length > 0);
                     const historyList = lines.map(line => {
-                        const [id, created, name, filename, status] = line.split('|');
+                        const [id, created, name, filename, status, rawError] = line.split('|');
+                        
+                        let solverError = "";
+                        if (rawError && rawError.startsWith("EXIT:")) {
+                            // Trim off trailing JSON formatting like \n\b\b\b...
+                            solverError = rawError.split('\\n')[0].replace(/["\\]/g, '').trim();
+                        }
+                        
+                        // Treat falsy or '0' status as failure
+                        const isSuccess = parseInt(status, 10) === 1;
+
                         return {
                             id: parseInt(id, 10),
                             created: parseFloat(created),
                             name: name ? name.trim() : "",
                             filename: filename ? filename.trim() : "",
-                            // Parse status as boolean
-                            status: parseInt(status, 10) === 1
+                            status: isSuccess,
+                            solverError: !isSuccess ? solverError : ""
                         };
                     });
 

@@ -58,7 +58,6 @@
 .tableContainer {
     border: 1px solid var(--vscode-panel-border, #333);
     border-radius: 6px;
-    overflow: hidden;
     background-color: var(--vscode-editor-background);
 }
 
@@ -68,6 +67,8 @@
     padding: 10px;
     background-color: var(--vscode-editorGroupHeader-tabsBackground);
     border-bottom: 1px solid var(--vscode-panel-border, #333);
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
     font-size: 14px;
     color: var(--vscode-editor-foreground);
 }
@@ -77,6 +78,7 @@
     flex-direction: column;
     max-height: 400px;
     overflow-y: auto;
+    padding-bottom: 60px; /* Provides safe space so the last element's tooltip isn't clipped out of boundaries */
 }
 
 .dataRow {
@@ -96,6 +98,8 @@
 
 .dataRow:last-child {
     border-bottom: none;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
 }
 
 .colStatus {
@@ -150,4 +154,43 @@
 
 .status-icon--fail {
     background-color: #f85149;
+    position: relative;
+    cursor: help;
+}
+
+.cssTooltip {
+    visibility: hidden;
+    width: max-content;
+    max-width: 250px;
+    background-color: var(--vscode-editorHoverWidget-background, #252526);
+    color: var(--vscode-editorHoverWidget-foreground, #ccc);
+    border: 1px solid var(--vscode-editorHoverWidget-border, #454545);
+    text-align: left;
+    border-radius: 4px;
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: normal;
+    font-family: var(--vscode-editor-font-family, monospace);
+    word-wrap: break-word;
+    white-space: pre-wrap;
+
+    /* Position */
+    position: absolute;
+    z-index: 999;
+    top: 0;
+    left: 100%;
+    margin-left: 15px;
+
+    /* Fade in/out */
+    opacity: 0;
+    transition: opacity 0.2s, visibility 0.2s;
+    pointer-events: none;
+    
+    /* Box shadow for depth */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.status-icon--fail:hover .cssTooltip {
+    visibility: visible;
+    opacity: 1;
 }
