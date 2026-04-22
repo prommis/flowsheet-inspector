@@ -80,3 +80,36 @@
     background-repeat: no-repeat;
     background-position: right 10px center;
 }
+
+.view_switch_container {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+    border-bottom: 1px solid var(--vscode-editorGroupHeader-tabsBorder, #252526);
+    background-color: var(--vscode-editorGroupHeader-tabsBackground, #1e1e1e);
+}
+
+.view_switch_container li {
+    padding: 10px 10px;
+    width: 160px;
+    text-align: center;
+    cursor: pointer;
+    font-size: 13px;
+    font-family: var(--vscode-font-family);
+    text-transform: uppercase;
+    color: var(--vscode-tab-inactiveForeground, #969696);
+    background-color: transparent;
+    border-top: 2px solid transparent;
+}
+
+.view_switch_container li:hover {
+    color: var(--vscode-tab-activeForeground, #ffffff);
+}
+
+.view_switch_container li.active {
+    color: var(--vscode-tab-activeForeground, #ffffff);
+    border-top: 2px solid var(--vscode-tab-activeBorderTop, #1a85ff);
+}
