@@ -10,7 +10,8 @@ import {
     type ExtensionErrorLogsType,
     type TerminalLogsType,
     type OpenPythonFilesType,
-    type MermaidDiagram
+    type MermaidDiagram,
+    type IdaesHistoryItem
 } from "./interface/interface";
 
 
@@ -32,7 +33,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const [activeLogTab, setActiveLogTab] = useState<ActiveLogTab>('error');
     const [initError, setInitError] = useState<string | null>(null);
     const [openPythonFiles, setOpenPythonFiles] = useState<OpenPythonFilesType>([]);
-    const [idaesHistoryList, setIdaesHistoryList] = useState<any[] | null>(null);
+    const [idaesHistoryList, setIdaesHistoryList] = useState<IdaesHistoryItem[] | null>(null);
 
     return (
         <AppContext.Provider value={{

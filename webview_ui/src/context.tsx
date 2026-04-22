@@ -21,7 +21,8 @@ import {
     type TerminalLogsType,
     type SetTerminalLogs,
     type OpenPythonFilesType,
-    type SetOpenPythonFiles
+    type SetOpenPythonFiles,
+    type IdaesHistoryItem
 } from "./interface/interface";
 
 export type ActiveLogTab = 'error' | 'terminal';
@@ -56,8 +57,8 @@ interface AppContextType {
     setInitError: React.Dispatch<React.SetStateAction<string | null>>;
     openPythonFiles: OpenPythonFilesType;
     setOpenPythonFiles: SetOpenPythonFiles;
-    idaesHistoryList: any[] | null;
-    setIdaesHistoryList: React.Dispatch<React.SetStateAction<any[] | null>>;
+    idaesHistoryList: IdaesHistoryItem[] | null;
+    setIdaesHistoryList: React.Dispatch<React.SetStateAction<IdaesHistoryItem[] | null>>;
 }
 // Create context with default values
 export const AppContext = createContext({} as AppContextType);

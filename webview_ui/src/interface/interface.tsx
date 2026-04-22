@@ -32,3 +32,12 @@ export type SetTerminalLogs = Dispatch<SetStateAction<TerminalLogsType>>;
 export type OpenPythonFile = { name: string, path: string };
 export type OpenPythonFilesType = OpenPythonFile[];
 export type SetOpenPythonFiles = Dispatch<SetStateAction<OpenPythonFilesType>>;
+
+export type IdaesHistoryItem = {
+    id: number;
+    created: number;
+    name: string;
+    filename: string;
+    status: boolean;
+    solverError?: string;
+};

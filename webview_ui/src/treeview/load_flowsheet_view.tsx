@@ -1,4 +1,4 @@
-import { useState, useContext, useEffect, useMemo } from "react";
+import { useState, useContext, useMemo } from "react";
 import css from "../css/load_flowsheet_view.module.css";
 import { AppContext } from "../context";
 import { vscode } from "../vscode";
@@ -8,14 +8,14 @@ function timeSince(unixTimestampSeconds: number) {
     if (!unixTimestampSeconds) return "-";
     const date = new Date(unixTimestampSeconds * 1000);
     const seconds = Math.floor(Date.now() / 1000 - unixTimestampSeconds);
-    
+
     let interval = seconds / 86400;
     if (interval > 1) {
         // Greater than 1 day, show the actual date and time
-        return date.toLocaleString('en-US', { 
-            month: 'short', 
-            day: 'numeric', 
-            hour: 'numeric', 
+        return date.toLocaleString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
             minute: '2-digit',
             hour12: false
         });
@@ -35,7 +35,7 @@ function timeSince(unixTimestampSeconds: number) {
 
 export default function LoadFlowsheetView() {
     const { idaesHistoryList } = useContext(AppContext);
-    
+
     // Automatically extract unique names
     const uniqueNames = useMemo(() => {
         if (!idaesHistoryList) return [];
@@ -45,22 +45,20 @@ export default function LoadFlowsheetView() {
 
     const [selectedName, setSelectedName] = useState<string>("");
 
-    useEffect(() => {
-        if (!selectedName && uniqueNames.length > 0) {
-            setSelectedName(uniqueNames[0]);
-        }
-    }, [uniqueNames, selectedName]);
+
+    // By default, if the user hasn't actively selected a name, fallback to the first available option
+    const actualSelectedName = selectedName || (uniqueNames.length > 0 ? uniqueNames[0] : "");
 
     const filteredRuns = useMemo(() => {
-        if (!idaesHistoryList || !selectedName) return [];
-        return idaesHistoryList.filter(r => (r.name || r.filename) === selectedName);
-    }, [idaesHistoryList, selectedName]);
+        if (!idaesHistoryList || !actualSelectedName) return [];
+        return idaesHistoryList.filter(r => (r.name || r.filename) === actualSelectedName);
+    }, [idaesHistoryList, actualSelectedName]);
 
     const handleLoadRun = (id?: number) => {
         if (id) {
             vscode.postMessage({ frontendInstruction: "pull_flowsheet_history", fromPanel: "treeView", id });
-        } else if (selectedName) {
-            vscode.postMessage({ frontendInstruction: "pull_flowsheet_history", fromPanel: "treeView", name: selectedName });
+        } else if (actualSelectedName) {
+            vscode.postMessage({ frontendInstruction: "pull_flowsheet_history", fromPanel: "treeView", name: actualSelectedName });
         }
     };
 
@@ -68,9 +66,9 @@ export default function LoadFlowsheetView() {
         <div className={css.container}>
             {/* Control Bar */}
             <div className={css.controlBar}>
-                <select 
-                    name="selectFlowsheet" 
-                    className={css.selectBox} 
+                <select
+                    name="selectFlowsheet"
+                    className={css.selectBox}
                     value={selectedName}
                     onChange={(e) => setSelectedName(e.target.value)}
                     disabled={idaesHistoryList === null || uniqueNames.length === 0}
@@ -88,8 +86,8 @@ export default function LoadFlowsheetView() {
 
                 <div className={css.actionGroup}>
                     <span className={css.runCount}>Runs: {filteredRuns.length}</span>
-                    <button 
-                        className={css.primaryButton} 
+                    <button
+                        className={css.primaryButton}
                         onClick={() => handleLoadRun()}
                         disabled={!selectedName}
                     >
@@ -108,9 +106,9 @@ export default function LoadFlowsheetView() {
 
                 <div className={css.dataRowContainer}>
                     {filteredRuns.map((run) => (
-                        <div 
-                            key={run.id} 
-                            className={css.dataRow} 
+                        <div
+                            key={run.id}
+                            className={css.dataRow}
                             onClick={() => handleLoadRun(run.id)}
                             style={{ cursor: 'pointer' }}
                         >
@@ -119,7 +117,7 @@ export default function LoadFlowsheetView() {
                                     <div className={`${css["status-icon"]} ${css["status-icon--success"]}`}>✓</div>
                                 ) : (
                                     <div className={`${css["status-icon"]} ${css["status-icon--fail"]}`}
-                                         onClick={(e) => e.stopPropagation()} /* Prevent clicking from re-opening the run if they just wanted to inspect the error */
+                                        onClick={(e) => e.stopPropagation()} /* Prevent clicking from re-opening the run if they just wanted to inspect the error */
                                     >
                                         ✕
                                         <span className={css.cssTooltip}>
