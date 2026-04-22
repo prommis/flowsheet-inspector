@@ -1,38 +1,55 @@
 .main_display_container{
     width:100vw;
     height:100vh;
-    overflow: scroll;
+    overflow: hidden;
     padding:0px 20px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
 }
 
-.nav{
-    display:flex;
-    justify-content: flex-end;
-    padding-top: 10px;
-    padding-bottom: 10px;
+.nav {
+    display: flex;
+    justify-content: flex-start;
     align-items: center;
-    gap:5px;
-    margin-bottom: 20px;
-    background-color: var(--vscode-editor-background);
+    background-color: var(--vscode-sideBar-background);
     position: sticky;
     top: 0;
     z-index: 100;
+    margin: 0;
+    padding: 0;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--vscode-panel-border, #444);
 }
 
-.nav_item{
-    padding:5px 10px;
+.nav_item {
     list-style: none;
-    color:var(--vscode-editor-foreground);
-    border:1px solid var(--vscode-button-background);
-    border-radius: 5px;
+    color: var(--vscode-panelTitle-inactiveForeground, #888);
     cursor: pointer;
+    text-transform: uppercase;
+    font-size: 11px;
+    font-weight: normal;
+    padding: 10px 10px;
+    margin-right: 15px;
+    border-top: 1px solid transparent;
+    display: flex;
+    align-items: center;
+    gap: 4px;
 }
 
-.nav_item:hover{
-    background:var(--vscode-button-hoverBackground);
+.nav_item:hover {
+    color: var(--vscode-panelTitle-activeForeground, #e7e7e7);
 }
 
-.nav_item_active{
-    background:var(--vscode-button-background);
-    color:var(--vscode-button-foreground);
+.nav_item_active {
+    color: var(--vscode-panelTitle-activeForeground, #e7e7e7);
+    border-top: 1px solid var(--vscode-panelTitle-activeBorder, #007acc);
+}
+
+.blue_dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    background-color: var(--vscode-textLink-foreground, #3794ff);
+    border-radius: 50%;
 }

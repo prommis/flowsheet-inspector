@@ -1,7 +1,6 @@
 import FlowsheetSteps from "./treeview/flowsheet_steps";
 import { AppContext } from "./context";
 import { useContext, useState, useEffect } from "react";
-import TreeNavBar from "./treeview/treeviewNav";
 import ConfigView from "./treeview/configView";
 // import AiChat from "./aichat/aichat"; // tempary close the AI chat
 import css from "./css/tree_app.module.css";
@@ -26,12 +25,11 @@ export default function TreePage() {
         <div className={`${css.tree_app_container}`}>
             <h2>Current Files is: {activateFileName}</h2>
             {/* <AiChat /> */}
-            <TreeNavBar setShowConfig={setShowConfig} />
             <div style={{ display: showConfig ? "block" : "none" }}>
                 <ConfigView setShowConfig={setShowConfig} />
             </div>
             <div style={{ display: showConfig ? "none" : "block" }}>
-                <FlowsheetSteps idaesRunInfo={idaesRunInfo} />
+                <FlowsheetSteps idaesRunInfo={idaesRunInfo} setShowConfig={setShowConfig} />
             </div>
         </div>
     );

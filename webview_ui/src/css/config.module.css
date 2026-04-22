@@ -21,3 +21,15 @@
     background-color: var(--vscode-button-background);
     color: var(--vscode-button-foreground);
 }
+
+.button_group {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.cancel_button {
+    background-color: transparent;
+    border: 1px solid var(--vscode-button-background);
+    color: var(--vscode-button-background);
+}

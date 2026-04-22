@@ -1,4 +1,4 @@
-import { useEffect, useContext, useRef } from "react";
+import { useEffect, useContext, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { AppContext } from "../context";
 import { vscode } from "../vscode";
@@ -7,21 +7,27 @@ import css from "../css/config.module.css";
 
 export default function ConfigView({ setShowConfig }: { setShowConfig: Dispatch<SetStateAction<boolean>> }) {
     const { extensionConfig, setExtensionConfig } = useContext(AppContext);
-    const activateCommandRef = useRef<HTMLInputElement>(null);
-    const sorceTerminalRef = useRef<HTMLInputElement>(null);
-    const outputFileNameRef = useRef<HTMLInputElement>(null);
-    const shellRef = useRef<HTMLInputElement>(null);
+    
+    // We use a local config state so we don't mutate the global context on every keystroke
+    const [localConfig, setLocalConfig] = useState<IExtensionConfig | null>(null);
 
-    if (extensionConfig) {
-        console.log(`get extension config: ${JSON.stringify(extensionConfig)}`)
+    useEffect(() => {
+        if (extensionConfig) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setLocalConfig({ ...extensionConfig });
+        }
+    }, [extensionConfig]);
+
+    if (localConfig) {
+        console.log(`get extension config: ${JSON.stringify(localConfig)}`)
     }
 
     function updateConfigHandler() {
         const updateConfig: IExtensionConfig = {
-            activate_command: activateCommandRef.current?.value || "",
-            sorce_treminal: sorceTerminalRef.current?.value || "",
-            output_file_name: outputFileNameRef.current?.value || "",
-            shell: shellRef.current?.value || "",
+            activate_command: localConfig?.activate_command || "",
+            sorce_treminal: localConfig?.sorce_treminal || "",
+            output_file_name: localConfig?.output_file_name || "",
+            shell: localConfig?.shell || "",
         }
 
         // error handling for updateConfig when updateConfig is empty report to extension
@@ -61,7 +67,13 @@ export default function ConfigView({ setShowConfig }: { setShowConfig: Dispatch<
         setShowConfig(false);
     }
 
-
+    function cancelConfigHandler() {
+        // Revert local form state to the currently saved extensionConfig
+        if (extensionConfig) {
+            setLocalConfig(extensionConfig);
+        }
+        setShowConfig(false);
+    }
 
     useEffect(() => {
         const handleMessage = (event: MessageEvent) => {
@@ -73,7 +85,7 @@ export default function ConfigView({ setShowConfig }: { setShowConfig: Dispatch<
 
         window.addEventListener("message", handleMessage);
         return () => window.removeEventListener("message", handleMessage);
-    }, [extensionConfig]);
+    }, []);
 
     return (
         <div>
@@ -84,9 +96,8 @@ export default function ConfigView({ setShowConfig }: { setShowConfig: Dispatch<
                     <input
                         type="text"
                         id="shell_type"
-                        value={extensionConfig?.shell || ""}
-                        onChange={(e) => setExtensionConfig(prev => ({ ...(prev || { activate_command: "", sorce_treminal: "", output_file_name: "", shell: "" }), shell: e.target.value }))}
-                        ref={shellRef}
+                        value={localConfig?.shell || ""}
+                        onChange={(e) => setLocalConfig(prev => ({ ...(prev || { activate_command: "", sorce_treminal: "", output_file_name: "", shell: "" }), shell: e.target.value }))}
                     />
                 </div>
                 <div className={`${css.config_control}`}>
@@ -94,9 +105,8 @@ export default function ConfigView({ setShowConfig }: { setShowConfig: Dispatch<
                     <input
                         type="text"
                         id="sorce_treminal"
-                        value={extensionConfig?.sorce_treminal || ""}
-                        onChange={(e) => setExtensionConfig(prev => ({ ...(prev || { activate_command: "", sorce_treminal: "", output_file_name: "", shell: "" }), sorce_treminal: e.target.value }))}
-                        ref={sorceTerminalRef}
+                        value={localConfig?.sorce_treminal || ""}
+                        onChange={(e) => setLocalConfig(prev => ({ ...(prev || { activate_command: "", sorce_treminal: "", output_file_name: "", shell: "" }), sorce_treminal: e.target.value }))}
                     />
                 </div>
                 <div className={`${css.config_control}`}>
@@ -104,9 +114,8 @@ export default function ConfigView({ setShowConfig }: { setShowConfig: Dispatch<
                     <input
                         type="text"
                         id="activate_command"
-                        value={extensionConfig?.activate_command || ""}
-                        onChange={(e) => setExtensionConfig(prev => ({ ...(prev || { activate_command: "", sorce_treminal: "", output_file_name: "", shell: "" }), activate_command: e.target.value }))}
-                        ref={activateCommandRef}
+                        value={localConfig?.activate_command || ""}
+                        onChange={(e) => setLocalConfig(prev => ({ ...(prev || { activate_command: "", sorce_treminal: "", output_file_name: "", shell: "" }), activate_command: e.target.value }))}
                     />
                 </div>
                 <div className={`${css.config_control}`}>
@@ -114,12 +123,14 @@ export default function ConfigView({ setShowConfig }: { setShowConfig: Dispatch<
                     <input
                         type="text"
                         id="output_file_name"
-                        value={extensionConfig?.output_file_name || ""}
-                        onChange={(e) => setExtensionConfig(prev => ({ ...(prev || { activate_command: "", sorce_treminal: "", output_file_name: "", shell: "" }), output_file_name: e.target.value }))}
-                        ref={outputFileNameRef}
+                        value={localConfig?.output_file_name || ""}
+                        onChange={(e) => setLocalConfig(prev => ({ ...(prev || { activate_command: "", sorce_treminal: "", output_file_name: "", shell: "" }), output_file_name: e.target.value }))}
                     />
                 </div>
-                <button type="button" className={`${css.update_button}`} onClick={(e) => { e.preventDefault(); updateConfigHandler(); }}>Update</button>
+                <div className={`${css.button_group}`}>
+                    <button type="button" className={`${css.update_button}`} onClick={(e) => { e.preventDefault(); updateConfigHandler(); }}>Update</button>
+                    <button type="button" className={`${css.update_button} ${css.cancel_button}`} onClick={(e) => { e.preventDefault(); cancelConfigHandler(); }}>Cancel</button>
+                </div>
             </form>
         </div>
     );

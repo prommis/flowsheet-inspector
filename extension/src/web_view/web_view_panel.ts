@@ -19,7 +19,7 @@ let currentContext: vscode.ExtensionContext | undefined;
  * @param outputFileName TODO: this need to be removed because the run is in the tree view.
  * @returns 
  */
-export default async function variableView(context: vscode.ExtensionContext, outputFileName?: string) {
+export default async function openWebView(context: vscode.ExtensionContext, outputFileName?: string) {
     // Get the current active editor
     const editor = vscode.window.activeTextEditor;
     let fileName = '';
@@ -31,7 +31,7 @@ export default async function variableView(context: vscode.ExtensionContext, out
             fileName = activatedFileName;
         } else {
             vscode.window.showErrorMessage('No active editor found and no activated flowsheet found either!');
-            console.error('Idaes variable view raise an error: fail to find or open the variable view.');
+            console.error('Idaes web view raise an error: fail to find or open the web view.');
             return;
         }
     } else {
@@ -39,9 +39,9 @@ export default async function variableView(context: vscode.ExtensionContext, out
     }
 
     // Create a Webview Panel with split layout (top and bottom sections)
-    const variableViewPanel = vscode.window.createWebviewPanel(
-        'idaes variable view',
-        `IDAES Extension Variable View - ${fileName.split('/').pop()}`,
+    const webViewPanel = vscode.window.createWebviewPanel(
+        'idaes web view',
+        `Prommis Flowsheet Inspector - ${fileName.split('/').pop()}`,
         // vscode.ViewColumn.Beside, // Open beside current editor
         vscode.ViewColumn.Beside, // Open beside current editor
         // vscode.ViewColumn.Active,
@@ -53,21 +53,23 @@ export default async function variableView(context: vscode.ExtensionContext, out
         }
     );
 
-    registerWebview("variableView", variableViewPanel);
+    webViewPanel.iconPath = vscode.Uri.file(path.join(context.extensionPath, 'resources', 'prommis_icon.svg'));
+
+    registerWebview("webView", webViewPanel);
 
     // Set Webview HTML content - split layout
-    variableViewPanel.webview.html = getReactTemplate(context, variableViewPanel.webview, fileName, '');
+    webViewPanel.webview.html = getReactTemplate(context, webViewPanel.webview, fileName, '');
 
-    variableViewPanel.webview.onDidReceiveMessage(message => {
+    webViewPanel.webview.onDidReceiveMessage(message => {
         if (message.frontendInstruction === 'ready') {
-            variableViewPanel.webview.postMessage({
+            webViewPanel.webview.postMessage({
                 type: "init",
-                loadApp: 'variableView'
+                loadApp: 'webView'
             });
         }
     });
 
-    variableViewPanel.onDidDispose(() => {
-        unregisterWebview("variableView");
+    webViewPanel.onDidDispose(() => {
+        unregisterWebview("webView");
     });
 }

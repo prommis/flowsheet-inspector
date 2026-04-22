@@ -5,9 +5,8 @@ import * as path from 'path';
 import { reloadCurrentWebview } from './util/reload_window';
 import { brodcastMessage } from './util/webview_handler';
 import { setDefaultConfig } from './util/setDefaultExtensionConfig';
-import variableView from './varibale_view/variable_view';
+import openWebView from './web_view/web_view_panel';
 import treeview from './tree_view/treeview';
-import webView from './web_view/web_view';
 import activateTabListener from './util/activate_tab_handler';
 
 // This method is called when your extension is activated
@@ -16,7 +15,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
 	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "idaes-extension" is now active!');
+	console.log('Congratulations, your extension "flowsheet-inspector" is now active!');
 
 	// Override console.error to automatically broadcast all extension errors to the React frontend
 	const originalConsoleError = console.error;
@@ -67,11 +66,11 @@ export function activate(context: vscode.ExtensionContext) {
 	 * 1. check all required packages and packages commands if not match requirement, will show error
 	 * 2. if all requirements are met, will show information message idaes extension is started
 	 */
-	const initialExtensionCommand = vscode.commands.registerCommand('idaes-extension.start', () => {
+	const initialExtensionCommand = vscode.commands.registerCommand('flowsheet-inspector.start', () => {
 		// The code you place here will be executed every time your command is executed
 		// Display a message box to the user
-		vscode.window.showInformationMessage('Starting idaes_extension!');
-		vscode.window.showInformationMessage('idaes extension is started!');
+		vscode.window.showInformationMessage('Starting flowsheet-inspector!');
+		vscode.window.showInformationMessage('Flowsheet-inspector is started!');
 	});
 
 	// Register the IDAES Tree View in the sidebar
@@ -83,14 +82,7 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	);
 
-	// Register the IDAES Mermaid View in the bottom panel
-	const idaesWebView = vscode.window.registerWebviewViewProvider(
-		'idaes.webView',
-		webView(context),
-		{
-			webviewOptions: { retainContextWhenHidden: true }
-		}
-	);
+	// Removed the bottom panel idaesWebView registration
 
 	/**
 	 * Open new tab command
@@ -100,9 +92,9 @@ export function activate(context: vscode.ExtensionContext) {
 	 * 1. beside the current editor a text editor view show code
 	 * 2. the webview window show diagram, button nasted var etc.
 	 */
-	const registerVariableView = vscode.commands.registerCommand(
-		'idaes-extension.openVariableView',
-		() => variableView(context)
+	const registerWebView = vscode.commands.registerCommand(
+		'flowsheet-inspector.openWebView',
+		() => openWebView(context)
 	);
 
 	/**
@@ -110,13 +102,13 @@ export function activate(context: vscode.ExtensionContext) {
 	 * This command is used for development, it will reload the webview when you change the webview code.
 	 * with this command you have no need to open and close the debug mode every time you change the webview code.
 	 */
-	const reloadWebviewCommand = vscode.commands.registerCommand('idaes-extension.reloadWebview', () => {
+	const reloadWebviewCommand = vscode.commands.registerCommand('flowsheet-inspector.reloadWebview', () => {
 		reloadCurrentWebview();
 		vscode.window.showInformationMessage('🔄 Webview reloaded!');
 	});
 
 
-	context.subscriptions.push(initialExtensionCommand, registerVariableView, treeView, idaesWebView, reloadWebviewCommand);
+	context.subscriptions.push(initialExtensionCommand, registerWebView, treeView, reloadWebviewCommand);
 }
 
 // This method is called when your extension is deactivated

@@ -1,21 +1,30 @@
-import { useEffect, useState, useRef, useContext } from "react";
+import { useEffect, useState, useContext } from "react";
 import type { idaesRunInfo } from "../interface/interface";
 import { AppContext } from "../context";
 import { vscode } from '../vscode';
+import TreeNavBar from "./treeviewNav";
 import css from "../css/tree_app.module.css";
 
-export default function FlowsheetSteps({ idaesRunInfo }: { idaesRunInfo: idaesRunInfo }) {
-    const { setSelectedSteps, isLoading, initError } = useContext(AppContext);
+export default function FlowsheetSteps({ idaesRunInfo, setShowConfig }: { idaesRunInfo: idaesRunInfo, setShowConfig: React.Dispatch<React.SetStateAction<boolean>> }) {
+    const { setSelectedSteps, isLoading, initError, openPythonFiles, activateFileName } = useContext(AppContext);
     const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
-    const focuseView = useRef<HTMLSelectElement>(null)
+    // const focuseView = useRef<HTMLSelectElement>(null)
 
-    const handleOpenView = () => {
-        const selected = focuseView.current?.value;
-        if (selected) {
+    const handleOpenView = (target: string) => {
+        vscode.postMessage({
+            frontendInstruction: 'focus_view',
+            fromPanel: 'treeView',
+            target: target
+        });
+    };
+
+    const handleDocumentSelection = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const targetPath = e.target.value;
+        if (targetPath) {
             vscode.postMessage({
-                frontendInstruction: 'focus_view',
+                frontendInstruction: 'focus_document',
                 fromPanel: 'treeView',
-                target: selected
+                target: targetPath
             });
         }
     };
@@ -120,23 +129,57 @@ export default function FlowsheetSteps({ idaesRunInfo }: { idaesRunInfo: idaesRu
 
     return (
         <div className={`${css.flowsheet_steps_main_container}`}>
+            <div style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', margin: '0 0 10px 0', fontSize: '13px', color: 'var(--vscode-foreground)' }}>
+                    Flowsheet to inspect:
+                </label>
+                <select 
+                    style={{ width: '100%', padding: '6px', backgroundColor: 'var(--vscode-dropdown-background)', color: 'var(--vscode-dropdown-foreground)', border: '1px solid var(--vscode-dropdown-border)', borderRadius: '2px', cursor: 'pointer' }}
+                    onChange={handleDocumentSelection}
+                    value={openPythonFiles?.find(f => f.name === activateFileName)?.path || ""}
+                >
+                    <option value="" disabled>Select a flowsheet...</option>
+                    {openPythonFiles?.map((f, i) => (
+                        <option key={i} value={f.path}>{f.name}</option>
+                    ))}
+                </select>
+                <p style={{ margin: '5px 0 0 0', fontSize: '11px', color: 'var(--vscode-descriptionForeground, #cccccc)', fontStyle: 'italic' }}>
+                    Open the flowsheet in editor to select
+                </p>
+            </div>
+
+            <p style={{ margin: '0 0 10px 0', fontSize: '13px', color: 'var(--vscode-foreground)' }}>
+                Select Steps to Run:
+            </p>
             <div className={`${css.steps_container}`}>
                 {stepDisplay()}
             </div>
-            <div className={`${css.open_results_view_container}`}>
-                <label
-                    htmlFor="open_results_view"
-                    className={`${css.open_results_view_label}`}
-                >Focus on the view:</label>
-                <select
-                    ref={focuseView}
-                    className={`${css.open_results_view_select}`}
-                    onChange={() => handleOpenView()}
-                >
-                    <option value="">Open Results View</option>
-                    <option value="webview">Flowsheet Variables View</option>
-                    <option value="mermaid">Diagram View</option>
-                </select>
+
+            <div style={{ marginTop: '15px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                <TreeNavBar setShowConfig={setShowConfig} />
+
+                <div className={`${css.open_results_view_container}`}>
+                    <button
+                        className={`${css.open_results_view_select}`}
+                        style={{
+                            width: '100%',
+                            padding: '8px',
+                            backgroundColor: 'transparent',
+                            border: '1px solid var(--vscode-editor-foreground)',
+                            color: 'var(--vscode-editor-foreground)',
+                            cursor: 'pointer',
+                            borderRadius: '4px',
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            gap: '8px',
+                            backgroundImage: 'none'
+                        }}
+                        onClick={() => handleOpenView('webview')}
+                    >
+                        Open Inspector Results Panel ↗
+                    </button>
+                </div>
             </div>
         </div>
     );

@@ -5,7 +5,6 @@ import { AppContext } from './context';
 
 import TreePage from './tree_app.tsx'
 import EditorPage from './editor_page';
-import VariableView from './variable_view/variable_view_main';
 import WebView from './web_view/main_display.tsx';
 import './webviewApp.css'
 
@@ -19,7 +18,8 @@ export default function App() {
     setExtensionErrorLogs, // the extension error logs
     setTerminalLogs,
     setIsLoading,
-    setInitError
+    setInitError,
+    setOpenPythonFiles
   } = useContext(AppContext);
 
   const [appName, setAppName] = useState('');
@@ -40,17 +40,13 @@ export default function App() {
       case 'editor':
         loadedApp = <EditorPage />
         break;
-      case 'variableView':
-        console.log('loading variable view page');
-        loadedApp = <VariableView />
+      case 'webView':
+        console.log('loading web view page');
+        loadedApp = <WebView />
         break;
       case 'treeView':
         console.log('loading tree page');
         loadedApp = <TreePage />
-        break;
-      case 'webView':
-        console.log('loading webview page');
-        loadedApp = <WebView />
         break;
       case 'error':
         console.log(`Encounter an error: ${pageName}`);
@@ -95,6 +91,15 @@ export default function App() {
             setInitError(message.initError);
           } else if (message.initError === null || message.isLoading) {
             setInitError(null);
+          }
+          if (message.open_python_files !== undefined) {
+            setOpenPythonFiles(message.open_python_files);
+          }
+          break;
+        case 'update_open_files':
+          console.log('Received update_open_files event');
+          if (message.open_python_files !== undefined) {
+            setOpenPythonFiles(message.open_python_files);
           }
           break;
         case 'flowsheet_detail':
@@ -143,8 +148,8 @@ export default function App() {
   }, []);
 
   return (
-    <div 
-      className={isHighlight ? 'flash-highlight' : ''} 
+    <div
+      className={isHighlight ? 'flash-highlight' : ''}
       onAnimationEnd={() => setIsHighlight(false)}
       style={{ height: '100vh', width: '100vw', boxSizing: 'border-box', backgroundColor: 'var(--vscode-editor-background)', color: 'var(--vscode-editor-foreground)' }}
     >

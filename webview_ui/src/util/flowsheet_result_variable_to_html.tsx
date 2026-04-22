@@ -216,31 +216,31 @@ function nodeMatchesSearch(data: VariableNode, term: string): boolean {
 // ============================================================
 
 /** Renders per-unit DOF breakdown across all steps */
-function DofSection({ dofInfo, pathPrefix, defaultOpen }: {
-    dofInfo: DofInfo;
-    pathPrefix: string;
-    defaultOpen: boolean;
-}) {
-    const stepEntries = Object.entries(dofInfo.steps);
-    if (stepEntries.length === 0) return null;
+// function DofSection({ dofInfo, pathPrefix, defaultOpen }: {
+//     dofInfo: DofInfo;
+//     pathPrefix: string;
+//     defaultOpen: boolean;
+// }) {
+//     const stepEntries = Object.entries(dofInfo.steps);
+//     if (stepEntries.length === 0) return null;
 
-    return (
-        <TreeNode label="DOF" defaultOpen={defaultOpen}>
-            {stepEntries.map(([stepName, components]) => {
-                const selfDof = components[pathPrefix];
-                if (selfDof === undefined) return null;
+//     return (
+//         <TreeNode label="DOF" defaultOpen={defaultOpen}>
+//             {stepEntries.map(([stepName, components]) => {
+//                 const selfDof = components[pathPrefix];
+//                 if (selfDof === undefined) return null;
 
-                return (
-                    <div key={stepName} style={{ paddingLeft: '24px', fontSize: '12px', padding: '2px 24px' }}>
-                        <span style={{ fontFamily: 'monospace', color: '#888' }}>
-                            {stepName}  DOF: {selfDof}
-                        </span>
-                    </div>
-                );
-            })}
-        </TreeNode>
-    );
-}
+//                 return (
+//                     <div key={stepName} style={{ paddingLeft: '24px', fontSize: '12px', padding: '2px 24px' }}>
+//                         <span style={{ fontFamily: 'monospace', color: '#888' }}>
+//                             {stepName}  DOF: {selfDof}
+//                         </span>
+//                     </div>
+//                 );
+//             })}
+//         </TreeNode>
+//     );
+// }
 
 // ============================================================
 // Recursive Tree Content (internal)
@@ -284,7 +284,7 @@ function TreeContent({ data, searchTerm, defaultOpen, dofInfo, pathPrefix }: {
     }
 
     // Check if this node has DOF data (show DOF section for sub-nodes that have it)
-    const hasDofSection = dofInfo && pathPrefix && !searchTerm;
+    // const hasDofSection = dofInfo && pathPrefix && !searchTerm;
 
     return (
         <>
@@ -318,10 +318,12 @@ function TreeContent({ data, searchTerm, defaultOpen, dofInfo, pathPrefix }: {
                 </TreeNode>
             )}
 
-            {/* DOF section - only at unit level (pathPrefix has a dot, e.g. "fs.M101") */}
+            {/* Temporarily cancel unit-level DOF details */}
+            {/* 
             {hasDofSection && pathPrefix.includes('.') && (
                 <DofSection dofInfo={dofInfo} pathPrefix={pathPrefix} defaultOpen={defaultOpen} />
             )}
+            */}
 
             {/* Sub-nodes */}
             {subNodes.map(([key, node]) => {
@@ -339,14 +341,14 @@ function TreeContent({ data, searchTerm, defaultOpen, dofInfo, pathPrefix }: {
                     }
                 }
 
-                // Only show DOF badge at unit level (childPath has a dot, e.g. "fs.M101")
-                const dofBadge = (solverDof !== undefined && childPath.includes('.')) ? (
+                // Show DOF badge only at top-level 'fs'
+                const dofBadge = (solverDof !== undefined && childPath === 'fs') ? (
                     <span style={{
                         fontSize: '11px',
                         color: '#888',
-                        marginLeft: '4px',
+                        marginLeft: '2px',
                     }}>
-                        DOF({solverDof})
+                        , DoF({solverDof})
                     </span>
                 ) : undefined;
 

@@ -45,6 +45,16 @@ export default function webviewReceiveMessageHandler(context: vscode.ExtensionCo
                 focusView(frontendMessage.target);
             }
             break;
+        case 'focus_document':
+            console.log(`User selected a document to focus`);
+            if (frontendMessage.target) {
+                vscode.workspace.openTextDocument(frontendMessage.target).then(
+                    doc => vscode.window.showTextDocument(doc, vscode.ViewColumn.One, false)
+                ).then(undefined, err => {
+                    console.error(`Failed to show document: ${err}`);
+                });
+            }
+            break;
         case 'switch_sub_tab':
             console.log(`Broadcasting switch_sub_tab to all webviews: ${frontendMessage.tab_name}`);
             brodcastMessage({ type: 'switch_sub_tab', tab_name: frontendMessage.tab_name, sub_tab_name: frontendMessage.sub_tab_name });
@@ -78,14 +88,8 @@ function focusView(webViewName: string) {
     let openCommand = '';
     
     if (webViewName === 'webview') {
-        internalName = 'variableView';
-        openCommand = 'idaes-extension.openVariableView';
-    } else if (webViewName === 'mermaid') {
         internalName = 'webView';
-        openCommand = 'idaes.webView.focus';
-    } else {
-        console.error(`Unknown view name: ${webViewName}`);
-        return;
+        openCommand = 'flowsheet-inspector.openWebView';
     }
 
     const webviewPanel = getWebview(internalName);
@@ -105,7 +109,7 @@ function focusView(webViewName: string) {
     }
 
     // It's open, focus it
-    if (internalName === 'variableView') {
+    if (internalName === 'webView') {
         (webviewPanel as vscode.WebviewPanel).reveal();
     } else {
         vscode.commands.executeCommand(openCommand);

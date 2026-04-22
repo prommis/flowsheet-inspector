@@ -51,7 +51,7 @@ export interface FlowsheetActions {
     timings?: FlowsheetTimings;
     capture_solver_output?: SolverOutput;
     model_variables?: ModelVariables;
-    mermaid_diagram?: { diagram: string[] };
+    mermaid_diagram?: { diagram: string[] | string };
     diagnostics?: Diagnostics;
 }
 

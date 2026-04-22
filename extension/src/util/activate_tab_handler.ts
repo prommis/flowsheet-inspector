@@ -5,7 +5,37 @@ import { readExtensionConfig } from './extensionHandler';
 import runTerminalCommand from './run_terminal_command';
 import { checkExtensionConfigEnv } from './extension_initial_check';
 
+function getOpenPythonFiles() {
+    const pyFiles: { name: string, path: string }[] = [];
+    const seenPaths = new Set<string>();
+
+    for (const group of vscode.window.tabGroups.all) {
+        for (const tab of group.tabs) {
+            if (tab.input instanceof vscode.TabInputText) {
+                const fsPath = tab.input.uri.fsPath;
+                if (fsPath.endsWith('.py') && !seenPaths.has(fsPath)) {
+                    seenPaths.add(fsPath);
+                    pyFiles.push({
+                        name: trimFileName(fsPath),
+                        path: fsPath
+                    });
+                }
+            }
+        }
+    }
+    return pyFiles;
+}
+
 export default function activateTabListener(context: vscode.ExtensionContext) {
+    vscode.window.tabGroups.onDidChangeTabs(() => {
+        const openFiles = getOpenPythonFiles();
+        brodcastMessage({
+            type: 'update_open_files',
+            open_python_files: openFiles,
+            time: new Date().toISOString()
+        });
+    });
+
     vscode.window.onDidChangeActiveTextEditor(async editor => {
         if (editor) {
             const currentActivateTabFileName = editor.document.fileName;
@@ -31,6 +61,7 @@ export default function activateTabListener(context: vscode.ExtensionContext) {
                             message: `switch tab from ${previousActivatedFileName} to ${currentActivateTabFileName}`,
                             activate_tab_name: activateFileName,
                             idaesRunInfo: null,
+                            open_python_files: getOpenPythonFiles(),
                             time: new Date().toISOString(),
                         }
                     );
@@ -44,6 +75,7 @@ export default function activateTabListener(context: vscode.ExtensionContext) {
                         message: `Starting fetch for ${currentActivateTabFileName}`,
                         activate_tab_name: activateFileName,
                         isLoading: true,
+                        open_python_files: getOpenPythonFiles(),
                         time: new Date().toISOString(),
                     }
                 );
@@ -56,6 +88,7 @@ export default function activateTabListener(context: vscode.ExtensionContext) {
                         idaesRunInfo: null,
                         initError: envCheck.errorMsg,
                         isLoading: false,
+                        open_python_files: getOpenPythonFiles(),
                         time: new Date().toISOString(),
                     });
                     return;
@@ -64,10 +97,10 @@ export default function activateTabListener(context: vscode.ExtensionContext) {
                 const sorceCommand = extensionConfigData.sorce_treminal;
                 const activateCommand = extensionConfigData.activate_command;
                 const outputFileName = extensionConfigData.output_file_name;
-                const shellType = "/bin/zsh";
+                const shellType = extensionConfigData.shell;
 
                 const commandIdaesRunInfo = `${sorceCommand} && ${activateCommand} && idaes-run "${currentActivateTabFileName}" "${outputFileName}" --info`;
-                
+
                 let stepsData: any;
                 try {
                     stepsData = await runTerminalCommand(context, commandIdaesRunInfo, shellType, outputFileName, "currentFileInfo");
@@ -82,6 +115,7 @@ export default function activateTabListener(context: vscode.ExtensionContext) {
                             idaesRunInfo: null,
                             initError: `Failed to load flowsheet info for new tab: ${err.message}`,
                             isLoading: false,
+                            open_python_files: getOpenPythonFiles(),
                             time: new Date().toISOString(),
                         }
                     );
@@ -97,6 +131,7 @@ export default function activateTabListener(context: vscode.ExtensionContext) {
                         activate_tab_name: activateFileName,
                         idaesRunInfo: stepsData,
                         isLoading: false,
+                        open_python_files: getOpenPythonFiles(),
                         time: new Date().toISOString(),
                     }
                 );

@@ -5,7 +5,7 @@ import { postReloadMermaidDone } from '../util/post_message';
 import css from '../css/mermaid.module.css';
 
 export default function Mermaid() {
-    const { flowsheetRunnerResult, activateFileName } = useContext(AppContext);
+    const { flowsheetRunnerResult } = useContext(AppContext);
     const mermaidRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -53,8 +53,15 @@ export default function Mermaid() {
         // get diagram from flowsheet runner result
         const mermaidDiagram = flowsheetRunnerResult.actions.mermaid_diagram.diagram;
 
-        // Normalize: handle both array and comma-separated string
-        const lines = mermaidDiagram;
+        // Normalize: handle both array and string
+        let lines: string[] = [];
+        if (typeof mermaidDiagram === 'string') {
+            lines = mermaidDiagram.split('\n');
+        } else if (Array.isArray(mermaidDiagram)) {
+            lines = mermaidDiagram;
+        } else {
+            console.error('Unknown mermaid diagram format', mermaidDiagram);
+        }
 
         // Filter out empty strings
         const filteredDiagram = lines.filter((line: string) => line.trim() !== '');
@@ -97,7 +104,7 @@ export default function Mermaid() {
 
     return (
         <div className={`${css.mermaid_container}`}>
-            <p className={`${css.mermaid_title}`}>Diagram for: {activateFileName}</p>
+            <h2 className="page-title">Diagram:</h2>
             {/* Leave this div empty — mermaid.run() will inject the SVG via innerHTML */}
             <div className={`${css.diagram_container}`}>
                 <div ref={mermaidRef} className={`${css.diagram}`}></div>

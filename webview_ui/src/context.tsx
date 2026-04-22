@@ -16,10 +16,12 @@ import {
     type SetMermaidDiagram,
     type IExtensionConfig,
     type SetExtensionConfig,
-    type ExtensionErrorLogsType,
     type SetExtensionErrorLogs,
+    type ExtensionErrorLogsType,
     type TerminalLogsType,
-    type SetTerminalLogs
+    type SetTerminalLogs,
+    type OpenPythonFilesType,
+    type SetOpenPythonFiles
 } from "./interface/interface";
 
 export type ActiveLogTab = 'error' | 'terminal';
@@ -52,6 +54,8 @@ interface AppContextType {
     setActiveLogTab: SetActiveLogTab;
     initError: string | null;
     setInitError: React.Dispatch<React.SetStateAction<string | null>>;
+    openPythonFiles: OpenPythonFilesType;
+    setOpenPythonFiles: SetOpenPythonFiles;
 }
 // Create context with default values
 export const AppContext = createContext({} as AppContextType);

@@ -3,6 +3,7 @@ import { AppContext } from "../context";
 import Mermaid from "./meraid";
 import Ipopt from "./ipopt";
 import Diagnostic from "./diagnostic";
+import Variable from "../variable_view/flowsheet_variable_display";
 import LogsView from "./logs";
 import css from "../css/webview_maindisplay.module.css";
 export default function WebView() {
@@ -10,6 +11,10 @@ export default function WebView() {
     const { extensionErrorLogs, setActiveLogTab } = useContext(AppContext);
     const [flashLogs, setFlashLogs] = useState(false);
     const prevLogsLength = useRef(extensionErrorLogs.length);
+    const { flowsheetRunnerResult } = useContext(AppContext);
+    
+    // total model dof
+    const totalDof = flowsheetRunnerResult?.actions?.degrees_of_freedom?.model;
 
     useEffect(() => {
         const handleMessage = (event: MessageEvent) => {
@@ -40,6 +45,9 @@ export default function WebView() {
         case 'diagram':
             display = <Mermaid />;
             break;
+        case 'variable':
+            display = <Variable />;
+            break;
         case 'ipopt':
             display = <Ipopt />;
             break;
@@ -62,17 +70,22 @@ export default function WebView() {
                 <li
                     className={`${css.nav_item} ${activeTab === 'diagram' ? css.nav_item_active : ''}`}
                     onClick={() => changeActivateTabHandler('diagram')}>
-                    Diagram
+                    DIAGRAM
                 </li>
                 <li
-                    className={`${css.nav_item} ${activeTab === 'ipopt' ? css.nav_item_active : ''}`}
-                    onClick={() => changeActivateTabHandler('ipopt')}>
-                    IPOPT
+                    className={`${css.nav_item} ${activeTab === 'variable' ? css.nav_item_active : ''}`}
+                    onClick={() => changeActivateTabHandler('variable')}>
+                    FLOWSHEET VARIABLES {totalDof !== undefined && <span style={{ textTransform: 'none', fontStyle: 'italic', marginLeft: '4px' }}>DoF({totalDof})</span>}
                 </li>
                 <li
                     className={`${css.nav_item} ${activeTab === 'diagnostics' ? css.nav_item_active : ''}`}
                     onClick={() => changeActivateTabHandler('diagnostics')}>
-                    Diagnostics
+                    DIAGNOSTICS
+                </li>
+                <li
+                    className={`${css.nav_item} ${activeTab === 'ipopt' ? css.nav_item_active : ''}`}
+                    onClick={() => changeActivateTabHandler('ipopt')}>
+                    IPOPT <span className={`${css.blue_dot}`}></span>
                 </li>
                 <li
                     className={`${css.nav_item} ${activeTab === 'logs' ? css.nav_item_active : ''} ${flashLogs ? 'flash-red-highlight' : ''}`}
@@ -80,10 +93,12 @@ export default function WebView() {
                         changeActivateTabHandler('logs');
                         setFlashLogs(false);
                     }}>
-                    Logs
+                    LOGS {flashLogs && <span className={`${css.blue_dot}`}></span>}
                 </li>
             </ul>
-            {display}
+            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+                {display}
+            </div>
         </div>
     );
 }
