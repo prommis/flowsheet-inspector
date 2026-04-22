@@ -35,7 +35,10 @@ export interface FlowsheetTimings {
 
 // Solver logs
 export interface SolverOutput {
-    solver_logs: {
+    output?: {
+        [stepName: string]: string;
+    };
+    solver_logs?: {
         [stepName: string]: string;
     };
 }
@@ -50,6 +53,7 @@ export interface FlowsheetActions {
     degrees_of_freedom?: DegreesOfFreedom;
     timings?: FlowsheetTimings;
     capture_solver_output?: SolverOutput;
+    solver_output?: SolverOutput;
     model_variables?: ModelVariables;
     mermaid_diagram?: { diagram: string[] | string };
     diagnostics?: Diagnostics;
