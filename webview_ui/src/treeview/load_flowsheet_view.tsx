@@ -69,7 +69,7 @@ export default function LoadFlowsheetView() {
                 <select
                     name="selectFlowsheet"
                     className={css.selectBox}
-                    value={selectedName}
+                    value={actualSelectedName}
                     onChange={(e) => setSelectedName(e.target.value)}
                     disabled={idaesHistoryList === null || uniqueNames.length === 0}
                 >
@@ -87,9 +87,9 @@ export default function LoadFlowsheetView() {
                 <div className={css.actionGroup}>
                     <span className={css.runCount}>Runs: {filteredRuns.length}</span>
                     <button
-                        className={css.primaryButton}
+                        className={css.primaryButton} 
                         onClick={() => handleLoadRun()}
-                        disabled={!selectedName}
+                        disabled={!actualSelectedName}
                     >
                         Show latest
                     </button>
