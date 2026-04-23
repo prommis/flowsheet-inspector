@@ -40,4 +40,5 @@ export type IdaesHistoryItem = {
     filename: string;
     status: boolean;
     solverError?: string;
+    tags?: string;
 };

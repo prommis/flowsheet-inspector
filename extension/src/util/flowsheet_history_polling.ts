@@ -55,7 +55,7 @@ export function startHistoryPolling(context: vscode.ExtensionContext) {
                 console.log(`Detected SQLite changes. New Max ID: ${currentMaxId}. Fetching recent runs...`);
 
                 // Fetch the list of history, delimited by | natively by sqlite3. We extract a quick 100 char snippet of the error message inside the blob directly!
-                const fetchCommand = `sqlite3 ${dbPath} "SELECT id, created, name, filename, status, SUBSTR(report, INSTR(report, 'EXIT:'), 100) FROM reports ORDER BY id DESC LIMIT 100;"`;
+                const fetchCommand = `sqlite3 ${dbPath} "SELECT id, created, name, filename, status, SUBSTR(report, INSTR(report, 'EXIT:'), 100), tags FROM reports ORDER BY id DESC LIMIT 100;"`;
 
                 cp.exec(fetchCommand, (err2, stdout2, stderr2) => {
                     if (err2) {
@@ -68,7 +68,7 @@ export function startHistoryPolling(context: vscode.ExtensionContext) {
 
                     const lines = stdout2.trim().split('\n').filter(l => l.trim().length > 0);
                     const historyList = lines.map(line => {
-                        const [id, created, name, filename, status, rawError] = line.split('|');
+                        const [id, created, name, filename, status, rawError, tags] = line.split('|');
                         
                         let solverError = "";
                         if (rawError && rawError.startsWith("EXIT:")) {
@@ -85,7 +85,8 @@ export function startHistoryPolling(context: vscode.ExtensionContext) {
                             name: name ? name.trim() : "",
                             filename: filename ? filename.trim() : "",
                             status: isSuccess,
-                            solverError: !isSuccess ? solverError : ""
+                            solverError: !isSuccess ? solverError : "",
+                            tags: tags ? tags.trim() : ""
                         };
                     });
 

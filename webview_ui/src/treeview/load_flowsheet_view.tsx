@@ -125,7 +125,9 @@ export default function LoadFlowsheetView() {
                                     </div>
                                 </div>
                                 <div className={css.colTags}>
-                                    <span className={css.tagBadge}>-</span>
+                                    <span className={css.tagBadge} style={!run.tags ? { backgroundColor: 'transparent', color: 'var(--vscode-descriptionForeground)' } : {}}>
+                                        {run.tags || '-'}
+                                    </span>
                                 </div>
                             </div>
                         );
