@@ -15,18 +15,28 @@
     gap: 10px;
 }
 
-.selectBox {
+.searchBox {
     flex: 1;
     width: 100%;
     max-width: 100%;
-    height: 30px;
-    padding: 0 10px;
+    padding: 8px 12px;
     background-color: var(--vscode-input-background);
     color: var(--vscode-input-foreground);
     border: 1px solid var(--vscode-input-border, transparent);
     border-radius: 4px;
     font-family: inherit;
+    font-size: 14px;
     box-sizing: border-box;
+}
+
+.searchBox:focus {
+    border-color: var(--vscode-focusBorder);
+    outline: none;
+}
+
+.searchBox:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 
 .actionGroup {
@@ -65,7 +75,7 @@
 
 .headerRow {
     display: grid;
-    grid-template-columns: 60px 120px 1fr;
+    grid-template-columns: 50px 70px 1fr 60px;
     padding: 10px;
     background-color: var(--vscode-editorGroupHeader-tabsBackground);
     border-bottom: 1px solid var(--vscode-panel-border, #333);
@@ -73,6 +83,7 @@
     border-top-right-radius: 6px;
     font-size: 14px;
     color: var(--vscode-editor-foreground);
+    gap: 10px;
 }
 
 .dataRowContainer {
@@ -85,13 +96,14 @@
 
 .dataRow {
     display: grid;
-    grid-template-columns: 60px 120px 1fr;
+    grid-template-columns: 50px 70px 1fr 60px;
     padding: 12px 10px;
     border-bottom: 1px solid var(--vscode-panel-border, #333);
     align-items: center;
     cursor: pointer;
     font-size: 13px;
     transition: background-color 0.1s ease;
+    gap: 10px;
 }
 
 .dataRow:hover {
@@ -193,6 +205,46 @@
 }
 
 .status-icon--fail:hover .cssTooltip {
+    visibility: visible;
+    opacity: 1;
+}
+.colFlowsheet {
+    position: relative;
+    min-width: 0;
+}
+
+.flowsheetText {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    display: block;
+    font-family: var(--vscode-editor-font-family);
+    color: var(--vscode-editor-foreground);
+}
+
+.pathTooltip {
+    visibility: hidden;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 5px;
+    z-index: 999;
+    background-color: var(--vscode-editorHoverWidget-background, #252526);
+    color: var(--vscode-editorHoverWidget-foreground, #ccc);
+    border: 1px solid var(--vscode-editorHoverWidget-border, #454545);
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    word-break: break-all;
+    max-width: 300px;
+    white-space: normal;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    opacity: 0;
+    transition: opacity 0.2s, visibility 0.2s;
+    pointer-events: none;
+}
+
+.colFlowsheet:hover .pathTooltip {
     visibility: visible;
     opacity: 1;
 }

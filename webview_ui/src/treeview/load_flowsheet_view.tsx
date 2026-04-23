@@ -36,29 +36,22 @@ function timeSince(unixTimestampSeconds: number) {
 export default function LoadFlowsheetView() {
     const { idaesHistoryList } = useContext(AppContext);
 
-    // Automatically extract unique names
-    const uniqueNames = useMemo(() => {
-        if (!idaesHistoryList) return [];
-        const names = idaesHistoryList.map(r => r.name || r.filename).filter(Boolean);
-        return Array.from(new Set(names));
-    }, [idaesHistoryList]);
-
-    const [selectedName, setSelectedName] = useState<string>("");
-
-
-    // By default, if the user hasn't actively selected a name, fallback to the first available option
-    const actualSelectedName = selectedName || (uniqueNames.length > 0 ? uniqueNames[0] : "");
+    const [searchQuery, setSearchQuery] = useState<string>("");
 
     const filteredRuns = useMemo(() => {
-        if (!idaesHistoryList || !actualSelectedName) return [];
-        return idaesHistoryList.filter(r => (r.name || r.filename) === actualSelectedName);
-    }, [idaesHistoryList, actualSelectedName]);
+        if (!idaesHistoryList) return [];
+        if (!searchQuery) return idaesHistoryList; // Show all by default
+        
+        const lowerQuery = searchQuery.toLowerCase();
+        return idaesHistoryList.filter(r => 
+            (r.name?.toLowerCase().includes(lowerQuery)) || 
+            (r.filename?.toLowerCase().includes(lowerQuery))
+        );
+    }, [idaesHistoryList, searchQuery]);
 
     const handleLoadRun = (id?: number) => {
         if (id) {
             vscode.postMessage({ frontendInstruction: "pull_flowsheet_history", fromPanel: "treeView", id });
-        } else if (actualSelectedName) {
-            vscode.postMessage({ frontendInstruction: "pull_flowsheet_history", fromPanel: "treeView", name: actualSelectedName });
         }
     };
 
@@ -66,72 +59,77 @@ export default function LoadFlowsheetView() {
         <div className={css.container}>
             {/* Control Bar */}
             <div className={css.controlBar}>
-                <select
-                    name="selectFlowsheet"
-                    className={css.selectBox}
-                    value={actualSelectedName}
-                    onChange={(e) => setSelectedName(e.target.value)}
-                    disabled={idaesHistoryList === null || uniqueNames.length === 0}
-                >
-                    {idaesHistoryList === null && (
-                        <option value="" disabled>Loading IDAES history...</option>
-                    )}
-                    {idaesHistoryList !== null && uniqueNames.length === 0 && (
-                        <option value="" disabled>No history found</option>
-                    )}
-                    {uniqueNames.map((name, index) => (
-                        <option key={index} value={name}>{name}</option>
-                    ))}
-                </select>
+                <input
+                    type="text"
+                    className={css.searchBox}
+                    placeholder="Search history by name or path..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    disabled={idaesHistoryList === null}
+                />
 
                 <div className={css.actionGroup}>
                     <span className={css.runCount}>Runs: {filteredRuns.length}</span>
-                    <button
-                        className={css.primaryButton} 
-                        onClick={() => handleLoadRun()}
-                        disabled={!actualSelectedName}
-                    >
-                        Show latest
-                    </button>
                 </div>
             </div>
 
             {/* Data Table */}
             <div className={css.tableContainer}>
                 <div className={css.headerRow}>
-                    <div className={css.colStatus}></div>
+                    <div className={css.colStatus}>Status</div>
                     <div className={css.colTime}>Since</div>
+                    <div>Flowsheet</div>
                     <div className={css.colTags}>Tags</div>
                 </div>
 
                 <div className={css.dataRowContainer}>
-                    {filteredRuns.map((run) => (
-                        <div
-                            key={run.id}
-                            className={css.dataRow}
-                            onClick={() => handleLoadRun(run.id)}
-                            style={{ cursor: 'pointer' }}
-                        >
-                            <div className={css.colStatus}>
-                                {run.status ? (
-                                    <div className={`${css["status-icon"]} ${css["status-icon--success"]}`}>✓</div>
-                                ) : (
-                                    <div className={`${css["status-icon"]} ${css["status-icon--fail"]}`}
-                                        onClick={(e) => e.stopPropagation()} /* Prevent clicking from re-opening the run if they just wanted to inspect the error */
-                                    >
-                                        ✕
-                                        <span className={css.cssTooltip}>
-                                            {run.solverError ? `Solver Output: ${run.solverError}` : "Run failed. No solver output available."}
-                                        </span>
+                    {filteredRuns.map((run) => {
+                        let displayName = run.name ? run.name.trim() : "";
+                        
+                        // If no name, or if the name provided is actually a full raw path (contains / or \)
+                        // We replace it with the fallback text as requested.
+                        if (!displayName || /[/\\]/.test(displayName)) {
+                            displayName = "Name not available";
+                        }
+
+                        const tooltipText = run.filename || "No file path available";
+                        
+                        return (
+                            <div
+                                key={run.id}
+                                className={css.dataRow}
+                                onClick={() => handleLoadRun(run.id)}
+                                style={{ cursor: 'pointer' }}
+                            >
+                                <div className={css.colStatus}>
+                                    {run.status ? (
+                                        <div className={`${css["status-icon"]} ${css["status-icon--success"]}`}>✓</div>
+                                    ) : (
+                                        <div className={`${css["status-icon"]} ${css["status-icon--fail"]}`}
+                                            onClick={(e) => e.stopPropagation()} /* Prevent clicking from re-opening the run if they just wanted to inspect the error */
+                                        >
+                                            ✕
+                                            <span className={css.cssTooltip}>
+                                                {run.solverError ? `Solver Output: ${run.solverError}` : "Run failed. No solver output available."}
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+                                <div className={css.colTime}>{timeSince(run.created)}</div>
+                                <div className={css.colFlowsheet}>
+                                    <span className={css.flowsheetText} style={{ fontStyle: displayName === "Name not available" ? 'italic' : 'normal', color: displayName === "Name not available" ? 'var(--vscode-descriptionForeground)' : 'var(--vscode-editor-foreground)' }}>
+                                        {displayName}
+                                    </span>
+                                    <div className={css.pathTooltip}>
+                                        {tooltipText}
                                     </div>
-                                )}
+                                </div>
+                                <div className={css.colTags}>
+                                    <span className={css.tagBadge}>-</span>
+                                </div>
                             </div>
-                            <div className={css.colTime}>{timeSince(run.created)}</div>
-                            <div className={css.colTags}>
-                                <span className={css.tagBadge}>-</span>
-                            </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                     {idaesHistoryList === null && (
                         <div className={css.emptyMessage}>Scanning SQLite database...</div>
                     )}

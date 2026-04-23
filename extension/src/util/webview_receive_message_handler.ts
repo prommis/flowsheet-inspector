@@ -73,8 +73,8 @@ export default function webviewReceiveMessageHandler(context: vscode.ExtensionCo
             }
             break;
         case 'pull_flowsheet_history':
-            if (frontendMessage.id || frontendMessage.name) {
-                console.log(`Loading historical run for: ${frontendMessage.id ? 'ID ' + frontendMessage.id : frontendMessage.name}`);
+            if (frontendMessage.id) {
+                console.log(`Loading historical run for ID: ${frontendMessage.id}`);
 
                 // Check if webView is open. If not, open it before grabbing results!
                 if (!activateWebviews.get('webView')) {
@@ -91,13 +91,8 @@ export default function webviewReceiveMessageHandler(context: vscode.ExtensionCo
                 const os = require('os');
                 const cp = require('child_process');
                 const dbPath = `${os.homedir()}/.idaes/reportdb.sqlite`;
-                // Securely query just the json report block for this explicit filename/name or exact ID
-                let queryCmd = '';
-                if (frontendMessage.id) {
-                    queryCmd = `sqlite3 ${dbPath} "SELECT report FROM reports WHERE id = ${frontendMessage.id};"`;
-                } else {
-                    queryCmd = `sqlite3 ${dbPath} "SELECT report FROM reports WHERE coalesce(nullif(name, ''), filename) = '${frontendMessage.name}' ORDER BY id DESC LIMIT 1;"`;
-                }
+                // Securely query just the json report block for this explicit exact ID
+                const queryCmd = `sqlite3 ${dbPath} "SELECT report FROM reports WHERE id = ${frontendMessage.id};"`;
                 
                 cp.exec(queryCmd, { maxBuffer: 1024 * 1024 * 10 }, (err: any, stdout: string, stderr: string) => {
                     if (err) {
