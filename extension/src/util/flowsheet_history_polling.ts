@@ -22,7 +22,7 @@ export function startHistoryPolling(context: vscode.ExtensionContext) {
         // Fetch the list of history natively by sqlite3. We use a bash logical OR (||) fallback.
         // It first attempts to query the modern schema (from minimal-wrap branch). If the 'run_status' column does not exist,
         // it gracefully suppresses the error and falls back to querying the legacy schema.
-        const fetchCommand = `sqlite3 ${dbPath} "SELECT id, created, name, filename, run_status, run_exception, tags FROM reports ORDER BY id DESC LIMIT 100;" 2>/dev/null || sqlite3 ${dbPath} "SELECT id, created, name, filename, status, SUBSTR(report, INSTR(report, 'EXIT:'), 100), tags FROM reports ORDER BY id DESC LIMIT 100;"`;
+        const fetchCommand = `sqlite3 ${dbPath} "SELECT id, created, name, filename, CASE WHEN run_status = 1 THEN 1 ELSE 0 END, COALESCE(NULLIF(run_exception, ''), SUBSTR(report, INSTR(report, 'EXIT:'), 100)), tags FROM reports ORDER BY id DESC LIMIT 100;" 2>/dev/null || sqlite3 ${dbPath} "SELECT id, created, name, filename, status, SUBSTR(report, INSTR(report, 'EXIT:'), 100), tags FROM reports ORDER BY id DESC LIMIT 100;"`;
 
         cp.exec(fetchCommand, (err, stdout, stderr) => {
             if (err) {
@@ -44,13 +44,13 @@ export function startHistoryPolling(context: vscode.ExtensionContext) {
             const lines = stdout.trim().split('\n').filter(l => l.trim().length > 0);
             const historyList = lines.map(line => {
                 const [id, created, name, filename, status, rawError, tags] = line.split('|');
-                
+
                 let solverError = "";
                 if (rawError && rawError.startsWith("EXIT:")) {
                     // Trim off trailing JSON formatting like \n\b\b\b...
                     solverError = rawError.split('\\n')[0].replace(/["\\]/g, '').trim();
                 }
-                
+
                 // Treat falsy or '0' status as failure
                 const isSuccess = parseInt(status, 10) === 1;
 
