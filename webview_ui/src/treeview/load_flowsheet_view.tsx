@@ -84,9 +84,10 @@ export default function LoadFlowsheetView() {
 
                 <div className={css.dataRowContainer}>
                     {filteredRuns.map((run) => {
-                        let displayName = run.name ? run.name.trim() : "";
+                        const extractedFilename = run.filename ? run.filename.split(/[/\\]/).pop() : "";
+                        let displayName = run.name ? run.name.trim() : (extractedFilename || "");
                         
-                        // If no name, or if the name provided is actually a full raw path (contains / or \)
+                        // If no valid text, or if the final string still looks like a raw path (contains / or \)
                         // We replace it with the fallback text as requested.
                         if (!displayName || /[/\\]/.test(displayName)) {
                             displayName = "Name not available";

@@ -4,11 +4,10 @@ import * as os from 'os';
 import * as vscode from 'vscode';
 import { brodcastMessage } from './webview_handler';
 
-let lastMaxId = -1;
+let lastHistoryString = "";
 
 export function startHistoryPolling(context: vscode.ExtensionContext) {
     console.log("Starting Flowsheet History Polling...");
-
 
     setInterval(() => {
         const idaesPath = `${os.homedir()}/.idaes`;
@@ -26,10 +25,10 @@ export function startHistoryPolling(context: vscode.ExtensionContext) {
             return;
         }
 
-        // Command to quickly check if new records were inserted
-        const checkCommand = `sqlite3 ${dbPath} "SELECT MAX(id) FROM reports;"`;
+        // Fetch the list of history, delimited by | natively by sqlite3. We extract a quick 100 char snippet of the error message inside the blob directly!
+        const fetchCommand = `sqlite3 ${dbPath} "SELECT id, created, name, filename, status, SUBSTR(report, INSTR(report, 'EXIT:'), 100), tags FROM reports ORDER BY id DESC LIMIT 100;"`;
 
-        cp.exec(checkCommand, (err, stdout, stderr) => {
+        cp.exec(fetchCommand, (err, stdout, stderr) => {
             if (err) {
                 // If the DB doesn't exist yet or is throwing an error, silently fail and retry later
                 brodcastMessage({
@@ -39,61 +38,37 @@ export function startHistoryPolling(context: vscode.ExtensionContext) {
                 return;
             }
 
-            const currentMaxId = parseInt(stdout.trim(), 10);
-            if (isNaN(currentMaxId)) {
-                brodcastMessage({
-                    type: 'error',
-                    message: `Failed to parse IDAES max ID. Received: ${stdout}`
-                });
-                return;
-            }
+            const lines = stdout.trim().split('\n').filter(l => l.trim().length > 0);
+            const historyList = lines.map(line => {
+                const [id, created, name, filename, status, rawError, tags] = line.split('|');
+                
+                let solverError = "";
+                if (rawError && rawError.startsWith("EXIT:")) {
+                    // Trim off trailing JSON formatting like \n\b\b\b...
+                    solverError = rawError.split('\\n')[0].replace(/["\\]/g, '').trim();
+                }
+                
+                // Treat falsy or '0' status as failure
+                const isSuccess = parseInt(status, 10) === 1;
 
-            // Trigger reading full history only if there's a new ID
-            if (currentMaxId !== lastMaxId) {
-                lastMaxId = currentMaxId;
+                return {
+                    id: parseInt(id, 10),
+                    created: parseFloat(created),
+                    name: name ? name.trim() : "",
+                    filename: filename ? filename.trim() : "",
+                    status: isSuccess,
+                    solverError: !isSuccess ? solverError : "",
+                    tags: tags ? tags.trim() : ""
+                };
+            });
 
-                console.log(`Detected SQLite changes. New Max ID: ${currentMaxId}. Fetching recent runs...`);
-
-                // Fetch the list of history, delimited by | natively by sqlite3. We extract a quick 100 char snippet of the error message inside the blob directly!
-                const fetchCommand = `sqlite3 ${dbPath} "SELECT id, created, name, filename, status, SUBSTR(report, INSTR(report, 'EXIT:'), 100), tags FROM reports ORDER BY id DESC LIMIT 100;"`;
-
-                cp.exec(fetchCommand, (err2, stdout2, stderr2) => {
-                    if (err2) {
-                        brodcastMessage({
-                            type: 'error',
-                            message: `Failed to fetch IDAES history rows. Error: ${err2.message || stderr2}`
-                        });
-                        return;
-                    }
-
-                    const lines = stdout2.trim().split('\n').filter(l => l.trim().length > 0);
-                    const historyList = lines.map(line => {
-                        const [id, created, name, filename, status, rawError, tags] = line.split('|');
-                        
-                        let solverError = "";
-                        if (rawError && rawError.startsWith("EXIT:")) {
-                            // Trim off trailing JSON formatting like \n\b\b\b...
-                            solverError = rawError.split('\\n')[0].replace(/["\\]/g, '').trim();
-                        }
-                        
-                        // Treat falsy or '0' status as failure
-                        const isSuccess = parseInt(status, 10) === 1;
-
-                        return {
-                            id: parseInt(id, 10),
-                            created: parseFloat(created),
-                            name: name ? name.trim() : "",
-                            filename: filename ? filename.trim() : "",
-                            status: isSuccess,
-                            solverError: !isSuccess ? solverError : "",
-                            tags: tags ? tags.trim() : ""
-                        };
-                    });
-
-                    // Update global state and immediately broadcast this chunk of data to React
-                    context.globalState.update('idaesHistoryList', historyList);
-                    brodcastMessage({ type: 'history_update', data: historyList });
-                });
+            const newHistoryString = JSON.stringify(historyList);
+            if (newHistoryString !== lastHistoryString) {
+                lastHistoryString = newHistoryString;
+                console.log(`Detected SQLite changes. History string diff registered. Fetching and syncing recent runs...`);
+                // Update global state and immediately broadcast this chunk of data to React
+                context.globalState.update('idaesHistoryList', historyList);
+                brodcastMessage({ type: 'history_update', data: historyList });
             }
         });
 
