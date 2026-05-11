@@ -6,7 +6,7 @@ import { registerWebview } from '../util/webview_handler';
 import { trimFileName } from '../util/trim_file_name';
 import { readExtensionConfig, updateExtensionConfig } from '../util/extensionHandler';
 import webviewReceiveMessageHandler from "../util/webview_receive_message_handler";
-import runTerminalCommand from '../util/run_terminal_command';
+// import runTerminalCommand from '../util/run_python';
 import { checkExtensionConfigEnv } from '../util/extension_initial_check';
 
 export default function treeview(context: vscode.ExtensionContext) {
@@ -97,22 +97,24 @@ export default function treeview(context: vscode.ExtensionContext) {
 
                 const commandIdaesRunInfo = `${sorceCommand} && ${activateCommand} && idaes-run "${fileName}" "${outputFileName}" --info`;
 
-                let resolvedStepsData: any = null;
-                try {
-                    resolvedStepsData = await runTerminalCommand(context, commandIdaesRunInfo, shellType, outputFileName, "currentFileInfo");
-                    console.log(resolvedStepsData);
-                } catch (err: any) {
-                    console.error(`Error running terminal command during tree view load: ${err.message}`);
-                    webviewView.webview.postMessage({
-                        type: 'switch_tab',
-                        activate_tab_name: trimFileName(fileName),
-                        idaesRunInfo: null,
-                        initError: `Failed to load flowsheet info: ${err.message}. Please check your configuration.`,
-                        isLoading: false,
-                        time: new Date().toISOString(),
-                    });
-                    return;
-                }
+                // TODO: Get correct value from <somewhere>
+                const resolvedStepsData = {"steps": ["step1", "step2"]};
+                // let resolvedStepsData: any = null;
+                // try {
+                //     resolvedStepsData = await runTerminalCommand(context, commandIdaesRunInfo, shellType, outputFileName, "currentFileInfo");
+                //     console.log(resolvedStepsData);
+                // } catch (err: any) {
+                //     console.error(`Error running terminal command during tree view load: ${err.message}`);
+                //     webviewView.webview.postMessage({
+                //         type: 'switch_tab',
+                //         activate_tab_name: trimFileName(fileName),
+                //         idaesRunInfo: null,
+                //         initError: `Failed to load flowsheet info: ${err.message}. Please check your configuration.`,
+                //         isLoading: false,
+                //         time: new Date().toISOString(),
+                //     });
+                //     return;
+                // }
 
                 // 5. Update UI with the result (success)
                 webviewView.webview.postMessage({
