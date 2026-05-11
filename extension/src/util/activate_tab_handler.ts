@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { brodcastMessage } from './webview_handler';
 import { trimFileName } from './trim_file_name';
 import { readExtensionConfig } from './extensionHandler';
-import runTerminalCommand from './run_terminal_command';
+import runTerminalCommand from './run_python';
 import { checkExtensionConfigEnv } from './extension_initial_check';
 
 function getOpenPythonFiles() {
@@ -101,26 +101,28 @@ export default function activateTabListener(context: vscode.ExtensionContext) {
 
                 const commandIdaesRunInfo = `${sorceCommand} && ${activateCommand} && idaes-run "${currentActivateTabFileName}" "${outputFileName}" --info`;
 
-                let stepsData: any;
-                try {
-                    stepsData = await runTerminalCommand(context, commandIdaesRunInfo, shellType, outputFileName, "currentFileInfo");
-                } catch (err: any) {
-                    console.error(`Error running terminal command during tab switch: ${err.message}`);
-                    stepsData = null;
-                    brodcastMessage(
-                        {
-                            type: 'switch_tab',
-                            message: `Failed to load flowsheet info for new tab: ${err.message}`,
-                            activate_tab_name: activateFileName,
-                            idaesRunInfo: null,
-                            initError: `Failed to load flowsheet info for new tab: ${err.message}`,
-                            isLoading: false,
-                            open_python_files: getOpenPythonFiles(),
-                            time: new Date().toISOString(),
-                        }
-                    );
-                    return;
-                }
+                //let stepsData: any;
+                // TODO: Get correct value from <somewhere>
+                const stepsData = {"steps": ["step1", "step2"]};
+                // try {
+                //     stepsData = await runTerminalCommand(context, commandIdaesRunInfo, shellType, outputFileName, "currentFileInfo");
+                // } catch (err: any) {
+                //     console.error(`Error running terminal command during tab switch: ${err.message}`);
+                //     stepsData = null;
+                //     brodcastMessage(
+                //         {
+                //             type: 'switch_tab',
+                //             message: `Failed to load flowsheet info for new tab: ${err.message}`,
+                //             activate_tab_name: activateFileName,
+                //             idaesRunInfo: null,
+                //             initError: `Failed to load flowsheet info for new tab: ${err.message}`,
+                //             isLoading: false,
+                //             open_python_files: getOpenPythonFiles(),
+                //             time: new Date().toISOString(),
+                //         }
+                //     );
+                //     return;
+                // }
 
                 // brodcast to all web app panel notice tab is switched
                 console.log('Brodcast switch_tab to all web app panels');
