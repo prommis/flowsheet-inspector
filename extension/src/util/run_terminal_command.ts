@@ -102,7 +102,8 @@ export default function runTerminalCommand(context: vscode.ExtensionContext, com
             let data: any;
             try {
                 const configContent = fs.readFileSync(outputFilePath, 'utf8');
-                data = JSON.parse(configContent);
+                const sanitizedContent = configContent.replace(/\bNaN\b/g, 'null').replace(/-?Infinity/g, 'null');
+                data = JSON.parse(sanitizedContent);
             } catch (err) {
                 console.error(`Failed to read or parse JSON from ${outputFilePath}:`, err);
                 brodcastMessage({ type: 'terminal_log', data: `\n[SYSTEM ERROR] Failed to parse output file: ${err}\n` });

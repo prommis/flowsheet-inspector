@@ -1,0 +1,250 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 10px 0;
+    color: var(--vscode-editor-foreground);
+    font-family: var(--vscode-font-family);
+}
+
+.controlBar {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.searchBox {
+    flex: 1;
+    width: 100%;
+    max-width: 100%;
+    padding: 8px 12px;
+    background-color: var(--vscode-input-background);
+    color: var(--vscode-input-foreground);
+    border: 1px solid var(--vscode-input-border, transparent);
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+.searchBox:focus {
+    border-color: var(--vscode-focusBorder);
+    outline: none;
+}
+
+.searchBox:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.actionGroup {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    width: 100%;
+    padding-top: 10px;
+}
+
+.runCount {
+    font-size: 13px;
+    color: var(--vscode-descriptionForeground);
+}
+
+.primaryButton {
+    background-color: var(--vscode-button-background);
+    color: var(--vscode-button-foreground);
+    border: none;
+    border-radius: 4px;
+    padding: 6px 14px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.primaryButton:hover {
+    background-color: var(--vscode-button-hoverBackground);
+}
+
+.tableContainer {
+    border: 1px solid var(--vscode-panel-border, #333);
+    border-radius: 6px;
+    background-color: var(--vscode-editor-background);
+}
+
+.headerRow {
+    display: grid;
+    grid-template-columns: 50px 70px 1fr 60px;
+    padding: 10px;
+    background-color: var(--vscode-editorGroupHeader-tabsBackground);
+    border-bottom: 1px solid var(--vscode-panel-border, #333);
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    font-size: 14px;
+    color: var(--vscode-editor-foreground);
+    gap: 10px;
+}
+
+.dataRowContainer {
+    display: flex;
+    flex-direction: column;
+    max-height: 400px;
+    overflow-y: auto;
+    padding-bottom: 60px; /* Provides safe space so the last element's tooltip isn't clipped out of boundaries */
+}
+
+.dataRow {
+    display: grid;
+    grid-template-columns: 50px 70px 1fr 60px;
+    padding: 12px 10px;
+    border-bottom: 1px solid var(--vscode-panel-border, #333);
+    align-items: center;
+    cursor: pointer;
+    font-size: 13px;
+    transition: background-color 0.1s ease;
+    gap: 10px;
+}
+
+.dataRow:hover {
+    background-color: var(--vscode-list-hoverBackground);
+}
+
+.dataRow:last-child {
+    border-bottom: none;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+
+.colStatus {
+    text-align: center;
+    font-size: 14px;
+}
+
+.colTime {
+    color: var(--vscode-textPreformat-foreground, #ccc);
+}
+
+.colTags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.tagBadge {
+    background-color: var(--vscode-badge-background, #1a4d80);
+    color: var(--vscode-badge-foreground, #fff);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.emptyMessage {
+    padding: 20px;
+    text-align: center;
+    color: var(--vscode-descriptionForeground);
+    font-size: 13px;
+    font-style: italic;
+}
+
+/* BEM classes for status icon */
+.status-icon {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+    margin: 0 auto;
+}
+
+.status-icon--success {
+    background-color: #3fb950;
+}
+
+.status-icon--fail {
+    background-color: #f85149;
+    position: relative;
+    cursor: help;
+}
+
+.cssTooltip {
+    visibility: hidden;
+    width: max-content;
+    max-width: 250px;
+    background-color: var(--vscode-editorHoverWidget-background, #252526);
+    color: var(--vscode-editorHoverWidget-foreground, #ccc);
+    border: 1px solid var(--vscode-editorHoverWidget-border, #454545);
+    text-align: left;
+    border-radius: 4px;
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: normal;
+    font-family: var(--vscode-editor-font-family, monospace);
+    word-wrap: break-word;
+    white-space: pre-wrap;
+
+    /* Position */
+    position: absolute;
+    z-index: 999;
+    top: 0;
+    left: 100%;
+    margin-left: 15px;
+
+    /* Fade in/out */
+    opacity: 0;
+    transition: opacity 0.2s, visibility 0.2s;
+    pointer-events: none;
+    
+    /* Box shadow for depth */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.status-icon--fail:hover .cssTooltip {
+    visibility: visible;
+    opacity: 1;
+}
+.colFlowsheet {
+    position: relative;
+    min-width: 0;
+}
+
+.flowsheetText {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    display: block;
+    font-family: var(--vscode-editor-font-family);
+    color: var(--vscode-editor-foreground);
+}
+
+.pathTooltip {
+    visibility: hidden;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 5px;
+    z-index: 999;
+    background-color: var(--vscode-editorHoverWidget-background, #252526);
+    color: var(--vscode-editorHoverWidget-foreground, #ccc);
+    border: 1px solid var(--vscode-editorHoverWidget-border, #454545);
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    word-break: break-all;
+    max-width: 300px;
+    white-space: normal;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    opacity: 0;
+    transition: opacity 0.2s, visibility 0.2s;
+    pointer-events: none;
+}
+
+.colFlowsheet:hover .pathTooltip {
+    visibility: visible;
+    opacity: 1;
+}

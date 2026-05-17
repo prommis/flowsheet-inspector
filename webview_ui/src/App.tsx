@@ -19,7 +19,8 @@ export default function App() {
     setTerminalLogs,
     setIsLoading,
     setInitError,
-    setOpenPythonFiles
+    setOpenPythonFiles,
+    setIdaesHistoryList
   } = useContext(AppContext);
 
   const [appName, setAppName] = useState('');
@@ -136,6 +137,10 @@ export default function App() {
           setIsHighlight(false);
           // Small timeout to restart animation if triggered again
           setTimeout(() => setIsHighlight(true), 10);
+          break;
+        case 'history_update':
+          console.log(`Received history list length: ${message.data?.length}`);
+          setIdaesHistoryList(message.data);
           break;
         default:
           console.log('Unknown message type:', JSON.stringify(message));

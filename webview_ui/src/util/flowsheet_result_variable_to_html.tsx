@@ -159,16 +159,28 @@ function isVariableData(value: unknown): value is VariableData {
     );
 }
 
+// TODO: This formatting function trims numbers to 4 decimal places strictly for display purposes in the UI.
+// It must be found and removed/refactored later if full precision is required.
+function formatNumberForDisplay(val: unknown): unknown {
+    if (typeof val === 'number' && !Number.isInteger(val)) {
+        if (Math.abs(val) < 0.0001 && val !== 0) {
+            return Number(val.toExponential(4));
+        }
+        return Number(val.toFixed(4));
+    }
+    return val;
+}
+
 function formatSingleValue(item: unknown): string {
     if (Array.isArray(item)) {
         const key = Array.isArray(item[0]) ? item[0].join('.') : String(item[0] ?? '');
-        const val = item.length > 1 ? item[1] : '';
+        const val = item.length > 1 ? formatNumberForDisplay(item[1]) : '';
         // For variable entries with info: [index, value, units, fixed, stale, lb, ub]
         if (item.length >= 7) {
             const units = item[2] ? `[${item[2]}]` : '';
             const fixed = item[3] ? 'fixed' : '';
-            const lb = item[5] !== null ? `lb:${item[5]}` : '';
-            const ub = item[6] !== null ? `ub:${item[6]}` : '';
+            const lb = item[5] !== null ? `lb:${formatNumberForDisplay(item[5])}` : '';
+            const ub = item[6] !== null ? `ub:${formatNumberForDisplay(item[6])}` : '';
             const bounds = [lb, ub].filter(Boolean).join(' ');
             return `${key || 'value'}: ${val} ${units} ${fixed} ${bounds}`.replace(/\s+/g, ' ').trim();
         }

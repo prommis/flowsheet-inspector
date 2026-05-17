@@ -72,6 +72,55 @@ export default function webviewReceiveMessageHandler(context: vscode.ExtensionCo
                 console.error('kill_process instruction received but no pid provided.');
             }
             break;
+        case 'pull_flowsheet_history':
+            if (frontendMessage.id) {
+                console.log(`Loading historical run for ID: ${frontendMessage.id}`);
+
+                // Check if webView is open. If not, open it before grabbing results!
+                if (!activateWebviews.get('webView')) {
+                    console.log('Main web view not found. Opening it via command flowsheet-inspector.openWebView');
+                    vscode.commands.executeCommand('flowsheet-inspector.openWebView').then(() => {
+                        // Wait for React to mount before continuing
+                        setTimeout(() => {
+                            webviewReceiveMessageHandler(context, frontendMessage);
+                        }, 1200);
+                    });
+                    return; // Exit and let the delayed callback handle it once opened
+                }
+
+                const os = require('os');
+                const cp = require('child_process');
+                const dbPath = `${os.homedir()}/.idaes/reportdb.sqlite`;
+                // Securely query just the json report block for this explicit exact ID
+                const queryCmd = `sqlite3 ${dbPath} "SELECT report FROM reports WHERE id = ${frontendMessage.id};"`;
+                
+                cp.exec(queryCmd, { maxBuffer: 1024 * 1024 * 10 }, (err: any, stdout: string, stderr: string) => {
+                    if (err) {
+                        brodcastMessage({ type: 'error', message: `Failed to load historical run: ${err.message || stderr}` });
+                        return;
+                    }
+                    if (stdout && stdout.trim().length > 0) {
+                        try {
+                            // Python's json.dumps() can produce raw Infinity, -Infinity, and NaN which break JS JSON.parse.
+                            // Convert them to null to safely deserialize into JS.
+                            let safeJsonString = stdout.trim()
+                                .replace(/:\s*Infinity/g, ': null')
+                                .replace(/:\s*-Infinity/g, ': null')
+                                .replace(/:\s*NaN/g, ': null');
+                            
+                            const parsedData = JSON.parse(safeJsonString);
+                            console.log('Successfully fetched and parsed historical flowsheet JSON blob.');
+                            // Piggyback onto the existing live-run pipeline!
+                            brodcastMessage({ type: 'flowsheet_runner_result', data: parsedData });
+                        } catch (parse_err) {
+                            brodcastMessage({ type: 'error', message: `Failed to parse historical JSON run data: ${parse_err}` });
+                        }
+                    } else {
+                        brodcastMessage({ type: 'error', message: `No historical data found for ${frontendMessage.id || frontendMessage.name}` });
+                    }
+                });
+            }
+            break;
         default:
             console.log(`receive unknown instruction: ${instruction}`);
     }

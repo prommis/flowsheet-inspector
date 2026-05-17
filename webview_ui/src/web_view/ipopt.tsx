@@ -26,7 +26,7 @@ export default function Ipopt() {
     const { flowsheetRunnerResult } = useContext(AppContext);
     const [activeTab, setActiveTab] = useState<"initial" | "optimization">("initial");
 
-    const solverLogs = flowsheetRunnerResult?.actions?.capture_solver_output?.solver_logs;
+    const solverLogs = flowsheetRunnerResult?.actions?.solver_output?.output || flowsheetRunnerResult?.actions?.capture_solver_output?.solver_logs;
 
     if (!solverLogs) {
         return (
