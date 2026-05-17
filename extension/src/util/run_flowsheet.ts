@@ -60,6 +60,9 @@ export default async function runFlowsheet(context: vscode.ExtensionContext, web
         }
         console.log(`Run command: ${command}`);
 
+        // Broadcast a signal to clear previous run results (diagram, IPOPT, diagnostic, etc.) from the UI
+        brodcastMessage({ type: 'start_new_run' });
+
         // Broadcast a signal to clear logs across ALL active webviews BEFORE starting new command
         brodcastMessage({ type: 'clear_terminal_logs' });
 

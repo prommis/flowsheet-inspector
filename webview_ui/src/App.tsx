@@ -129,6 +129,12 @@ export default function App() {
         case 'terminal_log':
           setTerminalLogs((prev: string[]) => [...prev, message.data]);
           break;
+        case 'start_new_run':
+          // Clear previous run results so stale diagram/IPOPT/diagnostic data doesn't linger during a new run
+          setFlowsheetRunnerResult(null);
+          setMermaidDiagram('');
+          setExtensionErrorLogs([]);
+          break;
         case 'clear_terminal_logs':
           setTerminalLogs([]);
           break;
