@@ -19,10 +19,8 @@ export function startHistoryPolling(context: vscode.ExtensionContext) {
             return;
         }
 
-        // Fetch the list of history natively by sqlite3. We use a bash logical OR (||) fallback.
-        // It first attempts to query the modern schema (from minimal-wrap branch). If the 'run_status' column does not exist,
-        // it gracefully suppresses the error and falls back to querying the legacy schema.
-        const fetchCommand = `sqlite3 ${dbPath} "SELECT id, created, name, filename, CASE WHEN run_status = 1 THEN 1 ELSE 0 END, COALESCE(NULLIF(run_exception, ''), SUBSTR(report, INSTR(report, 'EXIT:'), 100)), tags FROM reports ORDER BY id DESC LIMIT 100;" 2>/dev/null || sqlite3 ${dbPath} "SELECT id, created, name, filename, status, SUBSTR(report, INSTR(report, 'EXIT:'), 100), tags FROM reports ORDER BY id DESC LIMIT 100;"`;
+        // Fetch the list of history natively by sqlite3 using JSON mode to perfectly escape multiline text (like Python tracebacks).
+        const fetchCommand = `sqlite3 -json ${dbPath} "SELECT id, created, name, filename, CASE WHEN run_status = 1 THEN 1 ELSE 0 END as status, COALESCE(NULLIF(run_exception, ''), SUBSTR(report, INSTR(report, 'EXIT:'), 100)) as rawError, tags FROM reports ORDER BY id DESC LIMIT 100;" 2>/dev/null || sqlite3 -json ${dbPath} "SELECT id, created, name, filename, status as status, SUBSTR(report, INSTR(report, 'EXIT:'), 100) as rawError, tags FROM reports ORDER BY id DESC LIMIT 100;"`;
 
         cp.exec(fetchCommand, (err, stdout, stderr) => {
             if (err) {
@@ -41,27 +39,45 @@ export function startHistoryPolling(context: vscode.ExtensionContext) {
                 return;
             }
 
-            const lines = stdout.trim().split('\n').filter(l => l.trim().length > 0);
-            const historyList = lines.map(line => {
-                const [id, created, name, filename, status, rawError, tags] = line.split('|');
+            let parsedData = [];
+            try {
+                if (stdout.trim().length > 0) {
+                    parsedData = JSON.parse(stdout);
+                }
+            } catch (e) {
+                console.error("Failed to parse SQLite JSON:", e);
+                return;
+            }
+
+            const historyList = parsedData.map((row: any) => {
+                const id = row.id?.toString();
+                const created = row.created?.toString();
+                const name = row.name;
+                const filename = row.filename;
+                const status = row.status?.toString();
+                const rawError = row.rawError;
+                const tags = row.tags;
 
                 let solverError = "";
+                // If the rawError was from Pyomo's string manipulation
                 if (rawError && rawError.startsWith("EXIT:")) {
-                    // Trim off trailing JSON formatting like \n\b\b\b...
                     solverError = rawError.split('\\n')[0].replace(/["\\]/g, '').trim();
+                } else if (rawError) {
+                    // It's a real traceback from the run_exception field, just use the first line or raw string
+                    solverError = String(rawError).split('\n').pop()?.trim() || "Python exception thrown";
                 }
 
                 // Treat falsy or '0' status as failure
-                const isSuccess = parseInt(status, 10) === 1;
+                const isSuccess = status === "1" || status === "true" || parseInt(status, 10) === 1;
 
                 return {
                     id: parseInt(id, 10),
                     created: parseFloat(created),
-                    name: name ? name.trim() : "",
-                    filename: filename ? filename.trim() : "",
+                    name: name ? name.toString().trim() : "",
+                    filename: filename ? filename.toString().trim() : "",
                     status: isSuccess,
                     solverError: !isSuccess ? solverError : "",
-                    tags: tags ? tags.trim() : ""
+                    tags: tags ? tags.toString().trim() : ""
                 };
             });
 
