@@ -4,6 +4,7 @@ import { trimFileName } from './trim_file_name';
 import { readExtensionConfig } from './extensionHandler';
 import runTerminalCommand from './run_terminal_command';
 import { checkExtensionConfigEnv } from './extension_initial_check';
+import { buildCommandChain } from './platform_config';
 
 function getOpenPythonFiles() {
     const pyFiles: { name: string, path: string }[] = [];
@@ -99,7 +100,7 @@ export default function activateTabListener(context: vscode.ExtensionContext) {
                 const outputFileName = extensionConfigData.output_file_name;
                 const shellType = extensionConfigData.shell;
 
-                const commandIdaesRunInfo = `${sorceCommand} && ${activateCommand} && idaes-run "${currentActivateTabFileName}" "${outputFileName}" --info`;
+                const commandIdaesRunInfo = buildCommandChain([sorceCommand, activateCommand, `idaes-run "${currentActivateTabFileName}" "${outputFileName}" --info`]);
 
                 let stepsData: any;
                 try {

@@ -8,6 +8,7 @@ import { readExtensionConfig, updateExtensionConfig } from '../util/extensionHan
 import webviewReceiveMessageHandler from "../util/webview_receive_message_handler";
 import runTerminalCommand from '../util/run_terminal_command';
 import { checkExtensionConfigEnv } from '../util/extension_initial_check';
+import { buildCommandChain } from '../util/platform_config';
 
 export default function treeview(context: vscode.ExtensionContext) {
     return {
@@ -93,9 +94,9 @@ export default function treeview(context: vscode.ExtensionContext) {
                 const sorceCommand = extensionConfigData.sorce_treminal;
                 const activateCommand = extensionConfigData.activate_command;
                 const outputFileName = extensionConfigData.output_file_name;
-                const shellType = "/bin/zsh";
+                const shellType = extensionConfigData.shell;
 
-                const commandIdaesRunInfo = `${sorceCommand} && ${activateCommand} && idaes-run "${fileName}" "${outputFileName}" --info`;
+                const commandIdaesRunInfo = buildCommandChain([sorceCommand, activateCommand, `idaes-run "${fileName}" "${outputFileName}" --info`]);
 
                 let resolvedStepsData: any = null;
                 try {
