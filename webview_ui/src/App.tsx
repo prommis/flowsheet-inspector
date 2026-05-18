@@ -21,7 +21,8 @@ export default function App() {
     setInitError,
     setOpenPythonFiles,
     setIdaesHistoryList,
-    setMermaidDiagram
+    setMermaidDiagram,
+    setOsPlatform
   } = useContext(AppContext);
 
   const [appName, setAppName] = useState('');
@@ -72,6 +73,9 @@ export default function App() {
           setidaesRunInfo(message.idaesRunInfo);
           setAppName(message.loadApp);
           setIsLoading(false);
+          if (message.osPlatform) {
+            setOsPlatform(message.osPlatform);
+          }
           break;
         case 'update':
           console.log(`VSCode post message: ${JSON.stringify(message)}`);

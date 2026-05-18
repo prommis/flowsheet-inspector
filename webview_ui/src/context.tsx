@@ -59,6 +59,8 @@ interface AppContextType {
     setOpenPythonFiles: SetOpenPythonFiles;
     idaesHistoryList: IdaesHistoryItem[] | null;
     setIdaesHistoryList: React.Dispatch<React.SetStateAction<IdaesHistoryItem[] | null>>;
+    osPlatform: string;
+    setOsPlatform: React.Dispatch<React.SetStateAction<string>>;
 }
 // Create context with default values
 export const AppContext = createContext({} as AppContextType);

@@ -34,6 +34,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const [initError, setInitError] = useState<string | null>(null);
     const [openPythonFiles, setOpenPythonFiles] = useState<OpenPythonFilesType>([]);
     const [idaesHistoryList, setIdaesHistoryList] = useState<IdaesHistoryItem[] | null>(null);
+    const [osPlatform, setOsPlatform] = useState<string>('');
 
     return (
         <AppContext.Provider value={{
@@ -66,7 +67,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
             openPythonFiles,
             setOpenPythonFiles,
             idaesHistoryList,
-            setIdaesHistoryList
+            setIdaesHistoryList,
+            osPlatform,
+            setOsPlatform
         }}>
             {children}
         </AppContext.Provider>

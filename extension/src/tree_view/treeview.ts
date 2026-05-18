@@ -8,7 +8,7 @@ import { readExtensionConfig, updateExtensionConfig } from '../util/extensionHan
 import webviewReceiveMessageHandler from "../util/webview_receive_message_handler";
 import runTerminalCommand from '../util/run_terminal_command';
 import { checkExtensionConfigEnv } from '../util/extension_initial_check';
-import { buildCommandChain } from '../util/platform_config';
+import { buildCommandChain, getPlatform } from '../util/platform_config';
 
 export default function treeview(context: vscode.ExtensionContext) {
     return {
@@ -45,7 +45,8 @@ export default function treeview(context: vscode.ExtensionContext) {
                     content: '',
                     idaesRunInfo: null,
                     fileName: fileName !== '' ? trimFileName(fileName) : 'No file selected',
-                    loadApp: 'treeView'
+                    loadApp: 'treeView',
+                    osPlatform: getPlatform()
                 });
 
                 if (!extensionConfigData) {
