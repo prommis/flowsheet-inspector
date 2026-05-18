@@ -1,9 +1,27 @@
 import * as cp from 'child_process';
 import * as fs from 'fs';
 import { IExtensionConfig } from '../interface';
+import { isWindows, buildCommandChain, getDefaultShellConfig } from './platform_config';
 
 let lastCheckedConfigStr = "";
 let lastCheckResult: { success: boolean; errorMsg?: string } | null = null;
+
+/**
+ * Check if a shell executable exists on the system.
+ * - Unix: uses fs.existsSync (absolute path like /bin/zsh)
+ * - Windows: uses `where` command to check if it's in PATH (e.g. powershell.exe)
+ */
+function shellExists(shell: string): Promise<boolean> {
+    if (!isWindows()) {
+        return Promise.resolve(fs.existsSync(shell));
+    }
+    // On Windows, shell is typically just a name like 'powershell.exe' that lives in PATH
+    return new Promise((resolve) => {
+        cp.exec(`where ${shell}`, { windowsHide: true }, (error) => {
+            resolve(!error);
+        });
+    });
+}
 
 /**
  * Perform a 4-step sanity check on the user's environment configuration.
@@ -18,12 +36,14 @@ export async function checkExtensionConfigEnv(config: IExtensionConfig, force = 
         return lastCheckResult;
     }
 
-    const shell = config.shell || '/bin/zsh';
+    const defaultConfig = getDefaultShellConfig();
+    const shell = config.shell || defaultConfig.shell;
     const sourceCmd = config.sorce_treminal;
     const activateCmd = config.activate_command;
 
     // 1. Check Shell
-    if (!fs.existsSync(shell)) {
+    const shellFound = await shellExists(shell);
+    if (!shellFound) {
         lastCheckResult = { success: false, errorMsg: `[Step 1/4 Failed] Shell not found: ${shell}. Please check your extension config.` };
         lastCheckedConfigStr = configStr;
         return lastCheckResult;
@@ -31,7 +51,7 @@ export async function checkExtensionConfigEnv(config: IExtensionConfig, force = 
 
     const execPromise = (cmd: string): Promise<{ stdout: string; stderr: string }> => {
         return new Promise((resolve, reject) => {
-            cp.exec(cmd, { shell }, (error, stdout, stderr) => {
+            cp.exec(cmd, { shell, windowsHide: true }, (error, stdout, stderr) => {
                 if (error) {
                     reject(new Error(stderr || error.message));
                 } else {
@@ -43,7 +63,7 @@ export async function checkExtensionConfigEnv(config: IExtensionConfig, force = 
 
     // 2. Check Environment Activation
     try {
-        await execPromise(`${sourceCmd} && ${activateCmd}`);
+        await execPromise(buildCommandChain([sourceCmd, activateCmd]));
     } catch (e: any) {
         lastCheckResult = { success: false, errorMsg: `[Step 2/4 Failed] Could not activate environment.\nCommand: ${activateCmd}\nError: ${e.message.trim()}` };
         lastCheckedConfigStr = configStr;
@@ -52,7 +72,7 @@ export async function checkExtensionConfigEnv(config: IExtensionConfig, force = 
 
     // 3. Check IDAES
     try {
-        await execPromise(`${sourceCmd} && ${activateCmd} && python -c "import idaes"`);
+        await execPromise(buildCommandChain([sourceCmd, activateCmd, 'python -c "import idaes"']));
     } catch (e: any) {
         lastCheckResult = { success: false, errorMsg: `[Step 3/4 Failed] IDAES is not installed in the target environment.\nPlease install IDAES via your terminal.` };
         lastCheckedConfigStr = configStr;
@@ -61,7 +81,7 @@ export async function checkExtensionConfigEnv(config: IExtensionConfig, force = 
 
     // 4. Check idaes-connectivity
     try {
-        await execPromise(`${sourceCmd} && ${activateCmd} && python -c "import idaes_connectivity"`);
+        await execPromise(buildCommandChain([sourceCmd, activateCmd, 'python -c "import idaes_connectivity"']));
     } catch (e: any) {
         lastCheckResult = { success: false, errorMsg: `[Step 4/4 Failed] 'idaes-connectivity' package is missing.\nPlease run 'pip install idaes-connectivity' in your environment.` };
         lastCheckedConfigStr = configStr;

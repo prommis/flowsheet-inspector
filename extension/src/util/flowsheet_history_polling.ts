@@ -1,8 +1,8 @@
 import * as fs from 'fs';
 import * as cp from 'child_process';
-import * as os from 'os';
 import * as vscode from 'vscode';
 import { brodcastMessage } from './webview_handler';
+import { getIdaesDbPath, buildSqliteFallbackCommand } from './platform_config';
 
 let lastHistoryString = "";
 
@@ -10,8 +10,7 @@ export function startHistoryPolling(context: vscode.ExtensionContext) {
     console.log("Starting Flowsheet History Polling...");
 
     setInterval(() => {
-        const idaesPath = `${os.homedir()}/.idaes`;
-        const dbPath = `${idaesPath}/reportdb.sqlite`;
+        const dbPath = getIdaesDbPath();
 
         // Validate if IDAES database actually exists (checking the file, not just the folder)
         if (!fs.existsSync(dbPath)) {
@@ -20,9 +19,12 @@ export function startHistoryPolling(context: vscode.ExtensionContext) {
         }
 
         // Fetch the list of history natively by sqlite3 using JSON mode to perfectly escape multiline text (like Python tracebacks).
-        const fetchCommand = `sqlite3 -json ${dbPath} "SELECT id, created, name, filename, CASE WHEN run_status = 1 THEN 1 ELSE 0 END as status, COALESCE(NULLIF(run_exception, ''), SUBSTR(report, INSTR(report, 'EXIT:'), 100)) as rawError, tags FROM reports ORDER BY id DESC LIMIT 100;" 2>/dev/null || sqlite3 -json ${dbPath} "SELECT id, created, name, filename, status as status, SUBSTR(report, INSTR(report, 'EXIT:'), 100) as rawError, tags FROM reports ORDER BY id DESC LIMIT 100;"`;
+        // Uses a fallback query for schema compatibility (modern schema → legacy schema).
+        const modernQuery = "SELECT id, created, name, filename, CASE WHEN run_status = 1 THEN 1 ELSE 0 END as status, COALESCE(NULLIF(run_exception, ''), SUBSTR(report, INSTR(report, 'EXIT:'), 100)) as rawError, tags FROM reports ORDER BY id DESC LIMIT 100;";
+        const legacyQuery = "SELECT id, created, name, filename, status as status, SUBSTR(report, INSTR(report, 'EXIT:'), 100) as rawError, tags FROM reports ORDER BY id DESC LIMIT 100;";
+        const fetchCommand = buildSqliteFallbackCommand(dbPath, modernQuery, legacyQuery, true);
 
-        cp.exec(fetchCommand, (err, stdout, stderr) => {
+        cp.exec(fetchCommand, { windowsHide: true }, (err, stdout, stderr) => {
             if (err) {
                 // If the DB is completely empty (0-byte file created by accident), it will throw "no such table".
                 // We should silently ignore this so we don't spam the UI, waiting for Python to actually create the table.

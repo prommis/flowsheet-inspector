@@ -3,6 +3,7 @@ import { activateWebviews, brodcastMessage } from "./webview_handler";
 import { IExtensionConfig, IFlowsheetRunResult } from '../interface';
 import runTerminalCommand from "./run_terminal_command";
 import openWebView from '../web_view/web_view_panel';
+import { buildCommandChain } from './platform_config';
 
 export default async function runFlowsheet(context: vscode.ExtensionContext, webview: vscode.Webview, selectedStep: string | undefined) {
     try {
@@ -53,11 +54,14 @@ export default async function runFlowsheet(context: vscode.ExtensionContext, web
             return;
         }
 
-        // run command
-        let command = `${sourceTerminal} && ${activateCommand} && idaes-run "${activateFileName}" "${outputFileName}"`;
+        // Build the command chain using platform-appropriate separators
+        // On Unix: `source ~/.zshrc && conda activate ... && idaes-run ...`
+        // On Windows: `conda activate ... ; idaes-run ...` (empty sourceTerminal is filtered out)
+        let runCmd = `idaes-run "${activateFileName}" "${outputFileName}"`;
         if (selectedStep) {
-            command += ` --to ${selectedStep}`;
+            runCmd += ` --to ${selectedStep}`;
         }
+        let command = buildCommandChain([sourceTerminal, activateCommand, runCmd]);
         console.log(`Run command: ${command}`);
 
         // Broadcast a signal to clear previous run results (diagram, IPOPT, diagnostic, etc.) from the UI

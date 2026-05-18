@@ -1,7 +1,5 @@
-import path from "path";
-import os from "os";
-import fs from "fs";
 import * as vscode from 'vscode';
+import { getDefaultShellConfig } from './platform_config';
 
 export function setDefaultConfig(context: vscode.ExtensionContext) {
     // reading user's extension config from vscode global state
@@ -24,13 +22,7 @@ export function setDefaultConfig(context: vscode.ExtensionContext) {
         return;
     } else {
         console.log("User's config file not found, creating default config...");
-        const defaultOutputDir = os.homedir();
-        const defaultExtensionConfig = {
-            activate_command: "conda activate test-idaes-extension",
-            sorce_treminal: "source ~/.zshrc",
-            output_file_name: `${defaultOutputDir}/Downloads/out1.json`,
-            shell: "/bin/zsh"
-        };
+        const defaultExtensionConfig = getDefaultShellConfig();
 
         context.globalState.update("extensionConfig", defaultExtensionConfig);
 

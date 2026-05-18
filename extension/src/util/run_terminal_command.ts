@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as cp from 'child_process';
 import * as fs from 'fs';
 import { brodcastMessage } from './webview_handler';
+import { getSpawnArgs, getSpawnOptions } from './platform_config';
 /**
  * A helper function to execute a terminal command asynchronously.
  * Runs the given command in the specified shell. Once the command completes,
@@ -50,10 +51,13 @@ export default function runTerminalCommand(context: vscode.ExtensionContext, com
             console.warn(`Could not delete stale output file: ${e}`);
         }
 
-        const child = cp.spawn(shell, ['-c', command], {
-            detached: true,
+        const { shell: resolvedShell, args: shellArgs } = getSpawnArgs(shell, command);
+        const spawnOptions = {
+            ...getSpawnOptions(),
+            stdio: 'pipe' as const,
             env: Object.assign({}, process.env, { PYTHONUNBUFFERED: "1", FORCE_COLOR: "1" })
-        });
+        };
+        const child = cp.spawn(resolvedShell, shellArgs, spawnOptions);
 
         brodcastMessage({ type: 'process_started', pid: child.pid });
 
