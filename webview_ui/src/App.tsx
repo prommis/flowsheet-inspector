@@ -20,7 +20,8 @@ export default function App() {
     setIsLoading,
     setInitError,
     setOpenPythonFiles,
-    setIdaesHistoryList
+    setIdaesHistoryList,
+    setMermaidDiagram
   } = useContext(AppContext);
 
   const [appName, setAppName] = useState('');
