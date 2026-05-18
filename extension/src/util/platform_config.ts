@@ -147,11 +147,24 @@ export function killProcessTree(pid: number): void {
 // ============================================================
 
 /**
+ * Returns the cross-platform path to the IDAES data directory.
+ * Per IDAES-PSE convention:
+ * - macOS / Linux: $HOME/.idaes/
+ * - Windows:       %LOCALAPPDATA%\idaes\
+ */
+export function getIdaesDataDir(): string {
+    if (isWindows()) {
+        const localAppData = process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local');
+        return path.join(localAppData, 'idaes');
+    }
+    return path.join(os.homedir(), '.idaes');
+}
+
+/**
  * Returns the cross-platform path to the IDAES SQLite database.
- * Uses `path.join()` instead of template literals to ensure correct separators.
  */
 export function getIdaesDbPath(): string {
-    return path.join(os.homedir(), '.idaes', 'reportdb.sqlite');
+    return path.join(getIdaesDataDir(), 'reportdb.sqlite');
 }
 
 /**
