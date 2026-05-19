@@ -46,21 +46,18 @@ export function getDefaultShellConfig(): IExtensionConfig {
             return {
                 activate_command: 'conda activate test-idaes-extension',
                 sorce_treminal: '',  // Windows doesn't need sourcing a shell profile
-                output_file_name: path.join(os.homedir(), 'Documents', 'out1.json'),
                 shell: 'powershell.exe'
             };
         case 'darwin':
             return {
                 activate_command: 'conda activate test-idaes-extension',
                 sorce_treminal: 'source ~/.zshrc',
-                output_file_name: path.join(os.homedir(), 'Downloads', 'out1.json'),
                 shell: '/bin/zsh'
             };
         default: // linux
             return {
                 activate_command: 'conda activate test-idaes-extension',
                 sorce_treminal: 'source ~/.bashrc',
-                output_file_name: path.join(os.homedir(), 'out1.json'),
                 shell: '/bin/bash'
             };
     }

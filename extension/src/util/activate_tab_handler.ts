@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
+import * as cp from 'child_process';
 import { brodcastMessage } from './webview_handler';
 import { trimFileName } from './trim_file_name';
 import { readExtensionConfig } from './extensionHandler';
-import runTerminalCommand from './run_terminal_command';
 import { checkExtensionConfigEnv } from './extension_initial_check';
-import { buildCommandChain } from './platform_config';
+import { buildCommandChain, getSpawnArgs, getSpawnOptions } from './platform_config';
 
 function getOpenPythonFiles() {
     const pyFiles: { name: string, path: string }[] = [];
@@ -97,16 +97,45 @@ export default function activateTabListener(context: vscode.ExtensionContext) {
 
                 const sorceCommand = extensionConfigData.sorce_treminal;
                 const activateCommand = extensionConfigData.activate_command;
-                const outputFileName = extensionConfigData.output_file_name;
                 const shellType = extensionConfigData.shell;
 
-                const commandIdaesRunInfo = buildCommandChain([sorceCommand, activateCommand, `idaes-run "${currentActivateTabFileName}" "${outputFileName}" --info`]);
+                const commandFiSteps = buildCommandChain([sorceCommand, activateCommand, `fi-steps --fs "${currentActivateTabFileName}" -t json`]);
 
                 let stepsData: any;
                 try {
-                    stepsData = await runTerminalCommand(context, commandIdaesRunInfo, shellType, outputFileName, "currentFileInfo");
+                    stepsData = await new Promise<any>((resolve, reject) => {
+                        const { shell: resolvedShell, args: shellArgs } = getSpawnArgs(shellType, commandFiSteps);
+                        const child = cp.spawn(resolvedShell, shellArgs, {
+                            ...getSpawnOptions(),
+                            stdio: 'pipe' as const,
+                        });
+                        let stdout = '';
+                        let stderr = '';
+                        child.stdout.on('data', (d) => { stdout += d.toString(); });
+                        child.stderr.on('data', (d) => { stderr += d.toString(); });
+                        child.on('close', (code) => {
+                            if (code !== 0) {
+                                const errDetail = stderr.trim() || stdout.trim() || '(no output)';
+                                reject(new Error(`fi-steps failed (exit ${code}): ${errDetail}`));
+                                return;
+                            }
+                            try {
+                                const lines = stdout.trim().split('\n');
+                                const jsonLine = lines.reverse().find(l => l.trim().startsWith('['));
+                                if (!jsonLine) {
+                                    reject(new Error(`No JSON array found in fi-steps output`));
+                                    return;
+                                }
+                                const steps = JSON.parse(jsonLine.trim());
+                                resolve({ classname: 'FlowsheetRunner', steps });
+                            } catch (e) {
+                                reject(new Error(`Failed to parse fi-steps output: ${e}`));
+                            }
+                        });
+                        child.on('error', reject);
+                    });
                 } catch (err: any) {
-                    console.error(`Error running terminal command during tab switch: ${err.message}`);
+                    console.error(`Error running fi-steps during tab switch: ${err.message}`);
                     stepsData = null;
                     brodcastMessage(
                         {

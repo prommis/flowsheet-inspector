@@ -1,9 +1,10 @@
 import * as vscode from 'vscode';
+import * as cp from 'child_process';
 import { activateWebviews, brodcastMessage } from "./webview_handler";
-import { IExtensionConfig, IFlowsheetRunResult } from '../interface';
+import { IExtensionConfig } from '../interface';
 import runTerminalCommand from "./run_terminal_command";
 import openWebView from '../web_view/web_view_panel';
-import { buildCommandChain } from './platform_config';
+import { buildCommandChain, getIdaesDbPath, buildSqliteCommand } from './platform_config';
 
 export default async function runFlowsheet(context: vscode.ExtensionContext, webview: vscode.Webview, selectedStep: string | undefined) {
     try {
@@ -13,27 +14,21 @@ export default async function runFlowsheet(context: vscode.ExtensionContext, web
         // read run_flowsheet necessary params
         let activateCommand = undefined;
         let sourceTerminal = undefined;
-        let outputFileName = undefined;
         let shell = undefined;
-        let vscodeContextStateName = 'flowsheetRunResult';
 
         if (extensionConfig) {
             sourceTerminal = extensionConfig.sorce_treminal;
             activateCommand = extensionConfig.activate_command;
-            outputFileName = extensionConfig.output_file_name;
             shell = extensionConfig.shell;
         }
 
         // error handler if missing param
-        if (!sourceTerminal || !activateCommand || !outputFileName || !shell || !vscodeContextStateName) {
+        if (!activateCommand || !shell) {
             webview.postMessage({
                 type: 'error',
                 message: `run_flowsheet raise an error, looks like you are trying to run a flowsheet, but missing one of following params: [
-                    sourceTerminal: ${sourceTerminal}, 
                     activateCommand: ${activateCommand},
-                    outputFileName: ${outputFileName},
                     shell: ${shell},
-                    vscodeContextStateName: ${vscodeContextStateName}
                 From file webview_receive_message_handler.ts`
             });
             return;
@@ -44,22 +39,12 @@ export default async function runFlowsheet(context: vscode.ExtensionContext, web
             await openWebView(context);
         }
 
-        // GUARD: Prevent arbitrary file overwriting (e.g. wiping out ~/.zshrc)
-        if (!outputFileName.toLowerCase().trim().endsWith('.json')) {
-            vscode.window.showErrorMessage(`DANGER: Target output file "${outputFileName}" must be a .json file! Or it may overwrite your files. Check Extension Settings.`);
-            webview.postMessage({
-                type: 'error',
-                message: `run_flowsheet aborted: The 'Output File Name' parameter (${outputFileName}) must be a .json file. Refusing to execute to prevent overwriting critical system files.`
-            });
-            return;
-        }
-
         // Build the command chain using platform-appropriate separators
-        // On Unix: `source ~/.zshrc && conda activate ... && idaes-run ...`
-        // On Windows: `conda activate ... ; idaes-run ...` (empty sourceTerminal is filtered out)
-        let runCmd = `idaes-run "${activateFileName}" "${outputFileName}"`;
+        // On Unix: `source ~/.zshrc && conda activate ... && fi-run ...`
+        // On Windows: `conda activate ... ; fi-run ...` (empty sourceTerminal is filtered out)
+        let runCmd = `fi-run "${activateFileName}"`;
         if (selectedStep) {
-            runCmd += ` --to ${selectedStep}`;
+            runCmd += ` --last ${selectedStep}`;
         }
         let command = buildCommandChain([sourceTerminal, activateCommand, runCmd]);
         console.log(`Run command: ${command}`);
@@ -70,49 +55,53 @@ export default async function runFlowsheet(context: vscode.ExtensionContext, web
         // Broadcast a signal to clear logs across ALL active webviews BEFORE starting new command
         brodcastMessage({ type: 'clear_terminal_logs' });
 
-        await runTerminalCommand(context, command, shell, outputFileName, vscodeContextStateName);
+        await runTerminalCommand(context, command, shell);
 
+        console.log('fi-run completed. Reading latest report from SQLite...');
 
-        let webViewPanel = activateWebviews.get('webView');
-        let treePanel = activateWebviews.get('treeView');
-        let flowsheetRunResult = context.globalState.get<IFlowsheetRunResult>(vscodeContextStateName);
+        // Read the latest report from the SQLite database
+        const dbPath = getIdaesDbPath();
+        const reportQuery = `SELECT report FROM reports ORDER BY id DESC LIMIT 1;`;
+        const sqliteCmd = buildSqliteCommand(dbPath, reportQuery);
 
-        if (!webViewPanel) {
-            console.error('web view panel not found - user may not have opened the web view tab');
-            return;
-        }
-
-        if (!treePanel) {
-            console.error('tree view not found!');
-            return;
-        }
-
-        if (!flowsheetRunResult) {
-            console.error('flowsheet run result not found');
-            webViewPanel.webview.postMessage({
-                type: 'error',
-                message: 'finished running the flowsheet, but flowsheet run result not found'
+        const reportData = await new Promise<any>((resolve, reject) => {
+            cp.exec(sqliteCmd, { maxBuffer: 50 * 1024 * 1024, windowsHide: true }, (err, stdout, stderr) => {
+                if (err) {
+                    console.error(`Failed to read report from SQLite: ${err.message}`);
+                    reject(err);
+                    return;
+                }
+                try {
+                    // Python's json.dumps can produce -Infinity, Infinity, NaN
+                    // which are invalid in standard JSON. Replace with null.
+                    const sanitized = stdout.trim()
+                        .replace(/:\s*-Infinity/g, ': null')
+                        .replace(/:\s*Infinity/g, ': null')
+                        .replace(/:\s*NaN/g, ': null');
+                    const parsed = JSON.parse(sanitized);
+                    resolve(parsed);
+                } catch (e) {
+                    console.error(`Failed to parse report JSON from SQLite: ${e}`);
+                    reject(e);
+                }
             });
-            return;
-        }
-
-        console.log('Start post run flowsheet done to all panels');
-        // post flowsheet result to web view
-        webViewPanel.webview.postMessage({
-            type: "flowsheet_runner_result",
-            data: flowsheetRunResult
         });
 
-        // post flowsheet result to tree view
-        treePanel.webview.postMessage({
+        console.log('Successfully loaded report from SQLite. Broadcasting to webviews...');
+
+        // Broadcast the full report to all webviews (same message type the frontend expects)
+        brodcastMessage({
             type: 'flowsheet_runner_result',
-            data: flowsheetRunResult
+            data: reportData
         });
 
-        // this is telling tree panel to cancel the loading animation
-        treePanel.webview.postMessage({
-            type: 'run_flowsheet_done',
-        });
+        // Notify tree panel that the run is complete so it stops spinners
+        let treePanel = activateWebviews.get('treeView');
+        if (treePanel) {
+            treePanel.webview.postMessage({
+                type: 'run_flowsheet_done',
+            });
+        }
         console.log('Done');
 
     } catch (e) {

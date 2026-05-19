@@ -26,7 +26,6 @@ export default function ConfigView({ setShowConfig }: { setShowConfig: Dispatch<
         const updateConfig: IExtensionConfig = {
             activate_command: localConfig?.activate_command || "",
             sorce_treminal: localConfig?.sorce_treminal || "",
-            output_file_name: localConfig?.output_file_name || "",
             shell: localConfig?.shell || "",
         }
 
@@ -101,7 +100,7 @@ export default function ConfigView({ setShowConfig }: { setShowConfig: Dispatch<
                         type="text"
                         id="shell_type"
                         value={localConfig?.shell || ""}
-                        onChange={(e) => setLocalConfig(prev => ({ ...(prev || { activate_command: "", sorce_treminal: "", output_file_name: "", shell: "" }), shell: e.target.value }))}
+                        onChange={(e) => setLocalConfig(prev => ({ ...(prev || { activate_command: "", sorce_treminal: "", shell: "" }), shell: e.target.value }))}
                     />
                 </div>
                 {osPlatform !== 'win32' && (
@@ -111,7 +110,7 @@ export default function ConfigView({ setShowConfig }: { setShowConfig: Dispatch<
                         type="text"
                         id="sorce_treminal"
                         value={localConfig?.sorce_treminal || ""}
-                        onChange={(e) => setLocalConfig(prev => ({ ...(prev || { activate_command: "", sorce_treminal: "", output_file_name: "", shell: "" }), sorce_treminal: e.target.value }))}
+                        onChange={(e) => setLocalConfig(prev => ({ ...(prev || { activate_command: "", sorce_treminal: "", shell: "" }), sorce_treminal: e.target.value }))}
                     />
                 </div>
                 )}
@@ -121,16 +120,7 @@ export default function ConfigView({ setShowConfig }: { setShowConfig: Dispatch<
                         type="text"
                         id="activate_command"
                         value={localConfig?.activate_command || ""}
-                        onChange={(e) => setLocalConfig(prev => ({ ...(prev || { activate_command: "", sorce_treminal: "", output_file_name: "", shell: "" }), activate_command: e.target.value }))}
-                    />
-                </div>
-                <div className={`${css.config_control}`}>
-                    <label htmlFor="output_file_name">Output file name (Full path):</label>
-                    <input
-                        type="text"
-                        id="output_file_name"
-                        value={localConfig?.output_file_name || ""}
-                        onChange={(e) => setLocalConfig(prev => ({ ...(prev || { activate_command: "", sorce_treminal: "", output_file_name: "", shell: "" }), output_file_name: e.target.value }))}
+                        onChange={(e) => setLocalConfig(prev => ({ ...(prev || { activate_command: "", sorce_treminal: "", shell: "" }), activate_command: e.target.value }))}
                     />
                 </div>
                 <div className={`${css.button_group}`}>

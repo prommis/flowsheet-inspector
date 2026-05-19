@@ -18,7 +18,6 @@ export type SetMermaidDiagram = Dispatch<SetStateAction<MermaidDiagram>>;
 export type IExtensionConfig = {
     sorce_treminal: string;
     activate_command: string;
-    output_file_name: string;
     shell: string;
 }
 export type ExtensionConfigState = IExtensionConfig | null;

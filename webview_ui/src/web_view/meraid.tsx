@@ -1,4 +1,4 @@
-import { useContext, useEffect, useRef } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { AppContext } from "../context";
 import mermaid from "mermaid";
 import { postReloadMermaidDone } from '../util/post_message';
@@ -7,11 +7,15 @@ import css from '../css/mermaid.module.css';
 export default function Mermaid() {
     const { flowsheetRunnerResult } = useContext(AppContext);
     const mermaidRef = useRef<HTMLDivElement>(null);
+    const renderIdCounter = useRef(0);
+    // This state increments on every mount, ensuring useEffect always re-runs
+    const [mountKey, setMountKey] = useState(0);
 
     useEffect(() => {
         // initial mermaid
         mermaid.initialize({ startOnLoad: false, theme: 'dark' });
-
+        // Trigger a re-render on mount so the diagram effect runs
+        setMountKey(k => k + 1);
     }, []);
 
     useEffect(() => {
@@ -81,10 +85,13 @@ export default function Mermaid() {
         const diagramText = filteredDiagram.join('\n');
         console.log(`mermaid diagram text:\n${diagramText}`);
 
-        // Use mermaid.render() for more reliable SVG generation
+        // Use mermaid.render() with a unique ID each time to avoid ID conflicts
+        // when the component is re-mounted after tab switches
         const renderDiagram = async () => {
             try {
-                const { svg } = await mermaid.render('mermaid-diagram', diagramText);
+                renderIdCounter.current += 1;
+                const uniqueId = `mermaid-diagram-${renderIdCounter.current}`;
+                const { svg } = await mermaid.render(uniqueId, diagramText);
                 if (mermaidRef.current) {
                     mermaidRef.current.innerHTML = svg;
                 }
@@ -100,7 +107,7 @@ export default function Mermaid() {
         renderDiagram();
         postReloadMermaidDone({ reload_mermaid: 'done' });
 
-    }, [flowsheetRunnerResult]);
+    }, [flowsheetRunnerResult, mountKey]);
 
     return (
         <div className={`${css.mermaid_container}`}>

@@ -1,14 +1,14 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
+import * as cp from 'child_process';
 import { getReactTemplate } from '../util/get_webview_template';
 import { IExtensionConfig } from '../interface';
 import { registerWebview } from '../util/webview_handler';
 import { trimFileName } from '../util/trim_file_name';
 import { readExtensionConfig, updateExtensionConfig } from '../util/extensionHandler';
 import webviewReceiveMessageHandler from "../util/webview_receive_message_handler";
-import runTerminalCommand from '../util/run_terminal_command';
 import { checkExtensionConfigEnv } from '../util/extension_initial_check';
-import { buildCommandChain, getPlatform } from '../util/platform_config';
+import { buildCommandChain, getPlatform, getSpawnArgs, getSpawnOptions } from '../util/platform_config';
 
 export default function treeview(context: vscode.ExtensionContext) {
     return {
@@ -53,7 +53,6 @@ export default function treeview(context: vscode.ExtensionContext) {
                     extensionConfigData = {
                         sorce_treminal: "",
                         activate_command: "",
-                        output_file_name: "idaes_run_info.json",
                         shell: "/bin/zsh"
                     };
                 }
@@ -91,20 +90,51 @@ export default function treeview(context: vscode.ExtensionContext) {
                     return;
                 }
 
-                // 5. Run the terminal command 
+                // 5. Run fi-steps to get flowsheet step info
                 const sorceCommand = extensionConfigData.sorce_treminal;
                 const activateCommand = extensionConfigData.activate_command;
-                const outputFileName = extensionConfigData.output_file_name;
                 const shellType = extensionConfigData.shell;
 
-                const commandIdaesRunInfo = buildCommandChain([sorceCommand, activateCommand, `idaes-run "${fileName}" "${outputFileName}" --info`]);
+                const commandFiSteps = buildCommandChain([sorceCommand, activateCommand, `fi-steps --fs "${fileName}" -t json`]);
 
                 let resolvedStepsData: any = null;
                 try {
-                    resolvedStepsData = await runTerminalCommand(context, commandIdaesRunInfo, shellType, outputFileName, "currentFileInfo");
+                    resolvedStepsData = await new Promise<any>((resolve, reject) => {
+                        const { shell: resolvedShell, args: shellArgs } = getSpawnArgs(shellType, commandFiSteps);
+                        const child = cp.spawn(resolvedShell, shellArgs, {
+                            ...getSpawnOptions(),
+                            stdio: 'pipe' as const,
+                        });
+                        let stdout = '';
+                        let stderr = '';
+                        child.stdout.on('data', (d) => { stdout += d.toString(); });
+                        child.stderr.on('data', (d) => { stderr += d.toString(); });
+                        child.on('close', (code) => {
+                            if (code !== 0) {
+                                const errDetail = stderr.trim() || stdout.trim() || '(no output)';
+                                reject(new Error(`fi-steps failed (exit ${code}): ${errDetail}`));
+                                return;
+                            }
+                            try {
+                                // fi-steps outputs a JSON array to stdout, but shell banners
+                                // from .zshrc/.bashrc may precede it. Extract the JSON line.
+                                const lines = stdout.trim().split('\n');
+                                const jsonLine = lines.reverse().find(l => l.trim().startsWith('['));
+                                if (!jsonLine) {
+                                    reject(new Error(`No JSON array found in fi-steps output`));
+                                    return;
+                                }
+                                const steps = JSON.parse(jsonLine.trim());
+                                resolve({ classname: 'FlowsheetRunner', steps });
+                            } catch (e) {
+                                reject(new Error(`Failed to parse fi-steps output: ${e}`));
+                            }
+                        });
+                        child.on('error', reject);
+                    });
                     console.log(resolvedStepsData);
                 } catch (err: any) {
-                    console.error(`Error running terminal command during tree view load: ${err.message}`);
+                    console.error(`Error running fi-steps during tree view load: ${err.message}`);
                     webviewView.webview.postMessage({
                         type: 'switch_tab',
                         activate_tab_name: trimFileName(fileName),

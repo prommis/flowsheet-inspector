@@ -1,7 +1,6 @@
 export interface IExtensionConfig {
     activate_command: string;
     sorce_treminal: string;
-    output_file_name: string;
     shell: string;
 }
 

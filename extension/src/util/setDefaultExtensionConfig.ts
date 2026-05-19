@@ -8,7 +8,6 @@ export function setDefaultConfig(context: vscode.ExtensionContext) {
     const hasConfigFile = context.globalState.get<{
         activate_command: string;
         sorce_treminal: string;
-        output_file_name: string;
         shell: string;
     }>("extensionConfig");
 

@@ -79,11 +79,11 @@ export async function checkExtensionConfigEnv(config: IExtensionConfig, force = 
         return lastCheckResult;
     }
 
-    // 4. Check idaes-connectivity
+    // 4. Check idaes-fi
     try {
-        await execPromise(buildCommandChain([sourceCmd, activateCmd, 'python -c "import idaes_connectivity"']));
+        await execPromise(buildCommandChain([sourceCmd, activateCmd, 'python -c "import idaes_fi"']));
     } catch (e: any) {
-        lastCheckResult = { success: false, errorMsg: `[Step 4/4 Failed] 'idaes-connectivity' package is missing.\nPlease run 'pip install idaes-connectivity' in your environment.` };
+        lastCheckResult = { success: false, errorMsg: `[Step 4/4 Failed] 'idaes-fi' package is missing.\nPlease run 'pip install idaes-fi' in your environment.` };
         lastCheckedConfigStr = configStr;
         return lastCheckResult;
     }

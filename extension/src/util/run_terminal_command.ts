@@ -1,55 +1,35 @@
 import * as vscode from 'vscode';
 import * as cp from 'child_process';
-import * as fs from 'fs';
 import { brodcastMessage } from './webview_handler';
 import { getSpawnArgs, getSpawnOptions } from './platform_config';
 /**
  * A helper function to execute a terminal command asynchronously.
  * Runs the given command in the specified shell. Once the command completes,
- * it reads and parses the JSON content from the output file, stores it in
- * vscode globalState, and resolves the Promise with the parsed data.
+ * it resolves the Promise. With fi-run, results are written directly to
+ * the SQLite database and picked up by the history polling mechanism.
  *
  * @param context - The vscode context
- * @param command - The terminal command to execute (e.g., "source .zshrc && conda activate env && idaes-run ...")
+ * @param command - The terminal command to execute (e.g., "source .zshrc && conda activate env && fi-run ...")
  * @param shell - The shell executable path (e.g., "/bin/zsh", "/bin/bash", or "C:\\Windows\\System32\\powershell.exe")
- * @param outputFilePath - The file path where the command writes its output data
- * @param vscodeContextStateName - The name of the vscode context state to update
- * @returns A Promise that resolves with the parsed JSON data from the output file
+ * @returns A Promise that resolves when the command completes successfully
  */
 import * as os from 'os';
 
-export default function runTerminalCommand(context: vscode.ExtensionContext, command: string, shell: string, outputFilePath: string, vscodeContextStateName: string): Promise<any> {
+export default function runTerminalCommand(context: vscode.ExtensionContext, command: string, shell: string): Promise<void> {
     return new Promise((resolve, reject) => {
         if (!context) { reject(new Error(`runTerminalCommand requires context as param!`)); return; }
         if (!command) { reject(new Error(`runTerminalCommand requires command as param!`)); return; }
         if (!shell) { reject(new Error(`runTerminalCommand requires shell as param!`)); return; }
-        if (!outputFilePath) { reject(new Error(`runTerminalCommand requires outputFilePath as param!`)); return; }
-
-        if (outputFilePath.startsWith('~')) {
-            outputFilePath = outputFilePath.replace(/^~/, os.homedir());
-        }
 
         console.log(`
             Starting execute terminal command:
             ${command}
             Terminal environment is:
             ${shell}
-            Output file path is:
-            ${outputFilePath}
             ...
         `);
-        // Start execute terminal command and write to outputFilePath, then write to context.globalState.vscodeContextStateName
+        // Start execute terminal command
         brodcastMessage({ type: 'terminal_log', data: `\n[SYSTEM] Executing background process via SPAWN...\nCommand: ${command}\nShell: ${shell}\n` });
-
-        // Delete the output file if it exists to ensure we don't read stale data from a previous run
-        try {
-            if (fs.existsSync(outputFilePath)) {
-                fs.unlinkSync(outputFilePath);
-                console.log(`Deleted stale output file at ${outputFilePath}`);
-            }
-        } catch (e) {
-            console.warn(`Could not delete stale output file: ${e}`);
-        }
 
         const { shell: resolvedShell, args: shellArgs } = getSpawnArgs(shell, command);
         const spawnOptions = {
@@ -81,7 +61,7 @@ export default function runTerminalCommand(context: vscode.ExtensionContext, com
         });
 
         child.on('close', (code, signal) => {
-            console.log(`Finished run shell command with code ${code} and signal ${signal}. Starting to read data from output file: ${outputFilePath}`);
+            console.log(`Finished run shell command with code ${code} and signal ${signal}.`);
 
             if (signal === 'SIGKILL' || signal === 'SIGTERM' || signal === 'SIGINT') {
                 brodcastMessage({ type: 'terminal_log', data: `\n[SYSTEM] Run flowsheet stopped manually. PID: ${child.pid}\n` });
@@ -103,39 +83,11 @@ export default function runTerminalCommand(context: vscode.ExtensionContext, com
                 return;
             }
 
-            let data: any;
-            try {
-                const configContent = fs.readFileSync(outputFilePath, 'utf8');
-                const sanitizedContent = configContent.replace(/\bNaN\b/g, 'null').replace(/-?Infinity/g, 'null');
-                data = JSON.parse(sanitizedContent);
-            } catch (err) {
-                console.error(`Failed to read or parse JSON from ${outputFilePath}:`, err);
-                brodcastMessage({ type: 'terminal_log', data: `\n[SYSTEM ERROR] Failed to parse output file: ${err}\n` });
-                reject(new Error(`Failed to read/parse output file: ${err}`));
-                return;
-            }
-            console.log(`Finished reading data from ${outputFilePath}.`);
-
-                console.log(`Now starting to write data into vscode globalState ${vscodeContextStateName}`);
-                context.globalState.update(vscodeContextStateName, data);
-                console.log(`Finished write into vscode globalState at ${vscodeContextStateName}`);
-
-                console.log(`Start to verify if global context as same as ${outputFilePath} 's content`);
-                const readNewGlobalStateData = context.globalState.get(vscodeContextStateName);
-                if (JSON.stringify(data) !== JSON.stringify(readNewGlobalStateData)) {
-                    console.error(`
-                    runTerminalCommand raises error: fail to compare ${outputFilePath} 's content and vscode.globalState.${vscodeContextStateName} 's data, they are not equal!
-
-                    The data from ${outputFilePath} is: ${JSON.stringify(data)}
-                    The data from ${vscodeContextStateName} is: ${JSON.stringify(readNewGlobalStateData)}
-                    `);
-                    reject(new Error(`Data verification failed for ${vscodeContextStateName}`));
-                    return;
-                }
-                
-                brodcastMessage({ type: 'terminal_log', data: `\n[SYSTEM] Execution finished successfully. JSON parsed.\n` });
-                console.log(`Successfully update data from ${outputFilePath}, to vscode.globalState.${vscodeContextStateName}`);
-                resolve(data);
+            // fi-run writes results directly to the SQLite database.
+            // The history polling mechanism will pick up the new entry.
+            brodcastMessage({ type: 'terminal_log', data: `\n[SYSTEM] fi-run completed successfully. Results saved to SQLite database.\n` });
+            console.log(`fi-run completed successfully.`);
+            resolve();
         });
     });
 }
