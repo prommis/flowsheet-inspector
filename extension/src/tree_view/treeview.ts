@@ -101,9 +101,10 @@ export default function treeview(context: vscode.ExtensionContext) {
                 try {
                     resolvedStepsData = await new Promise<any>((resolve, reject) => {
                         const { shell: resolvedShell, args: shellArgs } = getSpawnArgs(shellType, commandFiSteps);
+                        console.log(`[fi-steps] Spawning: ${resolvedShell} ${JSON.stringify(shellArgs)}`);
                         const child = cp.spawn(resolvedShell, shellArgs, {
-                            ...getSpawnOptions(),
                             stdio: 'pipe' as const,
+                            windowsHide: true,
                         });
                         let stdout = '';
                         let stderr = '';
@@ -121,7 +122,7 @@ export default function treeview(context: vscode.ExtensionContext) {
                                 const lines = stdout.trim().split('\n');
                                 const jsonLine = lines.reverse().find(l => l.trim().startsWith('['));
                                 if (!jsonLine) {
-                                    reject(new Error(`No JSON array found in fi-steps output`));
+                                    reject(new Error(`No JSON array found in fi-steps output.\nSTDOUT: ${stdout.trim().slice(0, 500)}\nSTDERR: ${stderr.trim().slice(0, 500)}`));
                                     return;
                                 }
                                 const steps = JSON.parse(jsonLine.trim());
