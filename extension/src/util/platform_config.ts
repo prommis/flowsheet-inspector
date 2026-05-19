@@ -88,11 +88,13 @@ export function getSpawnArgs(shell: string, command: string): { shell: string; a
 
 /**
  * Returns additional spawn options that differ per platform.
- * On Windows we add `windowsHide: true` to prevent a console window from flashing.
+ * - Unix:    `detached: true` so we can kill the process group via negative PID
+ * - Windows: NO `detached` (it creates a new console and breaks stdout piping).
+ *            We use `taskkill /T` for process tree killing instead.
  */
 export function getSpawnOptions(): cp.SpawnOptions {
     if (isWindows()) {
-        return { detached: true, windowsHide: true };
+        return { windowsHide: true };
     }
     return { detached: true };
 }

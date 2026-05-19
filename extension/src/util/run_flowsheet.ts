@@ -60,42 +60,55 @@ export default async function runFlowsheet(context: vscode.ExtensionContext, web
         console.log('fi-run completed. Reading latest report from SQLite...');
 
         // Read the latest report from the SQLite database
-        const dbPath = getIdaesDbPath();
-        const reportQuery = `SELECT report FROM reports ORDER BY id DESC LIMIT 1;`;
-        const sqliteCmd = buildSqliteCommand(dbPath, reportQuery);
+        // This is non-fatal — if the DB/table doesn't exist yet, the history
+        // polling mechanism will pick up the results later.
+        try {
+            const dbPath = getIdaesDbPath();
+            const reportQuery = `SELECT report FROM reports ORDER BY id DESC LIMIT 1;`;
+            const sqliteCmd = buildSqliteCommand(dbPath, reportQuery);
 
-        const reportData = await new Promise<any>((resolve, reject) => {
-            cp.exec(sqliteCmd, { maxBuffer: 50 * 1024 * 1024, windowsHide: true }, (err, stdout, stderr) => {
-                if (err) {
-                    console.error(`Failed to read report from SQLite: ${err.message}`);
-                    reject(err);
-                    return;
-                }
-                try {
-                    // Python's json.dumps can produce -Infinity, Infinity, NaN
-                    // which are invalid in standard JSON. Replace with null.
-                    const sanitized = stdout.trim()
-                        .replace(/:\s*-Infinity/g, ': null')
-                        .replace(/:\s*Infinity/g, ': null')
-                        .replace(/:\s*NaN/g, ': null');
-                    const parsed = JSON.parse(sanitized);
-                    resolve(parsed);
-                } catch (e) {
-                    console.error(`Failed to parse report JSON from SQLite: ${e}`);
-                    reject(e);
-                }
+            const reportData = await new Promise<any>((resolve, reject) => {
+                cp.exec(sqliteCmd, { maxBuffer: 50 * 1024 * 1024, windowsHide: true }, (err, stdout, stderr) => {
+                    if (err) {
+                        reject(err);
+                        return;
+                    }
+                    if (!stdout.trim()) {
+                        reject(new Error('Empty report from SQLite'));
+                        return;
+                    }
+                    try {
+                        // Python's json.dumps can produce -Infinity, Infinity, NaN
+                        // which are invalid in standard JSON. Replace with null.
+                        const sanitized = stdout.trim()
+                            .replace(/:\s*-Infinity/g, ': null')
+                            .replace(/:\s*Infinity/g, ': null')
+                            .replace(/:\s*NaN/g, ': null');
+                        const parsed = JSON.parse(sanitized);
+                        resolve(parsed);
+                    } catch (e) {
+                        reject(e);
+                    }
+                });
             });
-        });
 
-        console.log('Successfully loaded report from SQLite. Broadcasting to webviews...');
+            console.log('Successfully loaded report from SQLite. Broadcasting to webviews...');
 
-        // Broadcast the full report to all webviews (same message type the frontend expects)
-        brodcastMessage({
-            type: 'flowsheet_runner_result',
-            data: reportData
-        });
+            // Broadcast the full report to all webviews
+            brodcastMessage({
+                type: 'flowsheet_runner_result',
+                data: reportData
+            });
+        } catch (dbErr: any) {
+            console.warn(`Could not load report from SQLite (non-fatal): ${dbErr.message}`);
+            console.warn('The history polling mechanism will pick up results when available.');
+            brodcastMessage({
+                type: 'terminal_log',
+                data: `\n[SYSTEM] fi-run completed but could not read report from database: ${dbErr.message}\nResults may appear in the history panel shortly.\n`
+            });
+        }
 
-        // Notify tree panel that the run is complete so it stops spinners
+        // Always notify tree panel that the run is complete so it stops spinners
         let treePanel = activateWebviews.get('treeView');
         if (treePanel) {
             treePanel.webview.postMessage({
