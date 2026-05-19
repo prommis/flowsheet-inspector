@@ -1,48 +1,49 @@
-# About flowsheet inspector extension:
+# Flowsheet Inspector Extension
 
+## Development Setup
 
-## How to Run Dev
-Required packages:
+### Prerequisites
 1. Python >= 3.12
 1. `pip install idaes-connectivity`
 1. `pip install idaes-pse`
 1. `idaes get-extensions`
-1. `pip install git+https://github.com/prommis/flowsheet-inspector-lib.git` 
+1. `pip install git+https://github.com/prommis/flowsheet-inspector-lib.git`
+
 ---
 
-How to start local dev server:
+### Starting the Local Dev Server
 1. Make sure you are using VS Code as your editor.
-1. Clone this repo to local.
-1. Make sure you are using nodeJS v24.11.0
-1. `npm install` in both `extension` and `webview_ui` folder.
-1. Go to `extension` folder, run `npm run watch:build` to enable the live compile feature. (extension live compile)
-1. Go to `webview_ui` folder, run `npm run watch:build` to enable the live reload feature. (react live reload)
+1. Clone this repo locally.
+1. Make sure you are using Node.js v24.11.0.
+1. Run `npm install` in both the `extension` and `webview_ui` folders.
+1. In the `extension` folder, run `npm run watch:build` to enable live compilation.
+1. In the `webview_ui` folder, run `npm run watch:build` to enable live reload for React.
 1. Open `extension/src/extension.ts`, then press `F5` to launch the extension in a new VS Code window. Select the **"Run Extension"** debug configuration.
 
 ---
 
-## Dev Server Architecture
+### Dev Server Architecture
 
 - **`extension/`** – Contains the VS Code extension source files.
 - **`webview_ui/`** – Contains the webview UI built with React.
-- React builds static files that the extension loads into the webview.
-- The React dev server allows developers to preview UI changes in the browser without reloading the extension.
+  - React builds static files that the extension loads into the webview.
+  - The React dev server allows developers to preview UI changes in the browser without reloading the extension.
 
+---
 
-# How to install Beta version of extension
-## Environment setup
-Required packages:
+## Installing the Beta Extension
+
+### Environment Setup
 1. Python >= 3.12
 1. `pip install idaes-connectivity`
 1. `pip install idaes-pse`
 1. `idaes get-extensions`
-1. `pip install git+https://github.com/prommis/flowsheet-inspector-lib.git` 
+1. `pip install git+https://github.com/prommis/flowsheet-inspector-lib.git`
 
-
-## Installation
-1. Go to git repo and download the `.vsix` file.
-1. Open VS Code, click on four squares extension store icon it will open the extension store panel.
-1. On extension store panel top right corner, click on the `"..."` icon then select `Install from VSIX`.
-1. From open window (finder or file explorer), select the .vsix file that you downloaded.
-1. Now you can see the Prommis icon shows on your VS Code sidebar, click it to open the extension panel.
+### Installation
+1. Go to the GitHub repo and download the `.vsix` file.
+1. Open VS Code and click the Extensions icon (four squares) in the sidebar.
+1. In the top-right corner of the Extensions panel, click the **`...`** menu and select **Install from VSIX...**.
+1. In the file dialog, select the `.vsix` file you downloaded.
+1. The PrOMMiS icon will now appear in your VS Code sidebar. Click it to open the extension panel.
 
