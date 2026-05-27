@@ -109,7 +109,7 @@ import idaes.logger as idaeslog
 from idaes.core.solvers import get_solver
 from idaes.core.util.exceptions import InitializationError
 
-from idaes.core.util.structfs.fsrunner import FlowsheetRunner, Context
+from idaes_fi.structfs.fsrunner import FlowsheetRunner, Context
 
 import hda_ideal_VLE as thermo_props
 import hda_reaction as reaction_props

@@ -26,7 +26,7 @@ from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import
     BTXParameterBlock,
 )
 from idaes.models.unit_models import Flash, Valve
-from idaes.core.util.structfs.fsrunner import FlowsheetRunner
+from idaes_fi.structfs.fsrunner import FlowsheetRunner
 
 FS = FlowsheetRunner()
 
@@ -111,4 +111,3 @@ def solve_o(ctx):
 
 if __name__ == "__main__":
     FS.run_steps()
-
