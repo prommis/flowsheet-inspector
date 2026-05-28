@@ -58,7 +58,6 @@ def build_model(ctx):
     m.fs.vap_outlet = Port(extends=m.fs.flash.vap_outlet)
     m.fs.liq_outlet = Port(extends=m.fs.flash.liq_outlet)
     m.fs.valve_outlet = Port(extends=m.fs.valve.outlet)
-    # assert degrees_of_freedom(m) == 7
     ctx.model = m
 
 

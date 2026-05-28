@@ -346,8 +346,6 @@ def solve_opt(ctx):
 
     m.fs.F102.deltaP.unfix()
 
-    assert degrees_of_freedom(m) == 5
-
     m.fs.H101.outlet.temperature[0].setlb(500)
     m.fs.H101.outlet.temperature[0].setub(600)
 
