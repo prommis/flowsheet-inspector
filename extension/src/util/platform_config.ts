@@ -37,7 +37,7 @@ export function isWindows(): boolean {
 /**
  * Returns the default IExtensionConfig appropriate for the current OS.
  * - macOS:  /bin/zsh + source ~/.zshrc
- * - Linux:  /bin/bash + source ~/.bashrc
+ * - Linux:  /bin/bash + eval "$(conda shell.bash hook)"
  * - Windows: powershell.exe, no source needed
  */
 export function getDefaultShellConfig(): IExtensionConfig {
@@ -57,7 +57,9 @@ export function getDefaultShellConfig(): IExtensionConfig {
         default: // linux
             return {
                 activate_command: 'conda activate test-idaes-extension',
-                sorce_treminal: 'source ~/.bashrc',
+                // `source ~/.bashrc` exits immediately in non-interactive bash (Ubuntu guard).
+                // `conda shell.bash hook` initialises conda without needing an interactive shell.
+                sorce_treminal: 'eval "$(conda shell.bash hook)"',
                 shell: '/bin/bash'
             };
     }
