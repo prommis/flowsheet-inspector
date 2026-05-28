@@ -1,8 +1,10 @@
 import { useContext, useEffect, useRef, useState } from "react";
 import { AppContext } from "../context";
+
 import mermaid from "mermaid";
 import { postReloadMermaidDone } from '../util/post_message';
 import css from '../css/mermaid.module.css';
+import type { Diagnostics } from "../interface/flowsheet_result_interface";
 
 export default function Mermaid() {
     const { flowsheetRunnerResult } = useContext(AppContext);
@@ -10,6 +12,9 @@ export default function Mermaid() {
     const renderIdCounter = useRef(0);
     // This state increments on every mount, ensuring useEffect always re-runs
     const [mountKey, setMountKey] = useState(0);
+
+    const diagnostics = flowsheetRunnerResult?.actions?.diagnostics as Diagnostics | undefined;
+    const runFailed = !!flowsheetRunnerResult && diagnostics?.valid === false;
 
     useEffect(() => {
         // initial mermaid
@@ -32,7 +37,23 @@ export default function Mermaid() {
             return;
         }
 
-        // 2. Ran successfully, but no diagram found in result
+        // 2. Run failed — diagram is empty because after_run() was not called
+        if (runFailed && (!flowsheetRunnerResult.actions.mermaid_diagram || !flowsheetRunnerResult.actions.mermaid_diagram.diagram)) {
+            const lastRun = flowsheetRunnerResult.last_run ?? [];
+            mermaidRef.current.innerHTML = `
+            <div style="color: var(--vscode-editorError-foreground, #f88); padding: 10px; border: 1px solid var(--vscode-editorError-foreground, #f88); border-radius: 4px; margin-top: 10px; background-color: var(--vscode-editorError-background, transparent);">
+                <p style="margin: 0 0 10px 0; font-weight: bold;">fi-run has issues: Diagram Unavailable</p>
+                <p style="margin: 0 0 10px 0; color: var(--vscode-editor-foreground, #ccc);">
+                    The flowsheet run may have failed or did not reach the solve step.
+                    ${lastRun.length > 0 ? `Last completed steps: ${lastRun.join(' → ')}.` : ''}
+                </p>
+                <p style="margin: 0;">Check the error log for details.</p>
+            </div>`;
+            postReloadMermaidDone({ reload_mermaid: 'done' });
+            return;
+        }
+
+        // 3. Ran successfully, but no diagram found in result (e.g. idaes-connectivity not installed)
         if (
             !flowsheetRunnerResult.actions.mermaid_diagram ||
             !flowsheetRunnerResult.actions.mermaid_diagram.diagram
@@ -43,7 +64,7 @@ export default function Mermaid() {
                     Mermaid Diagram Missing
                 </p>
                 <p style="margin: 0 0 10px 0; color: var(--vscode-editor-foreground, #ccc);">
-                    The IDAES runner result does not contain a Mermaid diagram. 
+                    The IDAES runner result does not contain a Mermaid diagram.
                 </p>
                 <p style="margin: 0;">
                     <strong>Reason:</strong> The <code>idaes-connectivity</code> Python package is likely not installed in your IDAES environment.

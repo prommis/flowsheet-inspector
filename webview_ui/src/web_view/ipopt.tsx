@@ -1,6 +1,7 @@
 import { useContext, useState } from "react";
 import { AppContext } from "../context";
 import css from "../css/ipopt.module.css";
+import type { Diagnostics } from "../interface/flowsheet_result_interface";
 
 /** Strip the Ipopt banner (everything up to and including the 2nd **** line) */
 function stripIpoptBanner(text: string | null | undefined): string {
@@ -25,8 +26,39 @@ function stripIpoptBanner(text: string | null | undefined): string {
 export default function Ipopt() {
     const { flowsheetRunnerResult } = useContext(AppContext);
     const [activeTab, setActiveTab] = useState<"initial" | "optimization">("initial");
+    const diagnostics = flowsheetRunnerResult?.actions?.diagnostics as Diagnostics | undefined;
+    const runFailed = !!flowsheetRunnerResult && diagnostics?.valid === false;
 
-    const solverLogs = flowsheetRunnerResult?.actions?.solver_output?.output || flowsheetRunnerResult?.actions?.capture_solver_output?.solver_logs;
+    const solverLogs = flowsheetRunnerResult?.actions?.solver_output?.output
+        || flowsheetRunnerResult?.actions?.capture_solver_output?.solver_logs;
+
+    if (!flowsheetRunnerResult) {
+        return (
+            <div className={`${css.ipopt_container}`}>
+                <h2 className="page-title">IPOPT:</h2>
+                <p>Please select a flowsheet, and run it with IDAES Extension first.</p>
+            </div>
+        );
+    }
+
+    if (runFailed) {
+        const lastRun = flowsheetRunnerResult.last_run ?? [];
+        return (
+            <div className={css.ipopt_container}>
+                <h2 className="page-title">IPOPT:</h2>
+                <div className={css.run_error}>
+                    <p className={css.run_error_title}>
+                        fi-run has issues: Solver Output Unavailable
+                    </p>
+                    <p className={css.run_error_body}>
+                        The flowsheet run may have failed or did not reach the solve step.
+                        {lastRun.length > 0 && ` Last completed steps: ${lastRun.join(" → ")}.`}
+                    </p>
+                    <p className={css.run_error_hint}>Check the error log for details.</p>
+                </div>
+            </div>
+        );
+    }
 
     if (!solverLogs) {
         return (

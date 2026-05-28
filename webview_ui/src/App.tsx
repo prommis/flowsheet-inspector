@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { vscode } from './vscode';
 import { useContext } from 'react';
 import { AppContext } from './context';
+import type { Diagnostics } from './interface/flowsheet_result_interface';
 
 import TreePage from './tree_app.tsx'
 import EditorPage from './editor_page';
@@ -13,6 +14,7 @@ export default function App() {
     setidaesRunInfo, // the idaes-run --info result
     setEditorContent, // the activate editor content
     setActivateFileName, // the current activate file name
+    flowsheetRunnerResult,
     setFlowsheetRunnerResult, // the idaes-run result
     setExtensionConfig, // the extension config
     setExtensionErrorLogs, // the extension error logs
@@ -60,6 +62,23 @@ export default function App() {
     }
     return loadedApp
   }
+
+  // Log run-failure details once per result change, from this stable root component
+  useEffect(() => {
+    if (!flowsheetRunnerResult) return;
+    const diagnostics = flowsheetRunnerResult.actions?.diagnostics as Diagnostics | undefined;
+    if (diagnostics?.valid !== false) return;
+
+    const lastRun = flowsheetRunnerResult.last_run ?? [];
+    const timestamp = `[${new Date().toLocaleTimeString()}]`;
+    setExtensionErrorLogs(prev => [
+      ...prev,
+      `${timestamp} fi-run has issues: diagnostics unavailable (valid=false). Last completed steps: [${lastRun.join(", ")}]. Raw data: ${JSON.stringify({ diagnostics, last_run: lastRun })}`,
+      `${timestamp} fi-run has issues: model variables unavailable. Raw data: ${JSON.stringify({ model_variables: flowsheetRunnerResult.actions?.model_variables, last_run: lastRun })}`,
+      `${timestamp} fi-run has issues: solver output may be incomplete. Raw data: ${JSON.stringify({ solver_output: flowsheetRunnerResult.actions?.solver_output, last_run: lastRun })}`,
+      `${timestamp} fi-run has issues: mermaid diagram unavailable. Raw data: ${JSON.stringify({ mermaid_diagram: flowsheetRunnerResult.actions?.mermaid_diagram, last_run: lastRun })}`,
+    ]);
+  }, [flowsheetRunnerResult]);
 
   useEffect(() => {
     // listen extension message
