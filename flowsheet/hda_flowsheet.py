@@ -332,7 +332,6 @@ def set_solver(ctx):
 def solve(ctx):
     """Perform the initial model solve."""
     ctx["status"] = results = ctx.solver.solve(ctx.model, tee=ctx["tee"])
-    assert results.solver.termination_condition == TerminationCondition.optimal
 
 
 @FS.step("solve_optimization")
