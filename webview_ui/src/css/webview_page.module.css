@@ -13,3 +13,28 @@
     width:100%;
     padding:20px;
 }
+
+/* ─── Run error box ─── */
+.run_error {
+    color: var(--vscode-editorError-foreground, #f88);
+    padding: 10px;
+    border: 1px solid var(--vscode-editorError-foreground, #f88);
+    border-radius: 4px;
+    margin-top: 10px;
+    background-color: var(--vscode-editorError-background, transparent);
+}
+
+.run_error_title {
+    margin: 0 0 10px 0;
+    font-weight: bold;
+}
+
+.run_error_body {
+    margin: 0 0 10px 0;
+    color: var(--vscode-editor-foreground, #ccc);
+}
+
+.run_error_hint {
+    margin: 0;
+    color: var(--vscode-editor-foreground, #ccc);
+}
