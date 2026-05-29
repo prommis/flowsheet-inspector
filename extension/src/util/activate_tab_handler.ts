@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as cp from 'child_process';
-import * as fs from 'fs';
 import { brodcastMessage } from './webview_handler';
+import { isWrappedFlowsheet } from './validate_flowsheet';
 import { trimFileName } from './trim_file_name';
 import { readExtensionConfig } from './extensionHandler';
 import { checkExtensionConfigEnv } from './extension_initial_check';
@@ -53,6 +53,21 @@ export default function activateTabListener(context: vscode.ExtensionContext) {
                 console.log('Get file name from activate file path');
                 const activateFileName = trimFileName(currentActivateTabFileName);
                 console.log(`Current activate file name is: ${activateFileName}`);
+
+                if (!isWrappedFlowsheet(currentActivateTabFileName)) {
+                    console.log(`File ${currentActivateTabFileName} does not appear to be a flowsheet (no @FS.step("build") found), skipping fi-steps.`);
+                    context.globalState.update("activatedFileName", currentActivateTabFileName);
+                    brodcastMessage({
+                        type: 'switch_tab',
+                        activate_tab_name: activateFileName,
+                        idaesRunInfo: null,
+                        initError: `"${activateFileName}" is not a wrapped flowsheet file.\nFlowsheet Inspector requires @FS.step("build") to be present in the file.`,
+                        isLoading: false,
+                        open_python_files: getOpenPythonFiles(),
+                        time: new Date().toISOString(),
+                    });
+                    return;
+                }
 
                 const extensionConfigData = readExtensionConfig(context);
                 if (!extensionConfigData) {
