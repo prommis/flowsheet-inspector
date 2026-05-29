@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as cp from 'child_process';
+import { isWrappedFlowsheet } from '../util/validate_flowsheet';
 import { getReactTemplate } from '../util/get_webview_template';
 import { IExtensionConfig } from '../interface';
 import { registerWebview } from '../util/webview_handler';
@@ -25,8 +26,11 @@ export default function treeview(context: vscode.ExtensionContext) {
             registerWebview("treeView", webviewView);
 
 
-            //Get current activate tab's file name
-            let fileName = context.globalState.get<string>("activatedFileName") ?? '';
+            // Prefer the currently active editor over stale globalState from a previous session
+            const currentActiveFile = vscode.window.activeTextEditor?.document.fileName;
+            let fileName = (currentActiveFile?.endsWith('.py') ? currentActiveFile : null)
+                ?? context.globalState.get<string>("activatedFileName")
+                ?? '';
 
             //Get config data from vscode global state
             // const extensionConfigData: IExtensionConfig | undefined = context.globalState.get("extensionConfig");
@@ -64,7 +68,26 @@ export default function treeview(context: vscode.ExtensionContext) {
                 });
 
                 if (!fileName.endsWith('.py')) {
-                    vscode.window.showErrorMessage("Please open a python flowsheet file to use IDAES extension.");
+                    webviewView.webview.postMessage({
+                        type: 'switch_tab',
+                        activate_tab_name: trimFileName(fileName) || 'No file selected',
+                        idaesRunInfo: null,
+                        initError: `No Python flowsheet file is currently active.\nPlease open a flowsheet file to use Flowsheet Inspector.`,
+                        isLoading: false,
+                        time: new Date().toISOString(),
+                    });
+                    return;
+                }
+
+                if (!isWrappedFlowsheet(fileName)) {
+                    webviewView.webview.postMessage({
+                        type: 'switch_tab',
+                        activate_tab_name: trimFileName(fileName),
+                        idaesRunInfo: null,
+                        initError: `"${trimFileName(fileName)}" is not a wrapped flowsheet file.\nFlowsheet Inspector requires @FS.step("build") to be present in the file.`,
+                        isLoading: false,
+                        time: new Date().toISOString(),
+                    });
                     return;
                 }
 
