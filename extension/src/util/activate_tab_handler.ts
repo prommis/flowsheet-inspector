@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as cp from 'child_process';
+import * as fs from 'fs';
 import { brodcastMessage } from './webview_handler';
 import { trimFileName } from './trim_file_name';
 import { readExtensionConfig } from './extensionHandler';
@@ -37,7 +38,7 @@ export default function activateTabListener(context: vscode.ExtensionContext) {
         });
     });
 
-    vscode.window.onDidChangeActiveTextEditor(async editor => {
+    const handleActiveEditor = async (editor: vscode.TextEditor | undefined) => {
         if (editor) {
             const currentActivateTabFileName = editor.document.fileName;
             if (currentActivateTabFileName.endsWith('.py')) {
@@ -173,5 +174,10 @@ export default function activateTabListener(context: vscode.ExtensionContext) {
         } else {
             console.log("User switched tab, and it's not an editor tab!");
         }
-    });
+    };
+
+    vscode.window.onDidChangeActiveTextEditor(handleActiveEditor, null, context.subscriptions);
+
+    // Fire immediately for the file already open when the extension first activates
+    handleActiveEditor(vscode.window.activeTextEditor);
 }
