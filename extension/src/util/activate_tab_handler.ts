@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as cp from 'child_process';
-import { brodcastMessage } from './webview_handler';
+import { brodcastMessage, activateWebviews } from './webview_handler';
 import { isWrappedFlowsheet } from './validate_flowsheet';
 import { trimFileName } from './trim_file_name';
 import { readExtensionConfig } from './extensionHandler';
@@ -53,6 +53,12 @@ export default function activateTabListener(context: vscode.ExtensionContext) {
                 console.log('Get file name from activate file path');
                 const activateFileName = trimFileName(currentActivateTabFileName);
                 console.log(`Current activate file name is: ${activateFileName}`);
+
+                // Update webview panel title to reflect the current file
+                const webViewPanel = activateWebviews.get('webView') as vscode.WebviewPanel | undefined;
+                if (webViewPanel) {
+                    webViewPanel.title = `Prommis Flowsheet Inspector - ${activateFileName}`;
+                }
 
                 if (!isWrappedFlowsheet(currentActivateTabFileName)) {
                     console.log(`File ${currentActivateTabFileName} does not appear to be a flowsheet (no @FS.step("build") found), skipping fi-steps.`);
