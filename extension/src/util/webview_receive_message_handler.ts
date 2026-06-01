@@ -3,6 +3,7 @@ import { activateWebviews } from "./webview_handler";
 import { IFrontendMessage } from "../interface";
 import runFlowsheet from "./run_flowsheet";
 import { getWebview, brodcastMessage } from "./webview_handler";
+import { killProcessTree, getIdaesDbPath, buildSqliteCommand } from './platform_config';
 
 export default function webviewReceiveMessageHandler(context: vscode.ExtensionContext, frontendMessage: IFrontendMessage) {
     console.log(`receive frontend instruction: ${JSON.stringify(frontendMessage)}`);
@@ -63,8 +64,7 @@ export default function webviewReceiveMessageHandler(context: vscode.ExtensionCo
             if (frontendMessage.pid) {
                 console.log(`User requested killing process PID: ${frontendMessage.pid}`);
                 try {
-                    // Send SIGKILL to the process group
-                    process.kill(-Number(frontendMessage.pid), 'SIGKILL');
+                    killProcessTree(Number(frontendMessage.pid));
                 } catch (e) {
                     console.error(`Failed to kill process: ${e}`);
                 }
@@ -88,13 +88,12 @@ export default function webviewReceiveMessageHandler(context: vscode.ExtensionCo
                     return; // Exit and let the delayed callback handle it once opened
                 }
 
-                const os = require('os');
                 const cp = require('child_process');
-                const dbPath = `${os.homedir()}/.idaes/reportdb.sqlite`;
+                const dbPath = getIdaesDbPath();
                 // Securely query just the json report block for this explicit exact ID
-                const queryCmd = `sqlite3 ${dbPath} "SELECT report FROM reports WHERE id = ${frontendMessage.id};"`;
+                const queryCmd = buildSqliteCommand(dbPath, `SELECT report FROM reports WHERE id = ${frontendMessage.id};`);
                 
-                cp.exec(queryCmd, { maxBuffer: 1024 * 1024 * 10 }, (err: any, stdout: string, stderr: string) => {
+                cp.exec(queryCmd, { maxBuffer: 1024 * 1024 * 10, windowsHide: true }, (err: any, stdout: string, stderr: string) => {
                     if (err) {
                         brodcastMessage({ type: 'error', message: `Failed to load historical run: ${err.message || stderr}` });
                         return;

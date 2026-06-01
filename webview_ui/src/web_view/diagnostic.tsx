@@ -371,6 +371,25 @@ export default function Diagnostic() {
         );
     }
 
+    if (!diagnostics.valid) {
+        const lastRun = flowsheetRunnerResult?.last_run ?? [];
+        return (
+            <div className={css.container}>
+                <h2>Diagnostic:</h2>
+                <div className={css.run_error}>
+                    <p className={css.run_error_title}>
+                        fi-run has issues: Diagnostics Unavailable
+                    </p>
+                    <p className={css.run_error_body}>
+                        The flowsheet run may have failed or did not reach the solve step.
+                        {lastRun.length > 0 && ` Last completed steps: ${lastRun.join(" → ")}.`}
+                    </p>
+                    <p className={css.run_error_hint}>Check the error log for details.</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className={css.container}>
             <h2 className="page-title">Diagnostic:</h2>

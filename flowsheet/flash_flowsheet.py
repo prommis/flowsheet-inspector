@@ -26,7 +26,7 @@ from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import
     BTXParameterBlock,
 )
 from idaes.models.unit_models import Flash, Valve
-from idaes.core.util.structfs.fsrunner import FlowsheetRunner
+from idaes_fi.structfs.fsrunner import FlowsheetRunner
 
 FS = FlowsheetRunner()
 
@@ -58,7 +58,6 @@ def build_model(ctx):
     m.fs.vap_outlet = Port(extends=m.fs.flash.vap_outlet)
     m.fs.liq_outlet = Port(extends=m.fs.flash.liq_outlet)
     m.fs.valve_outlet = Port(extends=m.fs.valve.outlet)
-    # assert degrees_of_freedom(m) == 7
     ctx.model = m
 
 
@@ -111,4 +110,3 @@ def solve_o(ctx):
 
 if __name__ == "__main__":
     FS.run_steps()
-

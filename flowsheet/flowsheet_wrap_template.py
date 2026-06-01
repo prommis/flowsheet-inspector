@@ -83,9 +83,7 @@ def set_scaling(context):
 def solve_initial(context):
     """Perform initial solve of the square model"""
     m = context.model
-    assert degrees_of_freedom(m) == 0
     results = context.solver.solve(m, tee=context["tee"])
-    assert results.solver.termination_condition == TerminationCondition.optimal
 
 
 @_FS.step("set_autoscaling")

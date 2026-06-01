@@ -1,42 +1,33 @@
-import path from "path";
-import os from "os";
-import fs from "fs";
 import * as vscode from 'vscode';
+import { getDefaultShellConfig } from './platform_config';
+
+// Old broken Linux default — replaced by eval "$(conda shell.bash hook)"
+const STALE_LINUX_SOURCE = 'source ~/.bashrc';
 
 export function setDefaultConfig(context: vscode.ExtensionContext) {
-    // reading user's extension config from vscode global state
     console.log("Checking extension config...");
-    console.log("Hint:Config stored at VSCode context.globalState");
-    const hasConfigFile = context.globalState.get<{
+    const stored = context.globalState.get<{
         activate_command: string;
         sorce_treminal: string;
-        output_file_name: string;
         shell: string;
     }>("extensionConfig");
 
+    const defaultConfig = getDefaultShellConfig();
 
-    if (hasConfigFile) {
-        console.log("User's config profile found!");
-        const userConfig = context.globalState.get("extensionConfig");
-        console.log("user's config is:");
-        console.log(userConfig);
-        console.log("Now use user's config!");
+    if (stored) {
+        // Migrate stale Linux configs that used the non-interactive-safe source command
+        if (stored.sorce_treminal === STALE_LINUX_SOURCE) {
+            console.log("Migrating stale Linux sorce_treminal to conda shell hook...");
+            context.globalState.update("extensionConfig", {
+                ...stored,
+                sorce_treminal: defaultConfig.sorce_treminal,
+            });
+        } else {
+            console.log("User's config profile found:", stored);
+        }
         return;
-    } else {
-        console.log("User's config file not found, creating default config...");
-        const defaultOutputDir = os.homedir();
-        const defaultExtensionConfig = {
-            activate_command: "conda activate test-idaes-extension",
-            sorce_treminal: "source ~/.zshrc",
-            output_file_name: `${defaultOutputDir}/Downloads/out1.json`,
-            shell: "/bin/zsh"
-        };
-
-        context.globalState.update("extensionConfig", defaultExtensionConfig);
-
-        // reading config and log it
-        const config = context.globalState.get("extensionConfig");
-        console.log("Default config is created! The default config is:");
-        console.log(config);
     }
+
+    console.log("No config found, writing default:", defaultConfig);
+    context.globalState.update("extensionConfig", defaultConfig);
 }

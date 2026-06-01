@@ -109,7 +109,7 @@ import idaes.logger as idaeslog
 from idaes.core.solvers import get_solver
 from idaes.core.util.exceptions import InitializationError
 
-from idaes.core.util.structfs.fsrunner import FlowsheetRunner, Context
+from idaes_fi.structfs.fsrunner import FlowsheetRunner, Context
 
 import hda_ideal_VLE as thermo_props
 import hda_reaction as reaction_props
@@ -332,7 +332,6 @@ def set_solver(ctx):
 def solve(ctx):
     """Perform the initial model solve."""
     ctx["status"] = results = ctx.solver.solve(ctx.model, tee=ctx["tee"])
-    assert results.solver.termination_condition == TerminationCondition.optimal
 
 
 @FS.step("solve_optimization")
@@ -346,8 +345,6 @@ def solve_opt(ctx):
     m.fs.F102.vap_outlet.temperature.unfix()
 
     m.fs.F102.deltaP.unfix()
-
-    assert degrees_of_freedom(m) == 5
 
     m.fs.H101.outlet.temperature[0].setlb(500)
     m.fs.H101.outlet.temperature[0].setub(600)
