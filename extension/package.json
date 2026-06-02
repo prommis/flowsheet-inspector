@@ -11,6 +11,10 @@
         "Other"
     ],
     "icon": "resources/prommis_icon.png",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/prommis/flowsheet-inspector"
+    },
     "activationEvents": [
         "onView:idaes.treeView",
         "onView:idaes.webView"
@@ -73,7 +77,7 @@
         }
     },
     "scripts": {
-        "package": "npm run compile && cd ../webview_ui && npm run build && cd ../extension && vsce package --out ../ --allow-missing-repository",
+        "package": "npm run compile && cd ../webview_ui && npm run build && cd ../extension && vsce package --out ../",
         "vscode:prepublish": "npm run compile",
         "compile": "tsc -p ./",
         "watch:build": "tsc -watch -p ./",
