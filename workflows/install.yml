@@ -1,0 +1,58 @@
+name: Local development installation tests
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  install:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          python-version: "3.10"
+          environment-file: false
+          auto-activate-base: false
+          activate-environment: test-idaes-extension
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install Python dependencies
+        shell: bash -el {0}
+        run: |
+          pip install idaes-connectivity idaes-pse
+          idaes get-extensions
+          pip install git+https://github.com/prommis/flowsheet-inspector-lib.git
+
+      - name: Install webview UI dependencies
+        run: npm install
+        working-directory: webview_ui
+
+      - name: Build webview UI
+        run: npm run build
+        working-directory: webview_ui
+
+      - name: Install extension dependencies
+        run: npm install
+        working-directory: extension
+
+      - name: Compile extension
+        run: npm run compile
+        working-directory: extension
+
+      - name: Package extension
+        run: vsce package --out ../ci_extension_package/
+        working-directory: extension
+
+      - name: Check extension package was created
+        run: node -e "const fs = require('fs'); const files = fs.readdirSync('ci_extension_package').filter(f => f.endsWith('.vsix')); if (files.length === 0) { console.error('No .vsix file found'); process.exit(1); } console.log('Found:', files);"
