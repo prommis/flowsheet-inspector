@@ -18,7 +18,6 @@ jobs:
         uses: conda-incubator/setup-miniconda@v3
         with:
           python-version: "3.10"
-          environment-file: false
           auto-activate-base: false
           activate-environment: test-idaes-extension
 
