@@ -14,7 +14,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python 3.10
+      - name: Set up Python 3.12
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -47,7 +47,7 @@ jobs:
         working-directory: extension
 
       - name: Package extension
-        run: vsce package --out ../ci_extension_package/
+        run: npx vsce package --out ../ci_extension_package/
         working-directory: extension
 
       - name: Check extension package was created
