@@ -1,0 +1,36 @@
+name: Build Extension
+description: Install dependencies, compile, and package the VS Code extension
+
+runs:
+  using: composite
+  steps:
+    - name: Install webview UI dependencies
+      shell: bash
+      run: npm install
+      working-directory: webview_ui
+
+    - name: Build webview UI
+      shell: bash
+      run: npm run build
+      working-directory: webview_ui
+
+    - name: Install extension dependencies
+      shell: bash
+      run: npm install
+      working-directory: extension
+
+    - name: Compile extension
+      shell: bash
+      run: npm run compile
+      working-directory: extension
+
+    - name: Package extension
+      shell: bash
+      run: |
+        mkdir -p ../ci_extension_package
+        npx vsce package --out ../ci_extension_package/flowsheet-inspector.vsix
+      working-directory: extension
+
+    - name: Check extension package was created
+      shell: bash
+      run: node -e "const fs = require('fs'); const files = fs.readdirSync('ci_extension_package').filter(f => f.endsWith('.vsix')); if (files.length === 0) { console.error('No .vsix file found'); process.exit(1); } console.log('Found:', files);"

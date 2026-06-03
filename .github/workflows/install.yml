@@ -30,27 +30,8 @@ jobs:
           idaes get-extensions
           pip install git+https://github.com/prommis/flowsheet-inspector-lib.git
 
-      - name: Install webview UI dependencies
-        run: npm install
-        working-directory: webview_ui
+      - name: Build extension
+        uses: ./.github/actions/build-extension
 
-      - name: Build webview UI
-        run: npm run build
-        working-directory: webview_ui
-
-      - name: Install extension dependencies
-        run: npm install
-        working-directory: extension
-
-      - name: Compile extension
-        run: npm run compile
-        working-directory: extension
-
-      - name: Package extension
-        run: |
-          mkdir -p ../ci_extension_package
-          npx vsce package --out ../ci_extension_package/flowsheet-inspector.vsix
-        working-directory: extension
-
-      - name: Check extension package was created
-        run: node -e "const fs = require('fs'); const files = fs.readdirSync('ci_extension_package').filter(f => f.endsWith('.vsix')); if (files.length === 0) { console.error('No .vsix file found'); process.exit(1); } console.log('Found:', files);"
+      - name: Test extension
+        uses: ./.github/actions/test-extension
