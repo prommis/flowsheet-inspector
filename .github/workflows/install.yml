@@ -47,7 +47,9 @@ jobs:
         working-directory: extension
 
       - name: Package extension
-        run: npx vsce package --out ../ci_extension_package/
+        run: |
+          mkdir -p ../ci_extension_package
+          npx vsce package --out ../ci_extension_package/flowsheet-inspector.vsix
         working-directory: extension
 
       - name: Check extension package was created
