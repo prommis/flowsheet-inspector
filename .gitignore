@@ -149,3 +149,6 @@ __pycache__/
 # CI build output
 ci_extension_package/
 *.vsix
+
+# test
+test-results/
