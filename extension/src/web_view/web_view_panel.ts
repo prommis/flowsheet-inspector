@@ -31,7 +31,7 @@ export default async function openWebView(context: vscode.ExtensionContext, outp
             fileName = activatedFileName;
         } else {
             vscode.window.showErrorMessage('No active editor found and no activated flowsheet found either!');
-            console.error('Idaes web view raise an error: fail to find or open the web view.');
+            console.error('Flowsheet Inspector web view raise an error: fail to find or open the web view.');
             return;
         }
     } else {
@@ -40,8 +40,8 @@ export default async function openWebView(context: vscode.ExtensionContext, outp
 
     // Create a Webview Panel with split layout (top and bottom sections)
     const webViewPanel = vscode.window.createWebviewPanel(
-        'idaes web view',
-        `Prommis Flowsheet Inspector - ${fileName.split('/').pop()}`,
+        'fi.webView',
+        `Flowsheet Inspector - ${fileName.split('/').pop()}`,
         // vscode.ViewColumn.Beside, // Open beside current editor
         vscode.ViewColumn.Beside, // Open beside current editor
         // vscode.ViewColumn.Active,

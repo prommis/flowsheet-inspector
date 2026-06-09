@@ -15,9 +15,9 @@ suite('Extension', () => {
         assert.strictEqual(ext!.isActive, true);
     });
 
-    test('registers idaes commands', async () => {
+    test('registers flowsheet-inspector commands', async () => {
         const commands = await vscode.commands.getCommands(true);
-        assert.ok(commands.some(cmd => cmd.startsWith('idaes.')));
+        assert.ok(commands.some(cmd => cmd.startsWith('flowsheet-inspector.')));
     });
 });
 
