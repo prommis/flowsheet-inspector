@@ -8,6 +8,7 @@ import { spawn } from 'child_process';
 
 const vsixPath = path.resolve(__dirname, '../../../flowsheet-inspector.vsix');
 const userDataDir = path.join(os.tmpdir(), `vscode-e2e-test-${Date.now()}`);
+const extensionsDir = path.join(userDataDir, 'extensions');
 
 function setupUserDataDir(dir: string) {
     const userSettingsDir = path.join(dir, 'User');
@@ -35,6 +36,7 @@ test('install extension from VSIX and verify it loads', async () => {
         const proc = spawn(executablePath, [
             `--install-extension=${vsixPath}`,
             `--user-data-dir=${userDataDir}`,
+            `--extensions-dir=${extensionsDir}`,
             '--no-sandbox',
             '--disable-gpu',
         ]);
@@ -49,10 +51,15 @@ test('install extension from VSIX and verify it loads', async () => {
         });
     });
 
+    // verify extension was actually written to disk
+    const installedExts = fs.existsSync(extensionsDir) ? fs.readdirSync(extensionsDir) : [];
+    console.log('installed extensions:', installedExts);
+
     const app = await electron.launch({
         executablePath,
         args: [
             `--user-data-dir=${userDataDir}`,
+            `--extensions-dir=${extensionsDir}`,
             '--no-sandbox',
             '--disable-gpu',
         ],
