@@ -45,7 +45,9 @@ export function getDefaultShellConfig(): IExtensionConfig {
         case 'win32':
             return {
                 activate_command: 'conda activate test-idaes-extension',
-                sorce_treminal: '',  // Windows doesn't need sourcing a shell profile
+                // Search common Miniconda/Anaconda install locations and initialise the
+                // conda shell hook — equivalent to Linux's eval "$(conda shell.bash hook)"
+                sorce_treminal: '$c=@("$env:USERPROFILE\\miniconda3\\Scripts\\conda.exe","$env:USERPROFILE\\Miniconda3\\Scripts\\conda.exe","$env:USERPROFILE\\anaconda3\\Scripts\\conda.exe","$env:USERPROFILE\\Anaconda3\\Scripts\\conda.exe","C:\\ProgramData\\miniconda3\\Scripts\\conda.exe","C:\\ProgramData\\Miniconda3\\Scripts\\conda.exe")|Where-Object{Test-Path $_}|Select-Object -First 1; if($c){(& $c shell.powershell hook)|Out-String|Invoke-Expression}',
                 shell: 'powershell.exe'
             };
         case 'darwin':
@@ -83,7 +85,9 @@ export function getSpawnArgs(shell: string, command: string): { shell: string; a
             return { shell, args: ['/c', command] };
         }
         // Default to PowerShell-style args on Windows (covers powershell.exe and pwsh)
-        return { shell, args: ['-Command', command] };
+        // -ExecutionPolicy Bypass lets the user's $PROFILE (conda init) load even when
+        // the system policy would otherwise block it.
+        return { shell, args: ['-ExecutionPolicy', 'Bypass', '-Command', command] };
     }
     return { shell, args: ['-c', command] };
 }
