@@ -11,6 +11,10 @@
         "Other"
     ],
     "icon": "resources/prommis_icon.png",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/prommis/flowsheet-inspector"
+    },
     "activationEvents": [
         "onView:idaes.treeView",
         "onView:idaes.webView"
@@ -73,20 +77,23 @@
         }
     },
     "scripts": {
-        "package": "npm run compile && cd ../webview_ui && npm run build && cd ../extension && vsce package --out ../",
+        "package": "cd ../webview_ui && npm run build && cd ../extension && npm run compile && npx vsce package --out ../",
         "vscode:prepublish": "npm run compile",
         "compile": "tsc -p ./",
         "watch:build": "tsc -watch -p ./",
         "pretest": "npm run compile && npm run lint",
         "lint": "eslint src",
-        "test": "vscode-test"
+        "test": "vscode-test",
+        "test:e2e": "playwright test"
     },
     "devDependencies": {
+        "@playwright/test": "^1.60.0",
         "@types/mocha": "^10.0.10",
         "@types/node": "22.x",
         "@types/vscode": "^1.106.1",
         "@vscode/test-cli": "^0.0.11",
         "@vscode/test-electron": "^2.5.2",
+        "@vscode/vsce": "^3.9.1",
         "eslint": "^9.39.1",
         "typescript": "^5.9.3",
         "typescript-eslint": "^8.48.1"

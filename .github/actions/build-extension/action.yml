@@ -1,0 +1,35 @@
+name: Build Extension
+description: Install dependencies, compile, and package the VS Code extension
+
+runs:
+  using: composite
+  steps:
+    - name: Install webview UI dependencies
+      shell: bash
+      run: npm install
+      working-directory: webview_ui
+
+    - name: Build webview UI
+      shell: bash
+      run: npm run build
+      working-directory: webview_ui
+
+    - name: Install extension dependencies
+      shell: bash
+      run: npm install
+      working-directory: extension
+
+    - name: Compile extension
+      shell: bash
+      run: npm run compile
+      working-directory: extension
+
+    - name: Package extension
+      shell: bash
+      run: npx vsce package --out ../flowsheet-inspector.vsix
+      working-directory: extension
+
+    - name: Check extension package was created
+      shell: bash
+      run: |
+        node -e "const fs = require('fs'); if (!fs.existsSync('flowsheet-inspector.vsix')) { console.error('No .vsix file found'); process.exit(1); } console.log('Found: flowsheet-inspector.vsix');"

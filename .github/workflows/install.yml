@@ -1,0 +1,40 @@
+name: Local development installation tests
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  install:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install Python dependencies
+        run: |
+          pip install idaes-connectivity idaes-pse
+          idaes get-extensions
+          pip install git+https://github.com/prommis/flowsheet-inspector-lib.git
+
+      - name: Build extension
+        uses: ./.github/actions/build-extension
+
+      - name: Test extension (unit tests)
+        uses: ./.github/actions/test-extension
+
+      - name: Test extension (E2E tests)
+        uses: ./.github/actions/test-extension-E2E

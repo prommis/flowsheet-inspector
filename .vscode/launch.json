@@ -1,3 +1,5 @@
+// This file is the vscode debug configuration used for debugging the extension in VS Code.
+// docs: https://code.visualstudio.com/docs/debugtest/debugging-configuration
 {
     "version": "0.0.5",
     "configurations": [
@@ -7,6 +9,19 @@
             "request": "launch",
             "args": [
                 "--extensionDevelopmentPath=${workspaceFolder}/extension"
+            ],
+            "outFiles": [
+                "${workspaceFolder}/extension/out/**/*.js"
+            ],
+            "preLaunchTask": "${defaultBuildTask}"
+        },
+        {
+            "name": "Extension Tests",
+            "type": "extensionHost",
+            "request": "launch",
+            "args": [
+                "--extensionDevelopmentPath=${workspaceFolder}/extension",
+                "--extensionTestsPath=${workspaceFolder}/extension/out/test"
             ],
             "outFiles": [
                 "${workspaceFolder}/extension/out/**/*.js"

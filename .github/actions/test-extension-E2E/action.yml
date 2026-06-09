@@ -1,0 +1,40 @@
+name: Extension E2E Test
+description: Run VS Code extension E2E tests with playwright and electron
+
+runs:
+  using: composite
+  steps:
+    - name: Install Xvfb (Linux only)
+      if: runner.os == 'Linux'
+      shell: bash
+      run: sudo apt-get install -y xvfb
+
+    - name: Run E2E tests (Linux)
+      if: runner.os == 'Linux'
+      shell: bash
+      run: xvfb-run --auto-servernum npx playwright test --project=electron --headed
+      working-directory: extension
+
+    - name: Remove macOS quarantine on downloaded VS Code
+      if: runner.os == 'macOS'
+      shell: bash
+      run: xattr -rd com.apple.quarantine extension/.vscode-test/ || true
+
+    - name: Run E2E tests (macOS)
+      if: runner.os == 'macOS'
+      shell: bash
+      run: npx playwright test --project=electron --headed
+      working-directory: extension
+
+    - name: Run E2E tests (Windows)
+      if: runner.os == 'Windows'
+      shell: bash
+      run: npx playwright test --project=electron --headed
+      working-directory: extension
+
+    - name: Upload test artifacts on failure
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: e2e-test-results-${{ runner.os }}
+        path: extension/test-results/

@@ -145,3 +145,10 @@ vite.config.ts.timestamp-*
 # Python
 __pycache__/
 *.py[cod]
+
+# CI build output
+ci_extension_package/
+*.vsix
+
+# test
+test-results/
