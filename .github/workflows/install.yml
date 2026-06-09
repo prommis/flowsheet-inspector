@@ -33,5 +33,8 @@ jobs:
       - name: Build extension
         uses: ./.github/actions/build-extension
 
-      - name: Test extension
+      - name: Test extension (unit tests)
         uses: ./.github/actions/test-extension
+
+      - name: Test extension (E2E tests)
+        uses: ./.github/actions/test-extension-E2E

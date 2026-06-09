@@ -1,0 +1,10 @@
+name: Extension E2E Test
+description: Run VS Code extension E2E tests with playwright and electron
+
+runs:
+  using: composite
+  steps:
+    - name: Install Xvfb (Linux only)
+      shell: bash
+      run: npx playwright test ./tests/e2e --project=electron --headed
+      working-directory: extension
