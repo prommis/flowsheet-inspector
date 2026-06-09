@@ -47,6 +47,14 @@ test('extension loads in VS Code', async () => {
 
     await page.screenshot({ path: 'test-results/vscodeStart.png' });
 
+    // debug: print all aria-labels in the activity bar
+    const activityBarLabels = await page.evaluate(() =>
+        Array.from(document.querySelectorAll('.activitybar [aria-label]'))
+            .map(el => el.getAttribute('aria-label'))
+            .filter(Boolean)
+    );
+    console.log('activity bar aria-labels:', activityBarLabels);
+
     // IDAES Control icon should be directly in activity bar in development mode
     const idaesDirectIcon = page.locator('[aria-label="IDAES Control"]');
     const additionalViews = page.locator('[aria-label="Additional Views..."]');
