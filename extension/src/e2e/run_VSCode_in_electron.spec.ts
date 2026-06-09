@@ -4,11 +4,9 @@ import { downloadAndUnzipVSCode } from '@vscode/test-electron';
 import * as path from 'path';
 import * as os from 'os';
 import * as fs from 'fs';
-import { spawn } from 'child_process';
 
-const vsixPath = path.resolve(__dirname, '../../../flowsheet-inspector.vsix');
+const extensionPath = path.resolve(__dirname, '../../');
 const userDataDir = path.join(os.tmpdir(), `vscode-e2e-test-${Date.now()}`);
-const extensionsDir = path.join(userDataDir, 'extensions');
 
 function setupUserDataDir(dir: string) {
     const userSettingsDir = path.join(dir, 'User');
@@ -22,48 +20,20 @@ function setupUserDataDir(dir: string) {
     }));
 }
 
-test('install extension from VSIX and verify it loads', async () => {
+test('extension loads in VS Code', async () => {
     setupUserDataDir(userDataDir);
     const executablePath = await downloadAndUnzipVSCode('stable');
-
-    console.log('vsixPath:', vsixPath);
-    console.log('vsix exists:', fs.existsSync(vsixPath));
-
-    // install VSIX first as a separate CLI step, then launch normally
-    // use spawn with timeout to avoid hanging on Linux CI (no display)
-    const installOutput: string[] = [];
-    await new Promise<void>((resolve) => {
-        const proc = spawn(executablePath, [
-            `--install-extension=${vsixPath}`,
-            `--user-data-dir=${userDataDir}`,
-            `--extensions-dir=${extensionsDir}`,
-            '--no-sandbox',
-            '--disable-gpu',
-        ]);
-        proc.stdout?.on('data', (d) => installOutput.push(d.toString()));
-        proc.stderr?.on('data', (d) => installOutput.push(d.toString()));
-        const timer = setTimeout(() => { proc.kill(); resolve(); }, 30000);
-        proc.on('close', (code) => {
-            clearTimeout(timer);
-            console.log('install exit code:', code);
-            console.log('install output:', installOutput.join(''));
-            resolve();
-        });
-    });
-
-    // verify extension was actually written to disk
-    const installedExts = fs.existsSync(extensionsDir) ? fs.readdirSync(extensionsDir) : [];
-    console.log('installed extensions:', installedExts);
 
     const app = await electron.launch({
         executablePath,
         args: [
+            `--extensionDevelopmentPath=${extensionPath}`,
             `--user-data-dir=${userDataDir}`,
-            `--extensions-dir=${extensionsDir}`,
             '--no-sandbox',
             '--disable-gpu',
         ],
     });
+
     const page = await app.firstWindow();
     await page.waitForLoadState('domcontentloaded');
     await page.waitForSelector('.monaco-workbench', { timeout: 30000 });
@@ -77,8 +47,7 @@ test('install extension from VSIX and verify it loads', async () => {
 
     await page.screenshot({ path: 'test-results/vscodeStart.png' });
 
-    // open IDAES Control panel — it may be directly in the activity bar (CI)
-    // or hidden inside "Additional Views" (local with many extensions)
+    // IDAES Control icon should be directly in activity bar in development mode
     const idaesDirectIcon = page.locator('[aria-label="IDAES Control"]');
     const additionalViews = page.locator('[aria-label="Additional Views..."]');
 
