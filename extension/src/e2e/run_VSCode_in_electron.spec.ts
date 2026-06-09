@@ -60,16 +60,21 @@ test('extension loads in VS Code', async () => {
     await page.waitForSelector('.monaco-workbench', { timeout: 30000 });
     await page.screenshot({ path: 'test-results/workbench-loaded.png' });
 
-    // dismiss the Copilot onboarding modal if it still slips through
-    const closeBtn = page.locator('button.onboarding-a-close-btn');
-    if (await closeBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
-        await closeBtn.click();
-    }
+    // The "Welcome to Visual Studio Code" onboarding modal appears at an
+    // unpredictable (delayed) time on macOS and intercepts clicks. Register a
+    // handler so Playwright auto-dismisses it whenever it shows up during any
+    // subsequent action.
+    await page.addLocatorHandler(
+        page.locator('.onboarding-a-overlay.visible'),
+        async () => {
+            await page.locator('button.onboarding-a-close-btn').click();
+        },
+    );
     await page.screenshot({ path: 'test-results/vscodeStart.png' });
 
     // click the IDAES Control icon in the activity bar (always directly visible
     // because --extensions-dir isolates us from other extensions)
-    await page.locator('[aria-label="IDAES Control"]').first().click({ timeout: 10000 });
+    await page.locator('[aria-label="IDAES Control"]').first().click({ timeout: 15000 });
 
     // verify the IDAES view container opened: its sidebar title shows the
     // contributed view name "Run Control".
