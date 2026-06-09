@@ -1,4 +1,5 @@
 {
+	"exclude": ["playwright.config.ts", "node_modules"],
 	"compilerOptions": {
 		"module": "Node16",
 		"target": "ES2022",
