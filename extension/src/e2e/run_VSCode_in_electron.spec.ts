@@ -17,6 +17,7 @@ function setupUserDataDir(dir: string) {
         'telemetry.telemetryLevel': 'off',
         'extensions.ignoreRecommendations': true,
         'github.copilot.editor.enableAutoCompletions': false,
+        'security.workspace.trust.enabled': false,
     }));
 }
 
@@ -59,6 +60,7 @@ test('install extension from VSIX and verify it loads', async () => {
     const page = await app.firstWindow();
     await page.waitForLoadState('domcontentloaded');
     await page.waitForSelector('.monaco-workbench', { timeout: 30000 });
+    await page.screenshot({ path: 'test-results/workbench-loaded.png' });
 
     // dismiss Copilot onboarding dialog if it appears
     const closeBtn = page.locator('button.onboarding-a-close-btn');
