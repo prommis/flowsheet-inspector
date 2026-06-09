@@ -15,8 +15,19 @@ runs:
       run: xvfb-run --auto-servernum npx playwright test --project=electron --headed
       working-directory: extension
 
-    - name: Run E2E tests (macOS / Windows)
-      if: runner.os != 'Linux'
+    - name: Remove macOS quarantine on downloaded VS Code
+      if: runner.os == 'macOS'
+      shell: bash
+      run: xattr -rd com.apple.quarantine extension/.vscode-test/ || true
+
+    - name: Run E2E tests (macOS)
+      if: runner.os == 'macOS'
+      shell: bash
+      run: npx playwright test --project=electron --headed
+      working-directory: extension
+
+    - name: Run E2E tests (Windows)
+      if: runner.os == 'Windows'
       shell: bash
       run: npx playwright test --project=electron --headed
       working-directory: extension
