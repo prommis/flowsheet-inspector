@@ -5,6 +5,18 @@ runs:
   using: composite
   steps:
     - name: Install Xvfb (Linux only)
+      if: runner.os == 'Linux'
       shell: bash
-      run: npx playwright test ./tests/e2e --project=electron --headed
+      run: sudo apt-get install -y xvfb
+
+    - name: Run E2E tests (Linux)
+      if: runner.os == 'Linux'
+      shell: bash
+      run: xvfb-run --auto-servernum npx playwright test --project=electron --headed
+      working-directory: extension
+
+    - name: Run E2E tests (macOS / Windows)
+      if: runner.os != 'Linux'
+      shell: bash
+      run: npx playwright test --project=electron --headed
       working-directory: extension
