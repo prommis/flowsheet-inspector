@@ -16,25 +16,32 @@
         "url": "https://github.com/prommis/flowsheet-inspector"
     },
     "activationEvents": [
-        "onView:idaes.treeView",
-        "onView:idaes.webView"
+        "onView:fi.treeView",
+        "onView:fi.webView"
+    ],
+    "extensionDependencies": [
+        "ms-python.python"
     ],
     "main": "./out/extension.js",
     "contributes": {
         "commands": [
             {
                 "command": "flowsheet-inspector.start",
-                "title": "IDAES Start"
+                "title": "Flowsheet Inspector: Start"
             },
             {
                 "command": "flowsheet-inspector.openWebView",
-                "title": "Open IDAES Flowsheet Inspector",
+                "title": "Open Flowsheet Inspector",
                 "icon": "$(open-preview)"
             },
             {
                 "command": "flowsheet-inspector.reloadWebview",
-                "title": "IDAES: Reload Webview (Dev)",
+                "title": "Flowsheet Inspector: Reload Webview (Dev)",
                 "icon": "$(refresh)"
+            },
+            {
+                "command": "flowsheet-inspector.logPythonEnv",
+                "title": "Flowsheet Inspector: Log Active Python Env (Dev)"
             }
         ],
         "keybindings": [
@@ -59,16 +66,16 @@
         "viewsContainers": {
             "activitybar": [
                 {
-                    "id": "idaes-activity-bar",
-                    "title": "IDAES Control",
+                    "id": "fi-activity-bar",
+                    "title": "Flowsheet Inspector",
                     "icon": "resources/prommis_icon.svg"
                 }
             ]
         },
         "views": {
-            "idaes-activity-bar": [
+            "fi-activity-bar": [
                 {
-                    "id": "idaes.treeView",
+                    "id": "fi.treeView",
                     "name": "Run Control",
                     "icon": "resources/prommis_icon.svg",
                     "type": "webview"

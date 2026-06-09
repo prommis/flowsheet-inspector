@@ -1,11 +1,10 @@
 import * as vscode from 'vscode';
-import * as cp from 'child_process';
 import { brodcastMessage, activateWebviews } from './webview_handler';
 import { isWrappedFlowsheet } from './validate_flowsheet';
 import { trimFileName } from './trim_file_name';
-import { readExtensionConfig } from './extensionHandler';
-import { checkExtensionConfigEnv } from './extension_initial_check';
-import { buildCommandChain, getSpawnArgs, getSpawnOptions } from './platform_config';
+import { checkActivePythonEnv } from './extension_initial_check';
+import { runFiSteps } from './run_fi_steps';
+import { onDidChangeActivePythonEnv } from './python_env';
 
 function getOpenPythonFiles() {
     const pyFiles: { name: string, path: string }[] = [];
@@ -75,22 +74,6 @@ export default function activateTabListener(context: vscode.ExtensionContext) {
                     return;
                 }
 
-                const extensionConfigData = readExtensionConfig(context);
-                if (!extensionConfigData) {
-                    vscode.window.showErrorMessage("Config not found when switching tabs. Please set the config first.");
-                    brodcastMessage(
-                        {
-                            type: 'switch_tab',
-                            message: `switch tab from ${previousActivatedFileName} to ${currentActivateTabFileName}`,
-                            activate_tab_name: activateFileName,
-                            idaesRunInfo: null,
-                            open_python_files: getOpenPythonFiles(),
-                            time: new Date().toISOString(),
-                        }
-                    );
-                    return;
-                }
-
 
                 brodcastMessage(
                     {
@@ -103,7 +86,7 @@ export default function activateTabListener(context: vscode.ExtensionContext) {
                     }
                 );
 
-                const envCheck = await checkExtensionConfigEnv(extensionConfigData);
+                const envCheck = await checkActivePythonEnv(vscode.Uri.file(currentActivateTabFileName));
                 if (!envCheck.success) {
                     brodcastMessage({
                         type: 'switch_tab',
@@ -117,46 +100,9 @@ export default function activateTabListener(context: vscode.ExtensionContext) {
                     return;
                 }
 
-                const sorceCommand = extensionConfigData.sorce_treminal;
-                const activateCommand = extensionConfigData.activate_command;
-                const shellType = extensionConfigData.shell;
-
-                const commandFiSteps = buildCommandChain([sorceCommand, activateCommand, `fi-steps --fs "${currentActivateTabFileName}" -t json`]);
-
                 let stepsData: any;
                 try {
-                    stepsData = await new Promise<any>((resolve, reject) => {
-                        const { shell: resolvedShell, args: shellArgs } = getSpawnArgs(shellType, commandFiSteps);
-                        console.log(`[fi-steps] Spawning: ${resolvedShell} ${JSON.stringify(shellArgs)}`);
-                        const child = cp.spawn(resolvedShell, shellArgs, {
-                            stdio: 'pipe' as const,
-                            windowsHide: true,
-                        });
-                        let stdout = '';
-                        let stderr = '';
-                        child.stdout.on('data', (d) => { stdout += d.toString(); });
-                        child.stderr.on('data', (d) => { stderr += d.toString(); });
-                        child.on('close', (code) => {
-                            if (code !== 0) {
-                                const errDetail = stderr.trim() || stdout.trim() || '(no output)';
-                                reject(new Error(`fi-steps failed (exit ${code}): ${errDetail}`));
-                                return;
-                            }
-                            try {
-                                const lines = stdout.trim().split('\n');
-                                const jsonLine = lines.reverse().find(l => l.trim().startsWith('['));
-                                if (!jsonLine) {
-                                    reject(new Error(`No JSON array found in fi-steps output.\nSTDOUT: ${stdout.trim().slice(0, 500)}\nSTDERR: ${stderr.trim().slice(0, 500)}`));
-                                    return;
-                                }
-                                const steps = JSON.parse(jsonLine.trim());
-                                resolve({ classname: 'FlowsheetRunner', steps });
-                            } catch (e) {
-                                reject(new Error(`Failed to parse fi-steps output: ${e}`));
-                            }
-                        });
-                        child.on('error', reject);
-                    });
+                    stepsData = await runFiSteps(currentActivateTabFileName);
                 } catch (err: any) {
                     console.error(`Error running fi-steps during tab switch: ${err.message}`);
                     stepsData = null;
@@ -183,6 +129,7 @@ export default function activateTabListener(context: vscode.ExtensionContext) {
                         message: `switch tab from ${previousActivatedFileName} to ${currentActivateTabFileName}`,
                         activate_tab_name: activateFileName,
                         idaesRunInfo: stepsData,
+                        initError: null,
                         isLoading: false,
                         open_python_files: getOpenPythonFiles(),
                         time: new Date().toISOString(),
@@ -198,6 +145,12 @@ export default function activateTabListener(context: vscode.ExtensionContext) {
     };
 
     vscode.window.onDidChangeActiveTextEditor(handleActiveEditor, null, context.subscriptions);
+
+    // Re-run steps when the user switches Python interpreter, so fixing the env
+    // (or any interpreter change) immediately refreshes the view — clearing a
+    // stale "package not installed" warning instead of stranding the user.
+    onDidChangeActivePythonEnv(() => handleActiveEditor(vscode.window.activeTextEditor))
+        .then((disposable) => { if (disposable) { context.subscriptions.push(disposable); } });
 
     // Fire immediately for the file already open when the extension first activates
     handleActiveEditor(vscode.window.activeTextEditor);

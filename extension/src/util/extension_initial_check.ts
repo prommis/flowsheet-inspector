@@ -1,10 +1,52 @@
 import * as cp from 'child_process';
 import * as fs from 'fs';
+import * as vscode from 'vscode';
 import { IExtensionConfig } from '../interface';
 import { isWindows, buildCommandChain, getDefaultShellConfig } from './platform_config';
+import { getActivePythonEnv, activatedProcessEnv } from './python_env';
 
 let lastCheckedConfigStr = "";
 let lastCheckResult: { success: boolean; errorMsg?: string } | null = null;
+
+/**
+ * Verifies the Python environment VS Code currently has selected can run the
+ * flowsheet tools — using the interpreter directly (no shell / conda activate).
+ *
+ * 1. an interpreter is selected (Python extension active)
+ * 2. `import idaes` succeeds
+ * 3. `import idaes_fi` succeeds
+ */
+export async function checkActivePythonEnv(resource?: vscode.Uri): Promise<{ success: boolean; errorMsg?: string }> {
+    const env = await getActivePythonEnv(resource);
+    if (!env) {
+        return {
+            success: false,
+            errorMsg: 'No Python interpreter selected. Use "Python: Select Interpreter" (bottom-right status bar) to pick the environment with Flowsheet Inspector installed.',
+        };
+    }
+
+    const childEnv = activatedProcessEnv(env);
+    const runImport = (module: string): Promise<void> => {
+        return new Promise((resolve, reject) => {
+            cp.execFile(env.interpreterPath, ['-c', `import ${module}`], { windowsHide: true, env: childEnv }, (error, _stdout, stderr) => {
+                if (error) { reject(new Error(stderr || error.message)); } else { resolve(); }
+            });
+        });
+    };
+
+    try {
+        await runImport('idaes');
+    } catch {
+        return { success: false, errorMsg: `IDAES is not installed in the selected environment (${env.name ?? env.interpreterPath}).\nInstall it, or pick a different interpreter.` };
+    }
+    try {
+        await runImport('idaes_fi');
+    } catch {
+        return { success: false, errorMsg: `'idaes-fi' is missing in the selected environment (${env.name ?? env.interpreterPath}).\nRun 'pip install idaes-fi', or pick a different interpreter.` };
+    }
+
+    return { success: true };
+}
 
 /**
  * Check if a shell executable exists on the system.
