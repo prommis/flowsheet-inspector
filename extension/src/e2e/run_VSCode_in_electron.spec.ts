@@ -24,8 +24,12 @@ test('install extension from VSIX and verify it loads', async () => {
     setupUserDataDir(userDataDir);
     const executablePath = await downloadAndUnzipVSCode('stable');
 
+    console.log('vsixPath:', vsixPath);
+    console.log('vsix exists:', fs.existsSync(vsixPath));
+
     // install VSIX first as a separate CLI step, then launch normally
     // use spawn with timeout to avoid hanging on Linux CI (no display)
+    const installOutput: string[] = [];
     await new Promise<void>((resolve) => {
         const proc = spawn(executablePath, [
             `--install-extension=${vsixPath}`,
@@ -33,8 +37,15 @@ test('install extension from VSIX and verify it loads', async () => {
             '--no-sandbox',
             '--disable-gpu',
         ]);
+        proc.stdout?.on('data', (d) => installOutput.push(d.toString()));
+        proc.stderr?.on('data', (d) => installOutput.push(d.toString()));
         const timer = setTimeout(() => { proc.kill(); resolve(); }, 30000);
-        proc.on('close', () => { clearTimeout(timer); resolve(); });
+        proc.on('close', (code) => {
+            clearTimeout(timer);
+            console.log('install exit code:', code);
+            console.log('install output:', installOutput.join(''));
+            resolve();
+        });
     });
 
     const app = await electron.launch({
