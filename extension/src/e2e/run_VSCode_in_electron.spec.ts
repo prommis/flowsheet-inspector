@@ -6,7 +6,7 @@ import * as os from 'os';
 import * as fs from 'fs';
 import { spawn } from 'child_process';
 
-const vsixPath = path.resolve(__dirname, '../../../flowsheet-inspector-0.0.5.vsix');
+const vsixPath = path.resolve(__dirname, '../../../flowsheet-inspector.vsix');
 const userDataDir = path.join(os.tmpdir(), `vscode-e2e-test-${Date.now()}`);
 
 function setupUserDataDir(dir: string) {
@@ -33,7 +33,7 @@ test('install extension from VSIX and verify it loads', async () => {
             '--no-sandbox',
             '--disable-gpu',
         ]);
-        const timer = setTimeout(() => { proc.kill(); resolve(); }, 15000);
+        const timer = setTimeout(() => { proc.kill(); resolve(); }, 30000);
         proc.on('close', () => { clearTimeout(timer); resolve(); });
     });
 
