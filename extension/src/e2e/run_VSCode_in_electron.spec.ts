@@ -4,7 +4,7 @@ import { downloadAndUnzipVSCode } from '@vscode/test-electron';
 import * as path from 'path';
 import * as os from 'os';
 import * as fs from 'fs';
-import { execFileSync } from 'child_process';
+import { spawn } from 'child_process';
 
 const vsixPath = path.resolve(__dirname, '../../../flowsheet-inspector-0.0.5.vsix');
 const userDataDir = path.join(os.tmpdir(), `vscode-e2e-test-${Date.now()}`);
@@ -25,11 +25,17 @@ test('install extension from VSIX and verify it loads', async () => {
     const executablePath = await downloadAndUnzipVSCode('stable');
 
     // install VSIX first as a separate CLI step, then launch normally
-    execFileSync(executablePath, [
-        `--install-extension=${vsixPath}`,
-        `--user-data-dir=${userDataDir}`,
-        '--no-sandbox',
-    ]);
+    // use spawn with timeout to avoid hanging on Linux CI (no display)
+    await new Promise<void>((resolve) => {
+        const proc = spawn(executablePath, [
+            `--install-extension=${vsixPath}`,
+            `--user-data-dir=${userDataDir}`,
+            '--no-sandbox',
+            '--disable-gpu',
+        ]);
+        const timer = setTimeout(() => { proc.kill(); resolve(); }, 15000);
+        proc.on('close', () => { clearTimeout(timer); resolve(); });
+    });
 
     const app = await electron.launch({
         executablePath,
