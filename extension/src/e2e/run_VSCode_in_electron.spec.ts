@@ -55,16 +55,8 @@ test('extension loads in VS Code', async () => {
     );
     console.log('activity bar aria-labels:', activityBarLabels);
 
-    // IDAES Control icon should be directly in activity bar in development mode
-    const idaesDirectIcon = page.locator('[aria-label="IDAES Control"]');
-    const additionalViews = page.locator('[aria-label="Additional Views..."]');
-
-    if (await idaesDirectIcon.isVisible({ timeout: 5000 }).catch(() => false)) {
-        await idaesDirectIcon.click();
-    } else {
-        await additionalViews.click({ timeout: 10000 });
-        await page.getByText('IDAES Control').click({ timeout: 5000 });
-    }
+    // click the IDAES Control icon in the activity bar
+    await page.locator('[aria-label="IDAES Control"]').first().click({ timeout: 10000 });
 
     await expect(page.locator('#idaes\\.treeView')).toBeVisible({ timeout: 10000 });
     await page.screenshot({ path: 'test-results/extensionLoaded.png' });
