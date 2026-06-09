@@ -4,6 +4,7 @@ import { downloadAndUnzipVSCode } from '@vscode/test-electron';
 import * as path from 'path';
 import * as os from 'os';
 import * as fs from 'fs';
+import { execFileSync } from 'child_process';
 
 const vsixPath = path.resolve(__dirname, '../../../flowsheet-inspector-0.0.5.vsix');
 const userDataDir = path.join(os.tmpdir(), `vscode-e2e-test-${Date.now()}`);
@@ -22,10 +23,17 @@ function setupUserDataDir(dir: string) {
 test('install extension from VSIX and verify it loads', async () => {
     setupUserDataDir(userDataDir);
     const executablePath = await downloadAndUnzipVSCode('stable');
+
+    // install VSIX first as a separate CLI step, then launch normally
+    execFileSync(executablePath, [
+        `--install-extension=${vsixPath}`,
+        `--user-data-dir=${userDataDir}`,
+        '--no-sandbox',
+    ]);
+
     const app = await electron.launch({
         executablePath,
         args: [
-            `--install-extension=${vsixPath}`,
             `--user-data-dir=${userDataDir}`,
             '--no-sandbox',
             '--disable-gpu',
