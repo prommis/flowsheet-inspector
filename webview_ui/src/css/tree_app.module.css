@@ -27,6 +27,27 @@
     gap: 10px;
 }
 
+.python_env_container {
+    margin-bottom: 20px;
+}
+
+.python_env_label {
+    display: block;
+    margin: 0 0 5px 0;
+    font-size: 13px;
+    color: var(--vscode-foreground);
+}
+
+.dropdown_select {
+    width: 100%;
+    padding: 6px;
+    background-color: var(--vscode-dropdown-background);
+    color: var(--vscode-dropdown-foreground);
+    border: 1px solid var(--vscode-dropdown-border);
+    border-radius: 2px;
+    cursor: pointer;
+}
+
 .open_results_view_label{
     display:block;
     font-size: 18px;
