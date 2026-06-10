@@ -18,6 +18,23 @@ const NO_INTERPRETER_MSG =
     'No Python interpreter selected. Pick the environment with Flowsheet Inspector ' +
     'installed via the Python: Select Interpreter command (bottom-right status bar).';
 
+/**
+ * Runs `fi-steps --fs <file> -t json` and returns the parsed step list.
+ *
+ * Resolves the interpreter the user selected in VS Code, then spawns the
+ * `fi-steps` entry point from that environment directly (with an activated
+ * PATH via {@link activatedProcessEnv}) — no shell, no `conda activate`, no
+ * reliance on the extension config. Output parsing scans stdout from the end
+ * for the line starting with `[`, skipping any log lines tools may print
+ * before the JSON array.
+ *
+ * @param fileName Absolute path to the flowsheet `.py` file to inspect.
+ * @returns `{ classname: 'FlowsheetRunner', steps }` where `steps` is the
+ *          JSON array produced by fi-steps.
+ * @throws If no interpreter is selected, if fi-steps exits non-zero (the
+ *         error includes stderr/stdout details), or if no JSON array can be
+ *         found in the output.
+ */
 export async function runFiSteps(fileName: string): Promise<IFiStepsResult> {
     const env = await getActivePythonEnv(fileName ? vscode.Uri.file(fileName) : undefined);
     if (!env) {

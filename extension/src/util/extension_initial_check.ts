@@ -12,9 +12,19 @@ let lastCheckResult: { success: boolean; errorMsg?: string } | null = null;
  * Verifies the Python environment VS Code currently has selected can run the
  * flowsheet tools — using the interpreter directly (no shell / conda activate).
  *
- * 1. an interpreter is selected (Python extension active)
- * 2. `import idaes` succeeds
- * 3. `import idaes_fi` succeeds
+ * Performs three checks, stopping at the first failure:
+ * 1. an interpreter is selected (Python extension active and configured)
+ * 2. `import idaes` succeeds in that interpreter
+ * 3. `import idaes_fi` succeeds in that interpreter
+ *
+ * Runs before fi-steps so the user gets a targeted, actionable message
+ * ("install X or pick a different interpreter") instead of a raw spawn error.
+ *
+ * @param resource Optional file/workspace URI for per-folder interpreter
+ *                 resolution in multi-root workspaces.
+ * @returns `{ success: true }` when all checks pass, otherwise
+ *          `{ success: false, errorMsg }` where `errorMsg` names the failed
+ *          check, the environment, and how to fix it (shown in the tree view).
  */
 export async function checkActivePythonEnv(resource?: vscode.Uri): Promise<{ success: boolean; errorMsg?: string }> {
     const env = await getActivePythonEnv(resource);
