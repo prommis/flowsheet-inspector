@@ -4,6 +4,7 @@ import { IFrontendMessage } from "../interface";
 import runFlowsheet from "./run_flowsheet";
 import { getWebview, brodcastMessage } from "./webview_handler";
 import { killProcessTree, getIdaesDbPath, buildSqliteCommand } from './platform_config';
+import { setActivePythonEnv, broadcastPythonEnvUpdate } from './python_env';
 
 export default function webviewReceiveMessageHandler(context: vscode.ExtensionContext, frontendMessage: IFrontendMessage) {
     console.log(`receive frontend instruction: ${JSON.stringify(frontendMessage)}`);
@@ -28,7 +29,22 @@ export default function webviewReceiveMessageHandler(context: vscode.ExtensionCo
     switch (instruction) {
         case 'ready':
             frontEndReady(context, webviewPanel.webview);
+            // Send the Python env list so the tree view can render its selector
+            broadcastPythonEnvUpdate().catch((e) => console.error(`Failed to broadcast python envs: ${e}`));
             console.log('frontend ready!');
+            break;
+        case 'change_python_env':
+            if (frontendMessage.envPath) {
+                console.log(`User selected Python interpreter: ${frontendMessage.envPath}`);
+                // This fires onDidChangeActiveEnvironmentPath, which re-runs
+                // fi-steps and refreshes the env list for all webviews.
+                setActivePythonEnv(frontendMessage.envPath).catch((e) => {
+                    console.error(`Failed to switch Python interpreter: ${e}`);
+                    brodcastMessage({ type: 'error', message: `Failed to switch Python interpreter: ${e.message ?? e}` });
+                });
+            } else {
+                console.error('change_python_env instruction received but no envPath provided.');
+            }
             break;
         case 'run_flowsheet':
             console.log(`Receive frontend instruction: run flowsheet`);
