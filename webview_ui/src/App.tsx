@@ -24,7 +24,8 @@ export default function App() {
     setOpenPythonFiles,
     setIdaesHistoryList,
     setMermaidDiagram,
-    setOsPlatform
+    setOsPlatform,
+    setPythonEnvInfo
   } = useContext(AppContext);
 
   const [appName, setAppName] = useState('');
@@ -120,6 +121,10 @@ export default function App() {
           if (message.open_python_files !== undefined) {
             setOpenPythonFiles(message.open_python_files);
           }
+          break;
+        case 'python_env_update':
+          console.log('Received python_env_update:', message);
+          setPythonEnvInfo({ current: message.current ?? null, envs: message.envs ?? [] });
           break;
         case 'update_open_files':
           console.log('Received update_open_files event');

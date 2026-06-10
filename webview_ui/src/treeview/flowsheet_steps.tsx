@@ -6,7 +6,7 @@ import TreeNavBar from "./treeviewNav";
 import css from "../css/tree_app.module.css";
 
 export default function FlowsheetSteps({ idaesRunInfo, setShowConfig }: { idaesRunInfo: idaesRunInfo, setShowConfig: React.Dispatch<React.SetStateAction<boolean>> }) {
-    const { setSelectedSteps, isLoading, initError, openPythonFiles, activateFileName } = useContext(AppContext);
+    const { setSelectedSteps, isLoading, initError, openPythonFiles, activateFileName, pythonEnvInfo } = useContext(AppContext);
     const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
     // const focuseView = useRef<HTMLSelectElement>(null)
 
@@ -25,6 +25,26 @@ export default function FlowsheetSteps({ idaesRunInfo, setShowConfig }: { idaesR
                 frontendInstruction: 'focus_document',
                 fromPanel: 'treeView',
                 target: targetPath
+            });
+        }
+    };
+
+    /**
+     * Handle selection in the "Current Python" environment dropdown.
+     * Sends a `change_python_env` instruction to the extension host, which
+     * switches VS Code's active interpreter (same effect as the status-bar
+     * picker). The extension then fires an env-change event that re-runs
+     * fi-steps and broadcasts the refreshed env list back, so the dropdown,
+     * the status bar, and the step list all stay in sync.
+     * @param e - select change event; `value` is the interpreter's absolute path
+     */
+    const handlePythonEnvSelection = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const envPath = e.target.value;
+        if (envPath) {
+            vscode.postMessage({
+                frontendInstruction: 'change_python_env',
+                fromPanel: 'treeView',
+                envPath: envPath
             });
         }
     };
@@ -133,8 +153,8 @@ export default function FlowsheetSteps({ idaesRunInfo, setShowConfig }: { idaesR
                 <label style={{ display: 'block', margin: '0 0 10px 0', fontSize: '13px', color: 'var(--vscode-foreground)' }}>
                     Flowsheet to inspect:
                 </label>
-                <select 
-                    style={{ width: '100%', padding: '6px', backgroundColor: 'var(--vscode-dropdown-background)', color: 'var(--vscode-dropdown-foreground)', border: '1px solid var(--vscode-dropdown-border)', borderRadius: '2px', cursor: 'pointer' }}
+                <select
+                    className={css.dropdown_select}
                     onChange={handleDocumentSelection}
                     value={openPythonFiles?.find(f => f.name === activateFileName)?.path || ""}
                 >
@@ -146,6 +166,22 @@ export default function FlowsheetSteps({ idaesRunInfo, setShowConfig }: { idaesR
                 <p style={{ margin: '5px 0 0 0', fontSize: '11px', color: 'var(--vscode-descriptionForeground, #cccccc)', fontStyle: 'italic' }}>
                     Open the flowsheet in editor to select
                 </p>
+            </div>
+
+            <div className={css.python_env_container}>
+                <label className={css.python_env_label}>
+                    Current Python:
+                </label>
+                <select
+                    className={css.dropdown_select}
+                    onChange={handlePythonEnvSelection}
+                    value={pythonEnvInfo?.current?.path || ""}
+                >
+                    <option value="" disabled>Select a Python environment...</option>
+                    {pythonEnvInfo?.envs.map((env, i) => (
+                        <option key={i} value={env.path}>{env.label}</option>
+                    ))}
+                </select>
             </div>
 
             <p style={{ margin: '0 0 10px 0', fontSize: '13px', color: 'var(--vscode-foreground)' }}>
