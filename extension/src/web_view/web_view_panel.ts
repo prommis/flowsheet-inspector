@@ -1,7 +1,4 @@
 import * as vscode from 'vscode';
-import * as path from 'path';
-import * as fs from 'fs';
-import * as cp from 'child_process';
 
 import { getReactTemplate } from '../util/get_webview_template';
 import { registerWebview, unregisterWebview } from '../util/webview_handler';
@@ -48,12 +45,12 @@ export default async function openWebView(context: vscode.ExtensionContext, outp
         {
             enableScripts: true,
             // Enable local resource loading (the React rendered static html css js files)
-            localResourceRoots: [vscode.Uri.file(path.join(context.extensionPath, 'src'))],
+            localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, 'src')],
             retainContextWhenHidden: true
         }
     );
 
-    webViewPanel.iconPath = vscode.Uri.file(path.join(context.extensionPath, 'resources', 'prommis_icon.svg'));
+    webViewPanel.iconPath = vscode.Uri.joinPath(context.extensionUri, 'resources', 'prommis_icon.svg');
 
     registerWebview("webView", webViewPanel);
 

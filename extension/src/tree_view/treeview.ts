@@ -1,5 +1,4 @@
 import * as vscode from 'vscode';
-import * as path from 'path';
 import { isWrappedFlowsheet } from '../util/validate_flowsheet';
 import { getReactTemplate } from '../util/get_webview_template';
 import { registerWebview } from '../util/webview_handler';
@@ -15,7 +14,7 @@ export default function treeview(context: vscode.ExtensionContext) {
         async resolveWebviewView(webviewView: vscode.WebviewView) {
             webviewView.webview.options = {
                 enableScripts: true,
-                localResourceRoots: [vscode.Uri.file(path.join(context.extensionPath, 'src'))]
+                localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, 'src')]
             };
 
             // define webview template
