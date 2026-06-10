@@ -172,33 +172,3 @@ export function getIdaesDbPath(): string {
     return path.join(getIdaesDataDir(), 'reportdb.sqlite');
 }
 
-/**
- * Returns the stderr-suppress redirect for the current platform.
- * - Unix:    `2>/dev/null`
- * - Windows: `2>NUL`
- */
-export function getStderrRedirect(): string {
-    return isWindows() ? '2>NUL' : '2>/dev/null';
-}
-
-/**
- * Builds a sqlite3 CLI command string with proper quoting per platform.
- * Wraps the db path in quotes to handle paths with spaces (common on Windows).
- */
-export function buildSqliteCommand(dbPath: string, query: string, jsonMode: boolean = false): string {
-    const jsonFlag = jsonMode ? '-json ' : '';
-    return `sqlite3 ${jsonFlag}"${dbPath}" "${query}"`;
-}
-
-/**
- * Builds a sqlite3 command with a fallback query for schema compatibility.
- * Uses `||` (works in both bash/zsh and cmd.exe) and platform-appropriate stderr redirect.
- * 
- * This pattern tries `query1` first (modern schema); if it fails, falls back to `query2` (legacy schema).
- */
-export function buildSqliteFallbackCommand(dbPath: string, query1: string, query2: string, jsonMode: boolean = false): string {
-    const stderrRedirect = getStderrRedirect();
-    const cmd1 = buildSqliteCommand(dbPath, query1, jsonMode);
-    const cmd2 = buildSqliteCommand(dbPath, query2, jsonMode);
-    return `${cmd1} ${stderrRedirect} || ${cmd2}`;
-}

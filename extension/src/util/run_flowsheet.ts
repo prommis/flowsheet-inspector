@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
-import * as cp from 'child_process';
 import { activateWebviews, brodcastMessage } from "./webview_handler";
 import { IExtensionConfig } from '../interface';
 import runTerminalCommand from "./run_terminal_command";
 import openWebView from '../web_view/web_view_panel';
-import { buildCommandChain, getIdaesDbPath, buildSqliteCommand } from './platform_config';
+import { buildCommandChain } from './platform_config';
+import { queryLatestReport } from './sqlite_reader';
 
 export default async function runFlowsheet(context: vscode.ExtensionContext, webview: vscode.Webview, selectedStep: string | undefined) {
     try {
@@ -63,42 +63,12 @@ export default async function runFlowsheet(context: vscode.ExtensionContext, web
         // This is non-fatal — if the DB/table doesn't exist yet, the history
         // polling mechanism will pick up the results later.
         try {
-            const dbPath = getIdaesDbPath();
-            const reportQuery = `SELECT report FROM reports ORDER BY id DESC LIMIT 1;`;
-            const sqliteCmd = buildSqliteCommand(dbPath, reportQuery);
-
-            const reportData = await new Promise<any>((resolve, reject) => {
-                cp.exec(sqliteCmd, { maxBuffer: 50 * 1024 * 1024, windowsHide: true }, (err, stdout, stderr) => {
-                    if (err) {
-                        reject(err);
-                        return;
-                    }
-                    if (!stdout.trim()) {
-                        reject(new Error('Empty report from SQLite'));
-                        return;
-                    }
-                    try {
-                        // Python's json.dumps can produce -Infinity, Infinity, NaN
-                        // which are invalid in standard JSON. Replace with null.
-                        const sanitized = stdout.trim()
-                            .replace(/:\s*-Infinity/g, ': null')
-                            .replace(/:\s*Infinity/g, ': null')
-                            .replace(/:\s*NaN/g, ': null');
-                        const parsed = JSON.parse(sanitized);
-                        resolve(parsed);
-                    } catch (e) {
-                        reject(e);
-                    }
-                });
-            });
-
+            const reportData = queryLatestReport();
+            if (!reportData) {
+                throw new Error('No report found in database');
+            }
             console.log('Successfully loaded report from SQLite. Broadcasting to webviews...');
-
-            // Broadcast the full report to all webviews
-            brodcastMessage({
-                type: 'flowsheet_runner_result',
-                data: reportData
-            });
+            brodcastMessage({ type: 'flowsheet_runner_result', data: reportData });
         } catch (dbErr: any) {
             console.warn(`Could not load report from SQLite (non-fatal): ${dbErr.message}`);
             console.warn('The history polling mechanism will pick up results when available.');
