@@ -8,7 +8,7 @@ import webviewReceiveMessageHandler from "../util/webview_receive_message_handle
 import { checkActivePythonEnv } from '../util/extension_initial_check';
 import { checkRequiredPackages } from '../util/check_required_packages';
 import { runFiSteps } from '../util/run_fi_steps';
-import { getActivePythonEnv, broadcastPythonEnvUpdate, triggerPythonEnvRefresh } from '../util/python_env';
+import { getActivePythonEnv, broadcastPythonEnvUpdate, triggerPythonEnvRefresh, listPythonEnvs } from '../util/python_env';
 import { getPlatform } from '../util/platform_config';
 
 export default function treeview(context: vscode.ExtensionContext) {
@@ -174,12 +174,16 @@ export default function treeview(context: vscode.ExtensionContext) {
                     } else if (message.frontendInstruction === 'ready') {
                         reactReady = true;
                         initializeApp();
-                        // Push the env list immediately so the dropdown isn't
-                        // empty on first open. Then trigger a re-discovery pass
-                        // so envs found after our listener was registered also
-                        // surface via the debounced onDidChangeKnownPythonEnvs.
-                        broadcastPythonEnvUpdate().catch((e) => console.error(`Failed to broadcast python envs: ${e}`));
-                        triggerPythonEnvRefresh().catch((e) => console.error(`Failed to refresh python envs: ${e}`));
+                        // Push the env list immediately so the dropdown fills
+                        // on first open.  Only trigger a re-discovery pass when
+                        // the list is empty — avoids kicking off a slow full
+                        // scan on every sidebar open when envs are already known.
+                        broadcastPythonEnvUpdate().then(async () => {
+                            const { envs } = await listPythonEnvs();
+                            if (envs.length === 0) {
+                                triggerPythonEnvRefresh().catch((e) => console.error(`Failed to refresh python envs: ${e}`));
+                            }
+                        }).catch((e) => console.error(`Failed to broadcast python envs: ${e}`));
                     } else {
                         webviewReceiveMessageHandler(context, message);
                     }
