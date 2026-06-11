@@ -24,7 +24,8 @@ import {
     type SetOpenPythonFiles,
     type IdaesHistoryItem,
     type PythonEnvInfo,
-    type SetPythonEnvInfo
+    type SetPythonEnvInfo,
+    type IPackageWarning
 } from "./interface/interface";
 
 export type ActiveLogTab = 'error' | 'terminal';
@@ -57,6 +58,8 @@ interface AppContextType {
     setActiveLogTab: SetActiveLogTab;
     initError: string | null;
     setInitError: React.Dispatch<React.SetStateAction<string | null>>;
+    packageWarnings: IPackageWarning[] | null;
+    setPackageWarnings: React.Dispatch<React.SetStateAction<IPackageWarning[] | null>>;
     openPythonFiles: OpenPythonFilesType;
     setOpenPythonFiles: SetOpenPythonFiles;
     idaesHistoryList: IdaesHistoryItem[] | null;

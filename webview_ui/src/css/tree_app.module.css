@@ -52,6 +52,36 @@
     gap: 15px;
 }
 
+.package_warnings_container {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
+.package_warning_item {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 7px 10px;
+    border-left: 3px solid var(--vscode-editorWarning-foreground, #cca700);
+    background-color: var(--vscode-inputValidation-warningBackground, rgba(204, 167, 0, 0.08));
+    border-radius: 0 3px 3px 0;
+}
+
+.package_warning_title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--vscode-editorWarning-foreground, #cca700);
+}
+
+.package_warning_cmd {
+    font-size: 11px;
+    font-family: var(--vscode-editor-font-family, monospace);
+    color: var(--vscode-descriptionForeground, #9d9d9d);
+    word-break: break-all;
+}
+
 .init_error_box {
     padding: 8px;
     border: 1px solid var(--vscode-errorForeground, #f44747);

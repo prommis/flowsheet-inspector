@@ -6,7 +6,9 @@ import { trimFileName } from '../util/trim_file_name';
 import { readExtensionConfig, updateExtensionConfig } from '../util/extensionHandler';
 import webviewReceiveMessageHandler from "../util/webview_receive_message_handler";
 import { checkActivePythonEnv } from '../util/extension_initial_check';
+import { checkRequiredPackages } from '../util/check_required_packages';
 import { runFiSteps } from '../util/run_fi_steps';
+import { getActivePythonEnv } from '../util/python_env';
 import { getPlatform } from '../util/platform_config';
 
 export default function treeview(context: vscode.ExtensionContext) {
@@ -105,13 +107,21 @@ export default function treeview(context: vscode.ExtensionContext) {
                         activate_tab_name: trimFileName(fileName),
                         idaesRunInfo: null,
                         initError: envCheck.errorMsg,
+                        packageWarnings: [],
                         isLoading: false,
                         time: new Date().toISOString(),
                     });
                     return;
                 }
 
-                // 5. Run fi-steps with the selected interpreter to get step info
+                // 5. Check required packages — non-blocking; missing ones become warnings
+                const resolvedEnv = await getActivePythonEnv(fileName ? vscode.Uri.file(fileName) : undefined);
+                const packageWarnings = resolvedEnv
+                    ? await checkRequiredPackages(resolvedEnv)
+                    : [];
+                console.log(`[treeview] package warnings: ${JSON.stringify(packageWarnings)}`);
+
+                // 6. Run fi-steps with the selected interpreter to get step info
                 let resolvedStepsData: any = null;
                 try {
                     resolvedStepsData = await runFiSteps(fileName);
@@ -123,18 +133,20 @@ export default function treeview(context: vscode.ExtensionContext) {
                         activate_tab_name: trimFileName(fileName),
                         idaesRunInfo: null,
                         initError: `Failed to load flowsheet info: ${err.message}`,
+                        packageWarnings,
                         isLoading: false,
                         time: new Date().toISOString(),
                     });
                     return;
                 }
 
-                // 5. Update UI with the result (success)
+                // 7. Update UI with the result (success, with any non-blocking warnings)
                 webviewView.webview.postMessage({
                     type: 'switch_tab',
                     activate_tab_name: trimFileName(fileName),
                     idaesRunInfo: resolvedStepsData || null,
                     initError: null,
+                    packageWarnings,
                     isLoading: false,
                     time: new Date().toISOString(),
                 });

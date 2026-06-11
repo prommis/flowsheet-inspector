@@ -12,7 +12,8 @@ import {
     type OpenPythonFilesType,
     type MermaidDiagram,
     type IdaesHistoryItem,
-    type PythonEnvInfo
+    type PythonEnvInfo,
+    type IPackageWarning
 } from "./interface/interface";
 
 
@@ -33,6 +34,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const [terminalLogs, setTerminalLogs] = useState<TerminalLogsType>([]);
     const [activeLogTab, setActiveLogTab] = useState<ActiveLogTab>('error');
     const [initError, setInitError] = useState<string | null>(null);
+    const [packageWarnings, setPackageWarnings] = useState<IPackageWarning[] | null>(null);
     const [openPythonFiles, setOpenPythonFiles] = useState<OpenPythonFilesType>([]);
     const [idaesHistoryList, setIdaesHistoryList] = useState<IdaesHistoryItem[] | null>(null);
     const [osPlatform, setOsPlatform] = useState<string>('');
@@ -66,6 +68,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
             setActiveLogTab,
             initError,
             setInitError,
+            packageWarnings,
+            setPackageWarnings,
             openPythonFiles,
             setOpenPythonFiles,
             idaesHistoryList,

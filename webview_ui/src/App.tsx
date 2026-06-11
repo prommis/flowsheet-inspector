@@ -21,6 +21,7 @@ export default function App() {
     setTerminalLogs,
     setIsLoading,
     setInitError,
+    setPackageWarnings,
     setOpenPythonFiles,
     setIdaesHistoryList,
     setMermaidDiagram,
@@ -117,6 +118,11 @@ export default function App() {
             setInitError(message.initError);
           } else if (message.initError === null || message.isLoading) {
             setInitError(null);
+          }
+          if (message.isLoading) {
+            setPackageWarnings(null);
+          } else if (message.packageWarnings !== undefined) {
+            setPackageWarnings(message.packageWarnings);
           }
           if (message.open_python_files !== undefined) {
             setOpenPythonFiles(message.open_python_files);

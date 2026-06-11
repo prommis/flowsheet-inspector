@@ -1,0 +1,14 @@
+[
+    {
+        "name": "idaes-pse",
+        "install_command": "pip install idaes-pse && idaes get-extensions"
+    },
+    {
+        "name": "idaes-connectivity",
+        "install_command": "pip install idaes-connectivity"
+    },
+    {
+        "name": "idaes-fi",
+        "install_command": "pip install git+https://github.com/prommis/flowsheet-inspector-lib.git"
+    }
+]

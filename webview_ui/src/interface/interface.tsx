@@ -36,6 +36,8 @@ export type PythonEnvItem = { id: string, path: string, label: string };
 export type PythonEnvInfo = { current: PythonEnvItem | null, envs: PythonEnvItem[] };
 export type SetPythonEnvInfo = Dispatch<SetStateAction<PythonEnvInfo | null>>;
 
+export type IPackageWarning = { name: string; install_command: string };
+
 export type IdaesHistoryItem = {
     id: number;
     created: number;

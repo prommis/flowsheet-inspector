@@ -3,28 +3,25 @@ import * as fs from 'fs';
 import * as vscode from 'vscode';
 import { IExtensionConfig } from '../interface';
 import { isWindows, buildCommandChain, getDefaultShellConfig } from './platform_config';
-import { getActivePythonEnv, activatedProcessEnv } from './python_env';
+import { getActivePythonEnv } from './python_env';
 
 let lastCheckedConfigStr = "";
 let lastCheckResult: { success: boolean; errorMsg?: string } | null = null;
 
 /**
- * Verifies the Python environment VS Code currently has selected can run the
- * flowsheet tools — using the interpreter directly (no shell / conda activate).
+ * Verifies that VS Code has a Python interpreter selected for the given
+ * resource.  This is the only hard gate before fi-steps: if no interpreter is
+ * configured the user cannot do anything, so we surface a clear action item.
  *
- * Performs three checks, stopping at the first failure:
- * 1. an interpreter is selected (Python extension active and configured)
- * 2. `import idaes` succeeds in that interpreter
- * 3. `import idaes_fi` succeeds in that interpreter
- *
- * Runs before fi-steps so the user gets a targeted, actionable message
- * ("install X or pick a different interpreter") instead of a raw spawn error.
+ * Package presence (idaes-pse, idaes-fi, …) is intentionally NOT checked here
+ * — that is handled separately by checkRequiredPackages, which returns
+ * non-blocking per-package warnings instead of a single blocking error, giving
+ * the user a complete picture of what is missing before fi-steps even runs.
  *
  * @param resource Optional file/workspace URI for per-folder interpreter
  *                 resolution in multi-root workspaces.
- * @returns `{ success: true }` when all checks pass, otherwise
- *          `{ success: false, errorMsg }` where `errorMsg` names the failed
- *          check, the environment, and how to fix it (shown in the tree view).
+ * @returns `{ success: true }` when an interpreter is selected, otherwise
+ *          `{ success: false, errorMsg }` with an actionable message.
  */
 export async function checkActivePythonEnv(resource?: vscode.Uri): Promise<{ success: boolean; errorMsg?: string }> {
     const env = await getActivePythonEnv(resource);
@@ -34,27 +31,6 @@ export async function checkActivePythonEnv(resource?: vscode.Uri): Promise<{ suc
             errorMsg: 'No Python interpreter selected. Use "Python: Select Interpreter" (bottom-right status bar) to pick the environment with Flowsheet Inspector installed.',
         };
     }
-
-    const childEnv = activatedProcessEnv(env);
-    const runImport = (module: string): Promise<void> => {
-        return new Promise((resolve, reject) => {
-            cp.execFile(env.interpreterPath, ['-c', `import ${module}`], { windowsHide: true, env: childEnv }, (error, _stdout, stderr) => {
-                if (error) { reject(new Error(stderr || error.message)); } else { resolve(); }
-            });
-        });
-    };
-
-    try {
-        await runImport('idaes');
-    } catch {
-        return { success: false, errorMsg: `IDAES is not installed in the selected environment (${env.name ?? env.interpreterPath}).\nInstall it, or pick a different interpreter.` };
-    }
-    try {
-        await runImport('idaes_fi');
-    } catch {
-        return { success: false, errorMsg: `'idaes-fi' is missing in the selected environment (${env.name ?? env.interpreterPath}).\nRun 'pip install idaes-fi', or pick a different interpreter.` };
-    }
-
     return { success: true };
 }
 
