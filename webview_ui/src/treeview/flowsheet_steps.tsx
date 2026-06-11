@@ -156,20 +156,6 @@ export default function FlowsheetSteps({ idaesRunInfo, setShowConfig }: { idaesR
 
     return (
         <div className={css.flowsheet_steps_main_container}>
-            {packageWarnings && packageWarnings.length > 0 && (
-                <div className={css.package_warnings_container}>
-                    {packageWarnings.map((w) => (
-                        <div key={w.name} className={css.package_warning_item}>
-                            <span className={css.package_warning_title}>
-                                Missing package: {w.name}
-                            </span>
-                            <span className={css.package_warning_cmd}>
-                                {w.install_command}
-                            </span>
-                        </div>
-                    ))}
-                </div>
-            )}
             <div className={css.flowsheet_file_section}>
                 <label className={css.section_label}>
                     Flowsheet to inspect:
@@ -220,6 +206,20 @@ export default function FlowsheetSteps({ idaesRunInfo, setShowConfig }: { idaesR
                         <option key={i} value={env.path}>{env.label}</option>
                     ))}
                 </select>
+                {packageWarnings && packageWarnings.length > 0 && (
+                    <div className={css.package_warnings_container}>
+                        {packageWarnings.map((w) => (
+                            <div key={w.name} className={css.package_warning_item}>
+                                <span className={css.package_warning_title}>
+                                    Missing package: {w.name}
+                                </span>
+                                <span className={css.package_warning_cmd}>
+                                    {w.install_command}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
 
             <p className={css.section_label}>
