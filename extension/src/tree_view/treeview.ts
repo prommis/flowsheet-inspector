@@ -26,15 +26,10 @@ export default function treeview(context: vscode.ExtensionContext) {
             registerWebview("treeView", webviewView);
 
 
-            // Prefer the currently active editor over stale globalState from a previous session
-            const currentActiveFile = vscode.window.activeTextEditor?.document.fileName;
-            let fileName = (currentActiveFile?.endsWith('.py') ? currentActiveFile : null)
-                ?? context.globalState.get<string>("activatedFileName")
-                ?? '';
-
             //Get config data from vscode global state
             // const extensionConfigData: IExtensionConfig | undefined = context.globalState.get("extensionConfig");
             let extensionConfigData = readExtensionConfig(context);
+            let fileName = '';
 
             let reactReady = false;
 
@@ -42,6 +37,19 @@ export default function treeview(context: vscode.ExtensionContext) {
                 if (!reactReady) {
                     return;
                 }
+
+                // Re-resolve the active file on every call.
+                // When the sidebar first loads it holds focus, making
+                // activeTextEditor undefined — fall back to any visible Python
+                // editor, then to globalState from a previous session.
+                const activeFile = vscode.window.activeTextEditor?.document.fileName;
+                const visiblePyFile = vscode.window.visibleTextEditors
+                    .find(e => e.document.fileName.endsWith('.py'))
+                    ?.document.fileName;
+                fileName = (activeFile?.endsWith('.py') ? activeFile : null)
+                    ?? visiblePyFile
+                    ?? context.globalState.get<string>("activatedFileName")
+                    ?? '';
 
                 // 1. Initial UI Loading (empty state)
                 webviewView.webview.postMessage({
