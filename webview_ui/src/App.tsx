@@ -121,7 +121,8 @@ export default function App() {
           }
           if (message.isLoading) {
             setPackageWarnings(null);
-          } else if (message.packageWarnings !== undefined) {
+          }
+          else if (message.packageWarnings !== undefined) {
             setPackageWarnings(message.packageWarnings);
           }
           if (message.open_python_files !== undefined) {
