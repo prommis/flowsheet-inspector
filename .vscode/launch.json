@@ -1,7 +1,7 @@
 // This file is the vscode debug configuration used for debugging the extension in VS Code.
 // docs: https://code.visualstudio.com/docs/debugtest/debugging-configuration
 {
-    "version": "0.0.5",
+    "version": "0.0.6",
     "configurations": [
         {
             "name": "Run Extension",
