@@ -344,3 +344,19 @@ export async function broadcastPythonEnvUpdate(resource?: vscode.Uri): Promise<v
         time: new Date().toISOString(),
     });
 }
+
+/**
+ * Triggers a Python environment re-discovery pass without blocking the caller.
+ *
+ * On Windows (and on first install generally), the Python extension may finish
+ * its initial environment scan before our sidebar webview is registered, so
+ * the onDidChangeEnvironments events are lost. Calling this after the webview
+ * is ready forces a new scan, which re-fires those events and lets the
+ * debounced listener in activate_tab_handler push the updated list to the UI.
+ */
+export async function triggerPythonEnvRefresh(): Promise<void> {
+    const api = await getPythonApi();
+    if (api?.environments?.refreshEnvironments) {
+        await api.environments.refreshEnvironments();
+    }
+}
