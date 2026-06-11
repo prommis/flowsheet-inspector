@@ -9,7 +9,6 @@
 import * as os from 'os';
 import * as path from 'path';
 import * as cp from 'child_process';
-import { IExtensionConfig } from '../interface';
 
 
 // ============================================================
@@ -27,44 +26,6 @@ export function getPlatform(): SupportedPlatform {
 
 export function isWindows(): boolean {
     return getPlatform() === 'win32';
-}
-
-
-// ============================================================
-// Default Extension Config (per-platform)
-// ============================================================
-
-/**
- * Returns the default IExtensionConfig appropriate for the current OS.
- * - macOS:  /bin/zsh + source ~/.zshrc
- * - Linux:  /bin/bash + eval "$(conda shell.bash hook)"
- * - Windows: powershell.exe, no source needed
- */
-export function getDefaultShellConfig(): IExtensionConfig {
-    switch (getPlatform()) {
-        case 'win32':
-            return {
-                activate_command: 'conda activate test-idaes-extension',
-                // Search common Miniconda/Anaconda install locations and initialise the
-                // conda shell hook — equivalent to Linux's eval "$(conda shell.bash hook)"
-                sorce_treminal: '$c=@("$env:USERPROFILE\\miniconda3\\Scripts\\conda.exe","$env:USERPROFILE\\Miniconda3\\Scripts\\conda.exe","$env:USERPROFILE\\anaconda3\\Scripts\\conda.exe","$env:USERPROFILE\\Anaconda3\\Scripts\\conda.exe","C:\\ProgramData\\miniconda3\\Scripts\\conda.exe","C:\\ProgramData\\Miniconda3\\Scripts\\conda.exe")|Where-Object{Test-Path $_}|Select-Object -First 1; if($c){(& $c shell.powershell hook)|Out-String|Invoke-Expression}',
-                shell: 'powershell.exe'
-            };
-        case 'darwin':
-            return {
-                activate_command: 'conda activate test-idaes-extension',
-                sorce_treminal: 'source ~/.zshrc',
-                shell: '/bin/zsh'
-            };
-        default: // linux
-            return {
-                activate_command: 'conda activate test-idaes-extension',
-                // `source ~/.bashrc` exits immediately in non-interactive bash (Ubuntu guard).
-                // `conda shell.bash hook` initialises conda without needing an interactive shell.
-                sorce_treminal: 'eval "$(conda shell.bash hook)"',
-                shell: '/bin/bash'
-            };
-    }
 }
 
 

@@ -16,7 +16,6 @@ export default function App() {
     setActivateFileName, // the current activate file name
     flowsheetRunnerResult,
     setFlowsheetRunnerResult, // the idaes-run result
-    setExtensionConfig, // the extension config
     setExtensionErrorLogs, // the extension error logs
     setTerminalLogs,
     setIsLoading,
@@ -146,14 +145,6 @@ export default function App() {
         case 'flowsheet_runner_result':
           console.log('receited flowsheet runner result, and update state');
           setFlowsheetRunnerResult(message.data);
-          break;
-        case 'readExtensionConfig':
-          console.log(`VSCode post message to initialize extension config data: ${JSON.stringify(message)}`)
-          setExtensionConfig(message.content);
-          break;
-        case 'updateExtensionConfig':
-          console.log(`VSCode post message to update extension config data: ${JSON.stringify(message)}`)
-          setExtensionConfig(message.content);
           break;
         case 'error':
           console.log(`VSCode post error message: ${JSON.stringify(message)}`);

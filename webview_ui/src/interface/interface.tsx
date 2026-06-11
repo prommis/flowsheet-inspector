@@ -15,13 +15,6 @@ export type ActivateFileName = string;
 export type SetActivateFileName = Dispatch<SetStateAction<ActivateFileName>>;
 export type MermaidDiagram = string;
 export type SetMermaidDiagram = Dispatch<SetStateAction<MermaidDiagram>>;
-export type IExtensionConfig = {
-    sorce_treminal: string;
-    activate_command: string;
-    shell: string;
-}
-export type ExtensionConfigState = IExtensionConfig | null;
-export type SetExtensionConfig = Dispatch<SetStateAction<ExtensionConfigState>>;
 export type ExtensionErrorLogsType = string[];
 export type SetExtensionErrorLogs = Dispatch<SetStateAction<ExtensionErrorLogsType>>;
 

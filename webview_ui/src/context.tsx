@@ -14,8 +14,6 @@ import {
     type SetActivateFileName,
     type MermaidDiagram,
     type SetMermaidDiagram,
-    type IExtensionConfig,
-    type SetExtensionConfig,
     type SetExtensionErrorLogs,
     type ExtensionErrorLogsType,
     type TerminalLogsType,
@@ -48,8 +46,6 @@ interface AppContextType {
     setActivateFileName: SetActivateFileName;
     mermaidDiagram: MermaidDiagram;
     setMermaidDiagram: SetMermaidDiagram;
-    extensionConfig: IExtensionConfig | null;
-    setExtensionConfig: SetExtensionConfig;
     extensionErrorLogs: ExtensionErrorLogsType;
     setExtensionErrorLogs: SetExtensionErrorLogs;
     terminalLogs: TerminalLogsType;

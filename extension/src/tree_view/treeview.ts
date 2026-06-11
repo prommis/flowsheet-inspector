@@ -3,7 +3,6 @@ import { isWrappedFlowsheet } from '../util/validate_flowsheet';
 import { getReactTemplate } from '../util/get_webview_template';
 import { registerWebview } from '../util/webview_handler';
 import { trimFileName } from '../util/trim_file_name';
-import { readExtensionConfig, updateExtensionConfig } from '../util/extensionHandler';
 import webviewReceiveMessageHandler from "../util/webview_receive_message_handler";
 import { checkActivePythonEnv } from '../util/extension_initial_check';
 import { checkRequiredPackages } from '../util/check_required_packages';
@@ -26,9 +25,6 @@ export default function treeview(context: vscode.ExtensionContext) {
             registerWebview("treeView", webviewView);
 
 
-            //Get config data from vscode global state
-            // const extensionConfigData: IExtensionConfig | undefined = context.globalState.get("extensionConfig");
-            let extensionConfigData = readExtensionConfig(context);
             let fileName = '';
 
             let reactReady = false;
@@ -59,20 +55,6 @@ export default function treeview(context: vscode.ExtensionContext) {
                     fileName: fileName !== '' ? trimFileName(fileName) : 'No file selected',
                     loadApp: 'treeView',
                     osPlatform: getPlatform()
-                });
-
-                if (!extensionConfigData) {
-                    extensionConfigData = {
-                        sorce_treminal: "",
-                        activate_command: "",
-                        shell: "/bin/zsh"
-                    };
-                }
-
-                // Send extension config to react, so user can edit if needed
-                webviewView.webview.postMessage({
-                    type: "readExtensionConfig",
-                    content: extensionConfigData,
                 });
 
                 if (!fileName.endsWith('.py')) {
@@ -160,15 +142,9 @@ export default function treeview(context: vscode.ExtensionContext) {
                 });
             };
 
-            // register message handler immediately so UI can update configs
             webviewView.webview.onDidReceiveMessage(
                 message => {
-                    if (message.type === "updateExtensionConfig") {
-                        updateExtensionConfig(context, message.content);
-                        extensionConfigData = message.content;
-                        vscode.window.showInformationMessage("Configuration updated successfully");
-                        initializeApp();
-                    } else if (message.type === "error") {
+                    if (message.type === "error") {
                         vscode.window.showErrorMessage(message.content);
                         console.error(`Received error from frontend: ${message.content}`);
                     } else if (message.frontendInstruction === 'ready') {

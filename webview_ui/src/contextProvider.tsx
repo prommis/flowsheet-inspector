@@ -6,7 +6,6 @@ import {
     type FlowsheetRunnerResult,
     type EditorContent,
     type ActivateFileName,
-    type IExtensionConfig,
     type ExtensionErrorLogsType,
     type TerminalLogsType,
     type OpenPythonFilesType,
@@ -29,7 +28,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const [editorContent, setEditorContent] = useState<EditorContent>("");
     const [activateFileName, setActivateFileName] = useState<ActivateFileName>("");
     const [mermaidDiagram, setMermaidDiagram] = useState<MermaidDiagram>('');
-    const [extensionConfig, setExtensionConfig] = useState<IExtensionConfig | null>(null);
     const [extensionErrorLogs, setExtensionErrorLogs] = useState<ExtensionErrorLogsType>([]);
     const [terminalLogs, setTerminalLogs] = useState<TerminalLogsType>([]);
     const [activeLogTab, setActiveLogTab] = useState<ActiveLogTab>('error');
@@ -58,8 +56,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
             setActivateFileName,
             mermaidDiagram,
             setMermaidDiagram,
-            extensionConfig,
-            setExtensionConfig,
             extensionErrorLogs,
             setExtensionErrorLogs,
             terminalLogs,

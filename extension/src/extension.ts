@@ -3,7 +3,6 @@
 import * as vscode from 'vscode';
 import { reloadCurrentWebview } from './util/reload_window';
 import { brodcastMessage } from './util/webview_handler';
-import { setDefaultConfig } from './util/setDefaultExtensionConfig';
 import openWebView from './web_view/web_view_panel';
 import treeview from './tree_view/treeview';
 import activateTabListener from './util/activate_tab_handler';
@@ -40,8 +39,6 @@ export function activate(context: vscode.ExtensionContext) {
 	 * This command is used to setup and check the default config for the extension.
 	 * It will load when extension is activated.
 	 */
-	setDefaultConfig(context);
-
 	/**
 	 * This command is used to listen to the tab change event.
 	 * It will load when extension is activated.
