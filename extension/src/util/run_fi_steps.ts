@@ -7,7 +7,7 @@
  */
 import * as vscode from 'vscode';
 import * as cp from 'child_process';
-import { getActivePythonEnv, pythonToolPath, activatedProcessEnv } from './python_env';
+import { getActivePythonEnv, activatedProcessEnv } from './python_env';
 
 export interface IFiStepsResult {
     classname: string;
@@ -41,14 +41,16 @@ export async function runFiSteps(fileName: string): Promise<IFiStepsResult> {
         throw new Error(NO_INTERPRETER_MSG);
     }
 
-    const fiSteps = pythonToolPath(env, 'fi-steps');
-
     return new Promise<IFiStepsResult>((resolve, reject) => {
-        const child = cp.spawn(fiSteps, ['--fs', fileName, '-t', 'json'], {
-            stdio: 'pipe',
-            windowsHide: true,
-            env: activatedProcessEnv(env),
-        });
+        const child = cp.spawn(
+            env.interpreterPath,
+            ['-m', 'idaes_fi.structfs.common', '--fs', fileName, '-t', 'json'],
+            {
+                stdio: 'pipe',
+                windowsHide: true,
+                env: activatedProcessEnv(env),
+            },
+        );
 
         let stdout = '';
         let stderr = '';
