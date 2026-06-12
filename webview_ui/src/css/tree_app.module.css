@@ -156,6 +156,24 @@
     cursor: not-allowed;
 }
 
+.change_interpreter_btn {
+    width: 100%;
+    padding: 5px 8px;
+    background: transparent;
+    border: 1px solid var(--vscode-button-secondaryBorder, var(--vscode-panel-border, #444));
+    border-radius: 3px;
+    color: var(--vscode-foreground);
+    font-size: 12px;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.change_interpreter_btn:hover {
+    background: var(--vscode-toolbar-hoverBackground, rgba(255,255,255,0.07));
+    border-color: var(--vscode-focusBorder, #007fd4);
+}
+
 .dropdown_select {
     width: 100%;
     padding: 6px;

@@ -5,7 +5,7 @@ import { trimFileName } from './trim_file_name';
 import { checkActivePythonEnv } from './extension_initial_check';
 import { checkRequiredPackages } from './check_required_packages';
 import { runFiSteps } from './run_fi_steps';
-import { onDidChangeActivePythonEnv, onDidChangeKnownPythonEnvs, broadcastPythonEnvUpdate, getActivePythonEnv } from './python_env';
+import { onDidChangeActivePythonEnv, broadcastCurrentPythonEnv, getActivePythonEnv } from './python_env';
 
 function getOpenPythonFiles() {
     const pyFiles: { name: string, path: string }[] = [];
@@ -157,19 +157,8 @@ export default function activateTabListener(context: vscode.ExtensionContext) {
     // stale "package not installed" warning instead of stranding the user.
     // Also push the refreshed env list so the tree view selector stays in sync.
     onDidChangeActivePythonEnv(() => {
-        broadcastPythonEnvUpdate().catch((e) => console.error(`Failed to broadcast python envs: ${e}`));
+        broadcastCurrentPythonEnv().catch((e) => console.error(`Failed to broadcast python env: ${e}`));
         handleActiveEditor(vscode.window.activeTextEditor);
-    }).then((disposable) => { if (disposable) { context.subscriptions.push(disposable); } });
-
-    // Environment discovery is async and trickles in after activation — push
-    // the refreshed list to the UI as environments are found (debounced,
-    // since discovery fires one event per env).
-    let envRefreshTimer: NodeJS.Timeout | undefined;
-    onDidChangeKnownPythonEnvs(() => {
-        clearTimeout(envRefreshTimer);
-        envRefreshTimer = setTimeout(() => {
-            broadcastPythonEnvUpdate().catch((e) => console.error(`Failed to broadcast python envs: ${e}`));
-        }, 500);
     }).then((disposable) => { if (disposable) { context.subscriptions.push(disposable); } });
 
     // Fire immediately for the file already open when the extension first activates

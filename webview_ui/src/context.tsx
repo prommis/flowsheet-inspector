@@ -21,8 +21,8 @@ import {
     type OpenPythonFilesType,
     type SetOpenPythonFiles,
     type IdaesHistoryItem,
-    type PythonEnvInfo,
-    type SetPythonEnvInfo,
+    type CurrentPythonEnv,
+    type SetCurrentPythonEnv,
     type IPackageWarning
 } from "./interface/interface";
 
@@ -62,8 +62,8 @@ interface AppContextType {
     setIdaesHistoryList: React.Dispatch<React.SetStateAction<IdaesHistoryItem[] | null>>;
     osPlatform: string;
     setOsPlatform: React.Dispatch<React.SetStateAction<string>>;
-    pythonEnvInfo: PythonEnvInfo | null;
-    setPythonEnvInfo: SetPythonEnvInfo;
+    currentPythonEnv: CurrentPythonEnv;
+    setCurrentPythonEnv: SetCurrentPythonEnv;
 }
 // Create context with default values
 export const AppContext = createContext({} as AppContextType);

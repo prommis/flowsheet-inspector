@@ -25,9 +25,8 @@ export type OpenPythonFile = { name: string, path: string };
 export type OpenPythonFilesType = OpenPythonFile[];
 export type SetOpenPythonFiles = Dispatch<SetStateAction<OpenPythonFilesType>>;
 
-export type PythonEnvItem = { id: string, path: string, label: string };
-export type PythonEnvInfo = { current: PythonEnvItem | null, envs: PythonEnvItem[] };
-export type SetPythonEnvInfo = Dispatch<SetStateAction<PythonEnvInfo | null>>;
+export type CurrentPythonEnv = { path: string; name: string } | null;
+export type SetCurrentPythonEnv = Dispatch<SetStateAction<CurrentPythonEnv>>;
 
 export type IPackageWarning = { name: string; install_command: string };
 

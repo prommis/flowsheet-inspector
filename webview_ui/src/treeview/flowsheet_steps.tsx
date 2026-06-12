@@ -6,7 +6,7 @@ import TreeNavBar from "./treeviewNav";
 import css from "../css/tree_app.module.css";
 
 export default function FlowsheetSteps({ idaesRunInfo }: { idaesRunInfo: idaesRunInfo }) {
-    const { setSelectedSteps, isLoading, initError, packageWarnings, openPythonFiles, activateFileName, pythonEnvInfo } = useContext(AppContext);
+    const { setSelectedSteps, isLoading, initError, packageWarnings, openPythonFiles, activateFileName, currentPythonEnv } = useContext(AppContext);
     const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
     // const focuseView = useRef<HTMLSelectElement>(null)
 
@@ -29,31 +29,17 @@ export default function FlowsheetSteps({ idaesRunInfo }: { idaesRunInfo: idaesRu
         }
     };
 
-    /**
-     * Handle selection in the "Current Python" environment dropdown.
-     * Sends a `change_python_env` instruction to the extension host, which
-     * switches VS Code's active interpreter (same effect as the status-bar
-     * picker). The extension then fires an env-change event that re-runs
-     * fi-steps and broadcasts the refreshed env list back, so the dropdown,
-     * the status bar, and the step list all stay in sync.
-     * @param e - select change event; `value` is the interpreter's absolute path
-     */
-    const handlePythonEnvSelection = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const envPath = e.target.value;
-        if (envPath) {
-            vscode.postMessage({
-                frontendInstruction: 'change_python_env',
-                fromPanel: 'treeView',
-                envPath: envPath
-            });
+    const handleCopyInterpreterPath = () => {
+        if (currentPythonEnv?.path) {
+            navigator.clipboard.writeText(currentPythonEnv.path);
         }
     };
 
-    const handleCopyInterpreterPath = () => {
-        const path = pythonEnvInfo?.current?.path;
-        if (path) {
-            navigator.clipboard.writeText(path);
-        }
+    const handleChangeInterpreter = () => {
+        vscode.postMessage({
+            frontendInstruction: 'open_interpreter_picker',
+            fromPanel: 'treeView',
+        });
     };
 
     /**
@@ -181,31 +167,26 @@ export default function FlowsheetSteps({ idaesRunInfo }: { idaesRunInfo: idaesRu
                 </label>
                 <div className={css.python_env_actions}>
                     <span className={css.python_env_path_text}>
-                        {pythonEnvInfo?.current?.path || "No interpreter selected"}
+                        {currentPythonEnv?.name || currentPythonEnv?.path || "No interpreter selected"}
                     </span>
                     <button
                         className={css.python_env_icon_btn}
                         onClick={handleCopyInterpreterPath}
                         title="Copy interpreter path"
-                        disabled={!pythonEnvInfo?.current?.path}
+                        disabled={!currentPythonEnv?.path}
                     >
-                        {/* two overlapping rectangles copy icon */}
                         <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <rect x="4" y="4" width="8" height="9" rx="1" stroke="currentColor" strokeWidth="1.2"/>
                             <rect x="2" y="2" width="8" height="9" rx="1" fill="var(--vscode-sideBar-background, #1e1e1e)" stroke="currentColor" strokeWidth="1.2"/>
                         </svg>
                     </button>
                 </div>
-                <select
-                    className={css.dropdown_select}
-                    onChange={handlePythonEnvSelection}
-                    value={pythonEnvInfo?.current?.path || ""}
+                <button
+                    className={css.change_interpreter_btn}
+                    onClick={handleChangeInterpreter}
                 >
-                    <option value="" disabled>Select a Python environment...</option>
-                    {pythonEnvInfo?.envs.map((env, i) => (
-                        <option key={i} value={env.path}>{env.label}</option>
-                    ))}
-                </select>
+                    Change Interpreter…
+                </button>
                 {packageWarnings && packageWarnings.length > 0 && (
                     <div className={css.package_warnings_container}>
                         {packageWarnings.map((w) => (

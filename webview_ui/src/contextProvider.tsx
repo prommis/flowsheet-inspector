@@ -11,7 +11,7 @@ import {
     type OpenPythonFilesType,
     type MermaidDiagram,
     type IdaesHistoryItem,
-    type PythonEnvInfo,
+    type CurrentPythonEnv,
     type IPackageWarning
 } from "./interface/interface";
 
@@ -36,7 +36,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const [openPythonFiles, setOpenPythonFiles] = useState<OpenPythonFilesType>([]);
     const [idaesHistoryList, setIdaesHistoryList] = useState<IdaesHistoryItem[] | null>(null);
     const [osPlatform, setOsPlatform] = useState<string>('');
-    const [pythonEnvInfo, setPythonEnvInfo] = useState<PythonEnvInfo | null>(null);
+    const [currentPythonEnv, setCurrentPythonEnv] = useState<CurrentPythonEnv>(null);
 
     return (
         <AppContext.Provider value={{
@@ -72,8 +72,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
             setIdaesHistoryList,
             osPlatform,
             setOsPlatform,
-            pythonEnvInfo,
-            setPythonEnvInfo
+            currentPythonEnv,
+            setCurrentPythonEnv
         }}>
             {children}
         </AppContext.Provider>
