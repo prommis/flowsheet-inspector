@@ -13,6 +13,65 @@ import * as path from 'path';
 import { isWindows } from './platform_config';
 import { brodcastMessage } from './webview_handler';
 
+/** ID of the VS Code Python extension we integrate with for interpreter selection. */
+export const PYTHON_EXTENSION_ID = 'ms-python.python';
+
+/** Global-state key remembering that the user dismissed the install recommendation. */
+const PYTHON_EXT_PROMPT_DISMISSED_KEY = 'fi.pythonExtensionPromptDismissed';
+
+/**
+ * Whether the VS Code Python extension is currently installed.
+ *
+ * @returns `true` if `ms-python.python` is present (enabled or not), else `false`.
+ */
+export function isPythonExtensionInstalled(): boolean {
+    return vscode.extensions.getExtension(PYTHON_EXTENSION_ID) !== undefined;
+}
+
+/**
+ * Recommends (does not force) installing the VS Code Python extension.
+ *
+ * The extension is a soft dependency: it is what lets the user pick the
+ * interpreter/conda env used to run flowsheets. Without it, interpreter
+ * resolution degrades gracefully (see {@link getActivePythonEnv} returning
+ * `undefined`), so instead of a hard `extensionDependencies` gate we surface a
+ * non-blocking notification with an "Install" action.
+ *
+ * Does nothing if the extension is already installed or the user previously
+ * chose "Don't show again" (persisted in global state).
+ *
+ * @param context Extension context, used to persist the dismissal choice.
+ */
+export async function recommendPythonExtension(context: vscode.ExtensionContext): Promise<void> {
+    if (isPythonExtensionInstalled()) {
+        return;
+    }
+    if (context.globalState.get<boolean>(PYTHON_EXT_PROMPT_DISMISSED_KEY)) {
+        return;
+    }
+    const install = 'Install';
+    const dontShow = "Don't show again";
+    const choice = await vscode.window.showInformationMessage(
+        'Flowsheet Inspector works best with the Python extension (ms-python.python), '
+        + 'which lets you pick the interpreter / conda environment used to run flowsheets. Install it?',
+        install,
+        dontShow,
+    );
+    if (choice === install) {
+        try {
+            await vscode.commands.executeCommand('workbench.extensions.installExtension', PYTHON_EXTENSION_ID);
+            vscode.window.showInformationMessage(
+                'Python extension installed. Use "Python: Select Interpreter" to pick the environment with Flowsheet Inspector installed.',
+            );
+        } catch (e) {
+            // Fall back to opening the Marketplace page if the direct install command is unavailable.
+            await vscode.commands.executeCommand('extension.open', PYTHON_EXTENSION_ID);
+        }
+    } else if (choice === dontShow) {
+        await context.globalState.update(PYTHON_EXT_PROMPT_DISMISSED_KEY, true);
+    }
+}
+
 /** Minimal shape of the bits of the Python extension API we use. */
 interface IPythonEnvApi {
     environments: {

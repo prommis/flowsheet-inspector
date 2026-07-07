@@ -7,7 +7,7 @@ import openWebView from './web_view/web_view_panel';
 import treeview from './tree_view/treeview';
 import activateTabListener from './util/activate_tab_handler';
 import { startHistoryPolling } from './util/flowsheet_history_polling';
-import { getActivePythonEnv } from './util/python_env';
+import { getActivePythonEnv, recommendPythonExtension } from './util/python_env';
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -44,6 +44,11 @@ export function activate(context: vscode.ExtensionContext) {
 	 * It will load when extension is activated.
 	 */
 	activateTabListener(context);
+
+	// Recommend (do not force) the Python extension. It is a soft dependency now:
+	// without it interpreter resolution degrades gracefully, so we suggest it via
+	// a non-blocking notification instead of an `extensionDependencies` gate.
+	recommendPythonExtension(context).catch((e) => console.error(`Failed to recommend Python extension: ${e}`));
 
 	// Start scanning flowsheets sqlite history quietly in the background
 	startHistoryPolling(context);

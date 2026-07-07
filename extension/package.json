@@ -19,9 +19,6 @@
         "onView:fi.treeView",
         "onView:fi.webView"
     ],
-    "extensionDependencies": [
-        "ms-python.python"
-    ],
     "main": "./out/extension.js",
     "contributes": {
         "commands": [
