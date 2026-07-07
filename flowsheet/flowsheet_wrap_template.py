@@ -19,7 +19,7 @@ from idaes.core import FlowsheetBlock
 
 # from idaes.core.scaling import AutoScaler, set_scaling_factor
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.structfs import FlowsheetRunner, Context
+from idaes_fi.structfs.fsrunner import FlowsheetRunner, Context
 
 _FS = FlowsheetRunner()
 

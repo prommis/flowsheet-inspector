@@ -1,61 +1,84 @@
+/**
+ * Orchestrates a fi-run execution for the currently active flowsheet file.
+ *
+ * Uses the Python interpreter VS Code has selected (via the Python extension
+ * API) to locate and spawn fi-run directly — no shell, no conda activate, no
+ * dependency on the user's PATH or shell init files.  This mirrors how fi-steps
+ * is invoked and makes the runner work on Windows without any extra config.
+ */
 import * as vscode from 'vscode';
-import * as cp from 'child_process';
-import { activateWebviews, brodcastMessage } from "./webview_handler";
-import { IExtensionConfig } from '../interface';
-import runTerminalCommand from "./run_terminal_command";
+import { activateWebviews, brodcastMessage } from './webview_handler';
 import openWebView from '../web_view/web_view_panel';
+<<<<<<< HEAD
 import { buildCommandChain, getIdaesDbPath, buildSqliteCommand } from './platform_config';
 import { getMaxReportId, startStepStatusPolling, stopStepStatusPolling, broadcastFinalStepStatus } from './step_status_polling';
+=======
+import { queryLatestReport } from './sqlite_reader';
+import runTerminalCommand from './run_terminal_command';
+import { getActivePythonEnv, activatedProcessEnv } from './python_env';
 
-export default async function runFlowsheet(context: vscode.ExtensionContext, webview: vscode.Webview, selectedStep: string | undefined) {
+const NO_INTERPRETER_MSG =
+    'No Python interpreter selected. Pick the environment with Flowsheet Inspector ' +
+    'installed via the Python: Select Interpreter command (bottom-right status bar).';
+
+/**
+ * Runs fi-run for the flowsheet file currently stored in VS Code global state.
+ *
+ * Resolves the active interpreter from the VS Code Python extension, locates
+ * the fi-run entry point inside that environment, and spawns it directly with
+ * an activated PATH — identical to the fi-steps approach.  stdout/stderr are
+ * streamed to the terminal log panel in real time.
+ *
+ * @param context       Extension context; used to read the active file name.
+ * @param webview       The webview that triggered the run (used to post errors).
+ * @param selectedStep  Optional step name to pass as `--last <step>` to fi-run.
+ */
+export default async function runFlowsheet(
+    context: vscode.ExtensionContext,
+    webview: vscode.Webview,
+    selectedStep: string | undefined,
+): Promise<void> {
+    const postError = (message: string) => {
+        webview.postMessage({ type: 'error', message });
+        activateWebviews.get('treeView')?.webview.postMessage({ type: 'run_flowsheet_done' });
+    };
+>>>>>>> main
+
     try {
-        const activateFileName = context.globalState.get<string>("activatedFileName");
-        const extensionConfig = context.globalState.get<IExtensionConfig>("extensionConfig");
-
-        // read run_flowsheet necessary params
-        let activateCommand = undefined;
-        let sourceTerminal = undefined;
-        let shell = undefined;
-
-        if (extensionConfig) {
-            sourceTerminal = extensionConfig.sorce_treminal;
-            activateCommand = extensionConfig.activate_command;
-            shell = extensionConfig.shell;
-        }
-
-        // error handler if missing param
-        if (!activateCommand || !shell) {
-            webview.postMessage({
-                type: 'error',
-                message: `run_flowsheet raise an error, looks like you are trying to run a flowsheet, but missing one of following params: [
-                    activateCommand: ${activateCommand},
-                    shell: ${shell},
-                From file webview_receive_message_handler.ts`
-            });
+        const activateFileName = context.globalState.get<string>('activatedFileName');
+        if (!activateFileName) {
+            postError('No flowsheet file is currently active. Open a flowsheet file first.');
             return;
         }
 
-        // if webview is closed then open it to prevent extension cant find webview
+        // Resolve the interpreter the user has selected in VS Code
+        const env = await getActivePythonEnv(vscode.Uri.file(activateFileName));
+        if (!env) {
+            postError(NO_INTERPRETER_MSG);
+            return;
+        }
+
+        const args: string[] = ['-m', 'idaes_fi.structfs.fsrunner', activateFileName];
+        if (selectedStep) {
+            args.push('--last', selectedStep);
+        }
+
+        const childEnv: NodeJS.ProcessEnv = {
+            ...activatedProcessEnv(env),
+            PYTHONUNBUFFERED: '1',
+            FORCE_COLOR: '1',
+        };
+
+        // Ensure the results panel is open before streaming starts
         if (!activateWebviews.get('webView')) {
             await openWebView(context);
         }
 
-        // Build the command chain using platform-appropriate separators
-        // On Unix: `source ~/.zshrc && conda activate ... && fi-run ...`
-        // On Windows: `conda activate ... ; fi-run ...` (empty sourceTerminal is filtered out)
-        let runCmd = `fi-run "${activateFileName}"`;
-        if (selectedStep) {
-            runCmd += ` --last ${selectedStep}`;
-        }
-        let command = buildCommandChain([sourceTerminal, activateCommand, runCmd]);
-        console.log(`Run command: ${command}`);
-
-        // Broadcast a signal to clear previous run results (diagram, IPOPT, diagnostic, etc.) from the UI
+        // Clear stale run state from the UI before starting
         brodcastMessage({ type: 'start_new_run' });
-
-        // Broadcast a signal to clear logs across ALL active webviews BEFORE starting new command
         brodcastMessage({ type: 'clear_terminal_logs' });
 
+<<<<<<< HEAD
         // Capture the current highest report id BEFORE launching fi-run. fi-run
         // inserts an empty report row up front and writes one `status` row per
         // step as it finishes, so polling for rows belonging to a report id
@@ -72,106 +95,48 @@ export default async function runFlowsheet(context: vscode.ExtensionContext, web
             // exits, so emit one final authoritative status broadcast.
             broadcastFinalStepStatus(baselineReportId);
         }
+=======
+        await runTerminalCommand(env.interpreterPath, args, childEnv);
+>>>>>>> main
 
         console.log('fi-run completed. Reading latest report from SQLite...');
 
-        // Read the latest report from the SQLite database
-        // This is non-fatal — if the DB/table doesn't exist yet, the history
-        // polling mechanism will pick up the results later.
         try {
-            const dbPath = getIdaesDbPath();
-            const reportQuery = `SELECT report FROM reports ORDER BY id DESC LIMIT 1;`;
-            const sqliteCmd = buildSqliteCommand(dbPath, reportQuery);
-
-            const reportData = await new Promise<any>((resolve, reject) => {
-                cp.exec(sqliteCmd, { maxBuffer: 50 * 1024 * 1024, windowsHide: true }, (err, stdout, stderr) => {
-                    if (err) {
-                        reject(err);
-                        return;
-                    }
-                    if (!stdout.trim()) {
-                        reject(new Error('Empty report from SQLite'));
-                        return;
-                    }
-                    try {
-                        // Python's json.dumps can produce -Infinity, Infinity, NaN
-                        // which are invalid in standard JSON. Replace with null.
-                        const sanitized = stdout.trim()
-                            .replace(/:\s*-Infinity/g, ': null')
-                            .replace(/:\s*Infinity/g, ': null')
-                            .replace(/:\s*NaN/g, ': null');
-                        const parsed = JSON.parse(sanitized);
-                        resolve(parsed);
-                    } catch (e) {
-                        reject(e);
-                    }
-                });
-            });
-
+            const reportData = queryLatestReport();
+            if (!reportData) {
+                throw new Error('No report found in database');
+            }
             console.log('Successfully loaded report from SQLite. Broadcasting to webviews...');
-
-            // Broadcast the full report to all webviews
-            brodcastMessage({
-                type: 'flowsheet_runner_result',
-                data: reportData
-            });
+            brodcastMessage({ type: 'flowsheet_runner_result', data: reportData });
         } catch (dbErr: any) {
             console.warn(`Could not load report from SQLite (non-fatal): ${dbErr.message}`);
-            console.warn('The history polling mechanism will pick up results when available.');
             brodcastMessage({
                 type: 'terminal_log',
-                data: `\n[SYSTEM] fi-run completed but could not read report from database: ${dbErr.message}\nResults may appear in the history panel shortly.\n`
+                data: `\n[SYSTEM] fi-run completed but could not read report from database: ${dbErr.message}\nResults may appear in the history panel shortly.\n`,
             });
         }
 
-        // Always notify tree panel that the run is complete so it stops spinners
-        let treePanel = activateWebviews.get('treeView');
-        if (treePanel) {
-            treePanel.webview.postMessage({
-                type: 'run_flowsheet_done',
-            });
-        }
-        console.log('Done');
+        activateWebviews.get('treeView')?.webview.postMessage({ type: 'run_flowsheet_done' });
 
     } catch (e) {
         const errorMessage = e instanceof Error ? e.message : String(e);
 
         if (errorMessage.startsWith('CANCELED_BY_USER')) {
-            // Silently swallow the rejection and log to console
-            console.log(`runFlowsheet was canceled by the user: ${errorMessage}`);
-            const pidChunk = errorMessage.split(':')[1] || '';
+            const pidChunk = errorMessage.split(':')[1] ?? '';
+            console.log(`runFlowsheet was canceled by the user. PID: ${pidChunk}`);
             vscode.window.showInformationMessage(`Run flowsheet stopped manually. PID: ${pidChunk}`);
+            activateWebviews.get('treeView')?.webview.postMessage({ type: 'run_flowsheet_done' });
             return;
         }
 
-        console.error(`
-            runFlowsheet from webview_receive_message_handler.ts raise an error:
-            ${e}
-        `);
+        console.error(`runFlowsheet error: ${e}`);
 
         let webViewPanel = activateWebviews.get('webView');
-
-        // if not web view panel, try to open it 
         if (!webViewPanel) {
             await openWebView(context);
             webViewPanel = activateWebviews.get('webView');
         }
-
-        if (webViewPanel) {
-            webViewPanel.webview.postMessage({
-                type: 'error',
-                message: errorMessage
-            });
-        } else {
-            console.error('web view panel not found to report error');
-        }
-
-        // Inform the tree panel that the run failed so it stops the timer/spinner
-        let treePanel = activateWebviews.get('treeView');
-        if (treePanel) {
-            treePanel.webview.postMessage({
-                type: 'run_flowsheet_done' // This sets `isRunningFlowsheet = false` in the frontend (though they cancel flowsheet currently resets it too)
-            });
-        }
+        webViewPanel?.webview.postMessage({ type: 'error', message: errorMessage });
+        activateWebviews.get('treeView')?.webview.postMessage({ type: 'run_flowsheet_done' });
     }
 }

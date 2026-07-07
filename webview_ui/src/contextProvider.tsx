@@ -6,13 +6,17 @@ import {
     type FlowsheetRunnerResult,
     type EditorContent,
     type ActivateFileName,
-    type IExtensionConfig,
     type ExtensionErrorLogsType,
     type TerminalLogsType,
     type OpenPythonFilesType,
     type MermaidDiagram,
     type IdaesHistoryItem,
+<<<<<<< HEAD
     type StepStatusMap
+=======
+    type CurrentPythonEnv,
+    type IPackageWarning
+>>>>>>> main
 } from "./interface/interface";
 
 
@@ -28,15 +32,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const [editorContent, setEditorContent] = useState<EditorContent>("");
     const [activateFileName, setActivateFileName] = useState<ActivateFileName>("");
     const [mermaidDiagram, setMermaidDiagram] = useState<MermaidDiagram>('');
-    const [extensionConfig, setExtensionConfig] = useState<IExtensionConfig | null>(null);
     const [extensionErrorLogs, setExtensionErrorLogs] = useState<ExtensionErrorLogsType>([]);
     const [terminalLogs, setTerminalLogs] = useState<TerminalLogsType>([]);
     const [activeLogTab, setActiveLogTab] = useState<ActiveLogTab>('error');
     const [initError, setInitError] = useState<string | null>(null);
+    const [packageWarnings, setPackageWarnings] = useState<IPackageWarning[] | null>(null);
     const [openPythonFiles, setOpenPythonFiles] = useState<OpenPythonFilesType>([]);
     const [idaesHistoryList, setIdaesHistoryList] = useState<IdaesHistoryItem[] | null>(null);
     const [osPlatform, setOsPlatform] = useState<string>('');
+<<<<<<< HEAD
     const [stepStatuses, setStepStatuses] = useState<StepStatusMap>({});
+=======
+    const [currentPythonEnv, setCurrentPythonEnv] = useState<CurrentPythonEnv>(null);
+>>>>>>> main
 
     return (
         <AppContext.Provider value={{
@@ -56,8 +64,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
             setActivateFileName,
             mermaidDiagram,
             setMermaidDiagram,
-            extensionConfig,
-            setExtensionConfig,
             extensionErrorLogs,
             setExtensionErrorLogs,
             terminalLogs,
@@ -66,14 +72,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
             setActiveLogTab,
             initError,
             setInitError,
+            packageWarnings,
+            setPackageWarnings,
             openPythonFiles,
             setOpenPythonFiles,
             idaesHistoryList,
             setIdaesHistoryList,
             osPlatform,
             setOsPlatform,
+<<<<<<< HEAD
             stepStatuses,
             setStepStatuses
+=======
+            currentPythonEnv,
+            setCurrentPythonEnv
+>>>>>>> main
         }}>
             {children}
         </AppContext.Provider>

@@ -1,7 +1,4 @@
 import * as vscode from 'vscode';
-import * as path from 'path';
-import * as fs from 'fs';
-import * as cp from 'child_process';
 
 import { getReactTemplate } from '../util/get_webview_template';
 import { registerWebview, unregisterWebview } from '../util/webview_handler';
@@ -31,7 +28,7 @@ export default async function openWebView(context: vscode.ExtensionContext, outp
             fileName = activatedFileName;
         } else {
             vscode.window.showErrorMessage('No active editor found and no activated flowsheet found either!');
-            console.error('Idaes web view raise an error: fail to find or open the web view.');
+            console.error('Flowsheet Inspector web view raise an error: fail to find or open the web view.');
             return;
         }
     } else {
@@ -40,20 +37,20 @@ export default async function openWebView(context: vscode.ExtensionContext, outp
 
     // Create a Webview Panel with split layout (top and bottom sections)
     const webViewPanel = vscode.window.createWebviewPanel(
-        'idaes web view',
-        `Prommis Flowsheet Inspector - ${fileName.split('/').pop()}`,
+        'fi.webView',
+        `Flowsheet Inspector - ${fileName.split('/').pop()}`,
         // vscode.ViewColumn.Beside, // Open beside current editor
         vscode.ViewColumn.Beside, // Open beside current editor
         // vscode.ViewColumn.Active,
         {
             enableScripts: true,
             // Enable local resource loading (the React rendered static html css js files)
-            localResourceRoots: [vscode.Uri.file(path.join(context.extensionPath, 'src'))],
+            localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, 'src')],
             retainContextWhenHidden: true
         }
     );
 
-    webViewPanel.iconPath = vscode.Uri.file(path.join(context.extensionPath, 'resources', 'prommis_icon.svg'));
+    webViewPanel.iconPath = vscode.Uri.joinPath(context.extensionUri, 'resources', 'prommis_icon.svg');
 
     registerWebview("webView", webViewPanel);
 

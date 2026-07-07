@@ -16,16 +16,20 @@ export default function App() {
     setActivateFileName, // the current activate file name
     flowsheetRunnerResult,
     setFlowsheetRunnerResult, // the idaes-run result
-    setExtensionConfig, // the extension config
     setExtensionErrorLogs, // the extension error logs
     setTerminalLogs,
     setIsLoading,
     setInitError,
+    setPackageWarnings,
     setOpenPythonFiles,
     setIdaesHistoryList,
     setMermaidDiagram,
     setOsPlatform,
+<<<<<<< HEAD
     setStepStatuses
+=======
+    setCurrentPythonEnv
+>>>>>>> main
   } = useContext(AppContext);
 
   const [appName, setAppName] = useState('');
@@ -118,9 +122,19 @@ export default function App() {
           } else if (message.initError === null || message.isLoading) {
             setInitError(null);
           }
+          if (message.isLoading) {
+            setPackageWarnings(null);
+          }
+          else if (message.packageWarnings !== undefined) {
+            setPackageWarnings(message.packageWarnings);
+          }
           if (message.open_python_files !== undefined) {
             setOpenPythonFiles(message.open_python_files);
           }
+          break;
+        case 'python_env_update':
+          console.log('Received python_env_update:', message);
+          setCurrentPythonEnv(message.current ?? null);
           break;
         case 'update_open_files':
           console.log('Received update_open_files event');
@@ -135,14 +149,6 @@ export default function App() {
         case 'flowsheet_runner_result':
           console.log('receited flowsheet runner result, and update state');
           setFlowsheetRunnerResult(message.data);
-          break;
-        case 'readExtensionConfig':
-          console.log(`VSCode post message to initialize extension config data: ${JSON.stringify(message)}`)
-          setExtensionConfig(message.content);
-          break;
-        case 'updateExtensionConfig':
-          console.log(`VSCode post message to update extension config data: ${JSON.stringify(message)}`)
-          setExtensionConfig(message.content);
           break;
         case 'error':
           console.log(`VSCode post error message: ${JSON.stringify(message)}`);

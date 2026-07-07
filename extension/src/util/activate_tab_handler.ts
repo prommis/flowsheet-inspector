@@ -1,11 +1,11 @@
 import * as vscode from 'vscode';
-import * as cp from 'child_process';
 import { brodcastMessage, activateWebviews } from './webview_handler';
 import { isWrappedFlowsheet } from './validate_flowsheet';
 import { trimFileName } from './trim_file_name';
-import { readExtensionConfig } from './extensionHandler';
-import { checkExtensionConfigEnv } from './extension_initial_check';
-import { buildCommandChain, getSpawnArgs, getSpawnOptions } from './platform_config';
+import { checkActivePythonEnv } from './extension_initial_check';
+import { checkRequiredPackages } from './check_required_packages';
+import { runFiSteps } from './run_fi_steps';
+import { onDidChangeActivePythonEnv, broadcastCurrentPythonEnv, getActivePythonEnv } from './python_env';
 
 function getOpenPythonFiles() {
     const pyFiles: { name: string, path: string }[] = [];
@@ -75,22 +75,6 @@ export default function activateTabListener(context: vscode.ExtensionContext) {
                     return;
                 }
 
-                const extensionConfigData = readExtensionConfig(context);
-                if (!extensionConfigData) {
-                    vscode.window.showErrorMessage("Config not found when switching tabs. Please set the config first.");
-                    brodcastMessage(
-                        {
-                            type: 'switch_tab',
-                            message: `switch tab from ${previousActivatedFileName} to ${currentActivateTabFileName}`,
-                            activate_tab_name: activateFileName,
-                            idaesRunInfo: null,
-                            open_python_files: getOpenPythonFiles(),
-                            time: new Date().toISOString(),
-                        }
-                    );
-                    return;
-                }
-
 
                 brodcastMessage(
                     {
@@ -103,13 +87,14 @@ export default function activateTabListener(context: vscode.ExtensionContext) {
                     }
                 );
 
-                const envCheck = await checkExtensionConfigEnv(extensionConfigData);
+                const envCheck = await checkActivePythonEnv(vscode.Uri.file(currentActivateTabFileName));
                 if (!envCheck.success) {
                     brodcastMessage({
                         type: 'switch_tab',
                         activate_tab_name: activateFileName,
                         idaesRunInfo: null,
                         initError: envCheck.errorMsg,
+                        packageWarnings: [],
                         isLoading: false,
                         open_python_files: getOpenPythonFiles(),
                         time: new Date().toISOString(),
@@ -117,77 +102,45 @@ export default function activateTabListener(context: vscode.ExtensionContext) {
                     return;
                 }
 
-                const sorceCommand = extensionConfigData.sorce_treminal;
-                const activateCommand = extensionConfigData.activate_command;
-                const shellType = extensionConfigData.shell;
-
-                const commandFiSteps = buildCommandChain([sorceCommand, activateCommand, `fi-steps --fs "${currentActivateTabFileName}" -t json`]);
+                // Check required packages — non-blocking; missing ones become warnings
+                const resolvedEnv = await getActivePythonEnv(vscode.Uri.file(currentActivateTabFileName));
+                const packageWarnings = resolvedEnv
+                    ? await checkRequiredPackages(resolvedEnv)
+                    : [];
 
                 let stepsData: any;
                 try {
-                    stepsData = await new Promise<any>((resolve, reject) => {
-                        const { shell: resolvedShell, args: shellArgs } = getSpawnArgs(shellType, commandFiSteps);
-                        console.log(`[fi-steps] Spawning: ${resolvedShell} ${JSON.stringify(shellArgs)}`);
-                        const child = cp.spawn(resolvedShell, shellArgs, {
-                            stdio: 'pipe' as const,
-                            windowsHide: true,
-                        });
-                        let stdout = '';
-                        let stderr = '';
-                        child.stdout.on('data', (d) => { stdout += d.toString(); });
-                        child.stderr.on('data', (d) => { stderr += d.toString(); });
-                        child.on('close', (code) => {
-                            if (code !== 0) {
-                                const errDetail = stderr.trim() || stdout.trim() || '(no output)';
-                                reject(new Error(`fi-steps failed (exit ${code}): ${errDetail}`));
-                                return;
-                            }
-                            try {
-                                const lines = stdout.trim().split('\n');
-                                const jsonLine = lines.reverse().find(l => l.trim().startsWith('['));
-                                if (!jsonLine) {
-                                    reject(new Error(`No JSON array found in fi-steps output.\nSTDOUT: ${stdout.trim().slice(0, 500)}\nSTDERR: ${stderr.trim().slice(0, 500)}`));
-                                    return;
-                                }
-                                const steps = JSON.parse(jsonLine.trim());
-                                resolve({ classname: 'FlowsheetRunner', steps });
-                            } catch (e) {
-                                reject(new Error(`Failed to parse fi-steps output: ${e}`));
-                            }
-                        });
-                        child.on('error', reject);
-                    });
+                    stepsData = await runFiSteps(currentActivateTabFileName);
                 } catch (err: any) {
                     console.error(`Error running fi-steps during tab switch: ${err.message}`);
                     stepsData = null;
-                    brodcastMessage(
-                        {
-                            type: 'switch_tab',
-                            message: `Failed to load flowsheet info for new tab: ${err.message}`,
-                            activate_tab_name: activateFileName,
-                            idaesRunInfo: null,
-                            initError: `Failed to load flowsheet info for new tab: ${err.message}`,
-                            isLoading: false,
-                            open_python_files: getOpenPythonFiles(),
-                            time: new Date().toISOString(),
-                        }
-                    );
+                    brodcastMessage({
+                        type: 'switch_tab',
+                        message: `Failed to load flowsheet info for new tab: ${err.message}`,
+                        activate_tab_name: activateFileName,
+                        idaesRunInfo: null,
+                        initError: `Failed to load flowsheet info for new tab: ${err.message}`,
+                        packageWarnings,
+                        isLoading: false,
+                        open_python_files: getOpenPythonFiles(),
+                        time: new Date().toISOString(),
+                    });
                     return;
                 }
 
                 // brodcast to all web app panel notice tab is switched
                 console.log('Brodcast switch_tab to all web app panels');
-                brodcastMessage(
-                    {
-                        type: 'switch_tab',
-                        message: `switch tab from ${previousActivatedFileName} to ${currentActivateTabFileName}`,
-                        activate_tab_name: activateFileName,
-                        idaesRunInfo: stepsData,
-                        isLoading: false,
-                        open_python_files: getOpenPythonFiles(),
-                        time: new Date().toISOString(),
-                    }
-                );
+                brodcastMessage({
+                    type: 'switch_tab',
+                    message: `switch tab from ${previousActivatedFileName} to ${currentActivateTabFileName}`,
+                    activate_tab_name: activateFileName,
+                    idaesRunInfo: stepsData,
+                    initError: null,
+                    packageWarnings,
+                    isLoading: false,
+                    open_python_files: getOpenPythonFiles(),
+                    time: new Date().toISOString(),
+                });
                 console.log('Brodcast done.');
             } else {
                 console.log(`User switched tab, but current activate tab file name is not a python file! The activated tab file is: ${currentActivateTabFileName}`);
@@ -198,6 +151,15 @@ export default function activateTabListener(context: vscode.ExtensionContext) {
     };
 
     vscode.window.onDidChangeActiveTextEditor(handleActiveEditor, null, context.subscriptions);
+
+    // Re-run steps when the user switches Python interpreter, so fixing the env
+    // (or any interpreter change) immediately refreshes the view — clearing a
+    // stale "package not installed" warning instead of stranding the user.
+    // Also push the refreshed env list so the tree view selector stays in sync.
+    onDidChangeActivePythonEnv(() => {
+        broadcastCurrentPythonEnv().catch((e) => console.error(`Failed to broadcast python env: ${e}`));
+        handleActiveEditor(vscode.window.activeTextEditor);
+    }).then((disposable) => { if (disposable) { context.subscriptions.push(disposable); } });
 
     // Fire immediately for the file already open when the extension first activates
     handleActiveEditor(vscode.window.activeTextEditor);
