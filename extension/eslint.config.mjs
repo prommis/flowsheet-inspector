@@ -1,7 +1,7 @@
 import typescriptEslint from "typescript-eslint";
 
 export default [{
-    ignores: ["out/**", "node_modules/**"],
+    ignores: ["out/**", "node_modules/**", "src/webview_template/**"],
 }, {
     files: ["src/**/*.ts"],
 }, {

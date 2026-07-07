@@ -74,8 +74,8 @@
     min-width: 22px;
     height: 22px;
     border-radius: 11px;
-    background: #e6a817;
-    color: #000;
+    background: #d32f2f;
+    color: #fff;
     font-size: 0.75rem;
     font-weight: 700;
     padding: 0 6px;
@@ -88,7 +88,7 @@
     min-width: 22px;
     height: 22px;
     border-radius: 11px;
-    background: #d32f2f;
+    background: #e6a817;
     color: #fff;
     font-size: 0.75rem;
     font-weight: 700;

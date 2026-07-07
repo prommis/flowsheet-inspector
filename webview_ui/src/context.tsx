@@ -14,15 +14,16 @@ import {
     type SetActivateFileName,
     type MermaidDiagram,
     type SetMermaidDiagram,
-    type IExtensionConfig,
-    type SetExtensionConfig,
     type SetExtensionErrorLogs,
     type ExtensionErrorLogsType,
     type TerminalLogsType,
     type SetTerminalLogs,
     type OpenPythonFilesType,
     type SetOpenPythonFiles,
-    type IdaesHistoryItem
+    type IdaesHistoryItem,
+    type CurrentPythonEnv,
+    type SetCurrentPythonEnv,
+    type IPackageWarning
 } from "./interface/interface";
 
 export type ActiveLogTab = 'error' | 'terminal';
@@ -45,8 +46,6 @@ interface AppContextType {
     setActivateFileName: SetActivateFileName;
     mermaidDiagram: MermaidDiagram;
     setMermaidDiagram: SetMermaidDiagram;
-    extensionConfig: IExtensionConfig | null;
-    setExtensionConfig: SetExtensionConfig;
     extensionErrorLogs: ExtensionErrorLogsType;
     setExtensionErrorLogs: SetExtensionErrorLogs;
     terminalLogs: TerminalLogsType;
@@ -55,12 +54,16 @@ interface AppContextType {
     setActiveLogTab: SetActiveLogTab;
     initError: string | null;
     setInitError: React.Dispatch<React.SetStateAction<string | null>>;
+    packageWarnings: IPackageWarning[] | null;
+    setPackageWarnings: React.Dispatch<React.SetStateAction<IPackageWarning[] | null>>;
     openPythonFiles: OpenPythonFilesType;
     setOpenPythonFiles: SetOpenPythonFiles;
     idaesHistoryList: IdaesHistoryItem[] | null;
     setIdaesHistoryList: React.Dispatch<React.SetStateAction<IdaesHistoryItem[] | null>>;
     osPlatform: string;
     setOsPlatform: React.Dispatch<React.SetStateAction<string>>;
+    currentPythonEnv: CurrentPythonEnv;
+    setCurrentPythonEnv: SetCurrentPythonEnv;
 }
 // Create context with default values
 export const AppContext = createContext({} as AppContextType);

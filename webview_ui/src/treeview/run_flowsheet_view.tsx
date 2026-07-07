@@ -1,11 +1,9 @@
-import { useContext, useState, useEffect } from "react";
+import { useContext, useEffect } from "react";
 import { AppContext } from "../context";
-import ConfigView from "./configView";
 import FlowsheetSteps from "./flowsheet_steps";
 
 export default function RunFlowsheetView() {
-    const { idaesRunInfo, activateFileName, setIsRunningFlowsheet } = useContext(AppContext);
-    const [showConfig, setShowConfig] = useState(false);
+    const { idaesRunInfo, setIsRunningFlowsheet } = useContext(AppContext);
 
     useEffect(() => {
         window.addEventListener('message', (e) => {
@@ -22,15 +20,6 @@ export default function RunFlowsheetView() {
     }, [])
 
     return (
-        <>
-            <h2>Current Files is: {activateFileName}</h2>
-            {/* <AiChat /> */}
-            <div style={{ display: showConfig ? "block" : "none" }}>
-                <ConfigView setShowConfig={setShowConfig} />
-            </div>
-            <div style={{ display: showConfig ? "none" : "block" }}>
-                <FlowsheetSteps idaesRunInfo={idaesRunInfo} setShowConfig={setShowConfig} />
-            </div>
-        </>
+        <FlowsheetSteps idaesRunInfo={idaesRunInfo} />
     )
 }

@@ -72,11 +72,11 @@ test('extension loads in VS Code', async () => {
     );
     await page.screenshot({ path: 'test-results/vscodeStart.png' });
 
-    // click the IDAES Control icon in the activity bar (always directly visible
-    // because --extensions-dir isolates us from other extensions)
-    await page.locator('[aria-label="IDAES Control"]').first().click({ timeout: 15000 });
+    // click the Flowsheet Inspector icon in the activity bar (always directly
+    // visible because --extensions-dir isolates us from other extensions)
+    await page.locator('[aria-label="Flowsheet Inspector"]').first().click({ timeout: 15000 });
 
-    // verify the IDAES view container opened: its sidebar title shows the
+    // verify the view container opened: its sidebar title shows the
     // contributed view name "Run Control".
     await expect(page.locator('.part.sidebar .composite.title'))
         .toContainText('Run Control', { timeout: 15000 });

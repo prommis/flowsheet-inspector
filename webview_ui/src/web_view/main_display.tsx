@@ -12,7 +12,7 @@ export default function WebView() {
     const [flashLogs, setFlashLogs] = useState(false);
     const prevLogsLength = useRef(extensionErrorLogs.length);
     const { flowsheetRunnerResult } = useContext(AppContext);
-    
+
     // total model dof
     const totalDof = flowsheetRunnerResult?.actions?.degrees_of_freedom?.model;
 
@@ -85,7 +85,8 @@ export default function WebView() {
                 <li
                     className={`${css.nav_item} ${activeTab === 'ipopt' ? css.nav_item_active : ''}`}
                     onClick={() => changeActivateTabHandler('ipopt')}>
-                    IPOPT <span className={`${css.blue_dot}`}></span>
+                    IPOPT
+                    {/* <span className={`${css.blue_dot}`}></span> */}
                 </li>
                 <li
                     className={`${css.nav_item} ${activeTab === 'logs' ? css.nav_item_active : ''} ${flashLogs ? 'flash-red-highlight' : ''}`}

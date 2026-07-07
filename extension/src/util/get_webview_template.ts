@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
-import * as path from 'path';
 
 export function getReactTemplate(
     context: vscode.ExtensionContext,
@@ -8,12 +7,12 @@ export function getReactTemplate(
     fileName: string,
     content: string
 ): string {
-    // Path to the React build output
-    const webviewNewPath = path.join(context.extensionPath, 'src', 'webview_template', 'webview_new');
-    const htmlPath = path.join(webviewNewPath, 'index.html');
+    // Path to the React build output — use extensionUri + joinPath (works under Snap/Flatpak/remote)
+    const webviewNewUri = vscode.Uri.joinPath(context.extensionUri, 'src', 'webview_template', 'webview_new');
+    const htmlPath = webviewNewUri.fsPath + '/index.html';
 
     // Convert local file paths to webview URIs
-    const assetsUri = webview.asWebviewUri(vscode.Uri.file(path.join(webviewNewPath, 'assets')));
+    const assetsUri = webview.asWebviewUri(vscode.Uri.joinPath(webviewNewUri, 'assets'));
 
     // Read HTML content
     let htmlContent = fs.readFileSync(htmlPath, 'utf-8');

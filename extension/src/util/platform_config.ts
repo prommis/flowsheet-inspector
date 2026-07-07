@@ -9,7 +9,6 @@
 import * as os from 'os';
 import * as path from 'path';
 import * as cp from 'child_process';
-import { IExtensionConfig } from '../interface';
 
 
 // ============================================================
@@ -27,44 +26,6 @@ export function getPlatform(): SupportedPlatform {
 
 export function isWindows(): boolean {
     return getPlatform() === 'win32';
-}
-
-
-// ============================================================
-// Default Extension Config (per-platform)
-// ============================================================
-
-/**
- * Returns the default IExtensionConfig appropriate for the current OS.
- * - macOS:  /bin/zsh + source ~/.zshrc
- * - Linux:  /bin/bash + eval "$(conda shell.bash hook)"
- * - Windows: powershell.exe, no source needed
- */
-export function getDefaultShellConfig(): IExtensionConfig {
-    switch (getPlatform()) {
-        case 'win32':
-            return {
-                activate_command: 'conda activate test-idaes-extension',
-                // Search common Miniconda/Anaconda install locations and initialise the
-                // conda shell hook — equivalent to Linux's eval "$(conda shell.bash hook)"
-                sorce_treminal: '$c=@("$env:USERPROFILE\\miniconda3\\Scripts\\conda.exe","$env:USERPROFILE\\Miniconda3\\Scripts\\conda.exe","$env:USERPROFILE\\anaconda3\\Scripts\\conda.exe","$env:USERPROFILE\\Anaconda3\\Scripts\\conda.exe","C:\\ProgramData\\miniconda3\\Scripts\\conda.exe","C:\\ProgramData\\Miniconda3\\Scripts\\conda.exe")|Where-Object{Test-Path $_}|Select-Object -First 1; if($c){(& $c shell.powershell hook)|Out-String|Invoke-Expression}',
-                shell: 'powershell.exe'
-            };
-        case 'darwin':
-            return {
-                activate_command: 'conda activate test-idaes-extension',
-                sorce_treminal: 'source ~/.zshrc',
-                shell: '/bin/zsh'
-            };
-        default: // linux
-            return {
-                activate_command: 'conda activate test-idaes-extension',
-                // `source ~/.bashrc` exits immediately in non-interactive bash (Ubuntu guard).
-                // `conda shell.bash hook` initialises conda without needing an interactive shell.
-                sorce_treminal: 'eval "$(conda shell.bash hook)"',
-                shell: '/bin/bash'
-            };
-    }
 }
 
 
@@ -172,33 +133,3 @@ export function getIdaesDbPath(): string {
     return path.join(getIdaesDataDir(), 'reportdb.sqlite');
 }
 
-/**
- * Returns the stderr-suppress redirect for the current platform.
- * - Unix:    `2>/dev/null`
- * - Windows: `2>NUL`
- */
-export function getStderrRedirect(): string {
-    return isWindows() ? '2>NUL' : '2>/dev/null';
-}
-
-/**
- * Builds a sqlite3 CLI command string with proper quoting per platform.
- * Wraps the db path in quotes to handle paths with spaces (common on Windows).
- */
-export function buildSqliteCommand(dbPath: string, query: string, jsonMode: boolean = false): string {
-    const jsonFlag = jsonMode ? '-json ' : '';
-    return `sqlite3 ${jsonFlag}"${dbPath}" "${query}"`;
-}
-
-/**
- * Builds a sqlite3 command with a fallback query for schema compatibility.
- * Uses `||` (works in both bash/zsh and cmd.exe) and platform-appropriate stderr redirect.
- * 
- * This pattern tries `query1` first (modern schema); if it fails, falls back to `query2` (legacy schema).
- */
-export function buildSqliteFallbackCommand(dbPath: string, query1: string, query2: string, jsonMode: boolean = false): string {
-    const stderrRedirect = getStderrRedirect();
-    const cmd1 = buildSqliteCommand(dbPath, query1, jsonMode);
-    const cmd2 = buildSqliteCommand(dbPath, query2, jsonMode);
-    return `${cmd1} ${stderrRedirect} || ${cmd2}`;
-}

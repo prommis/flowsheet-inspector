@@ -3,11 +3,11 @@
 import * as vscode from 'vscode';
 import { reloadCurrentWebview } from './util/reload_window';
 import { brodcastMessage } from './util/webview_handler';
-import { setDefaultConfig } from './util/setDefaultExtensionConfig';
 import openWebView from './web_view/web_view_panel';
 import treeview from './tree_view/treeview';
 import activateTabListener from './util/activate_tab_handler';
 import { startHistoryPolling } from './util/flowsheet_history_polling';
+import { getActivePythonEnv, recommendPythonExtension } from './util/python_env';
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -39,13 +39,16 @@ export function activate(context: vscode.ExtensionContext) {
 	 * This command is used to setup and check the default config for the extension.
 	 * It will load when extension is activated.
 	 */
-	setDefaultConfig(context);
-
 	/**
 	 * This command is used to listen to the tab change event.
 	 * It will load when extension is activated.
 	 */
 	activateTabListener(context);
+
+	// Recommend (do not force) the Python extension. It is a soft dependency now:
+	// without it interpreter resolution degrades gracefully, so we suggest it via
+	// a non-blocking notification instead of an `extensionDependencies` gate.
+	recommendPythonExtension(context).catch((e) => console.error(`Failed to recommend Python extension: ${e}`));
 
 	// Start scanning flowsheets sqlite history quietly in the background
 	startHistoryPolling(context);
@@ -76,9 +79,9 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.window.showInformationMessage('Flowsheet-inspector is started!');
 	});
 
-	// Register the IDAES Tree View in the sidebar
+	// Register the Flowsheet Inspector Tree View in the sidebar
 	const treeView = vscode.window.registerWebviewViewProvider(
-		'idaes.treeView',
+		'fi.treeView',
 		treeview(context),
 		{
 			webviewOptions: { retainContextWhenHidden: true }
@@ -110,8 +113,22 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.window.showInformationMessage('🔄 Webview reloaded!');
 	});
 
+	/**
+	 * PoC / debug: log the Python environment VS Code currently has selected.
+	 * Verifies we can resolve the user's interpreter without conda activate.
+	 */
+	const logPythonEnvCommand = vscode.commands.registerCommand('flowsheet-inspector.logPythonEnv', async () => {
+		const env = await getActivePythonEnv();
+		if (!env) {
+			vscode.window.showWarningMessage('No active Python environment (is the Python extension installed and an interpreter selected?)');
+			return;
+		}
+		console.log('[python_env] resolved active env:', JSON.stringify(env, null, 2));
+		vscode.window.showInformationMessage(`Python env: ${env.type ?? 'unknown'} — ${env.interpreterPath}`);
+	});
 
-	context.subscriptions.push(initialExtensionCommand, registerWebView, treeView, reloadWebviewCommand);
+
+	context.subscriptions.push(initialExtensionCommand, registerWebView, treeView, reloadWebviewCommand, logPythonEnvCommand);
 }
 
 // This method is called when your extension is deactivated

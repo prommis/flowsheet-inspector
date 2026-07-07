@@ -5,8 +5,8 @@ import { vscode } from '../vscode';
 import TreeNavBar from "./treeviewNav";
 import css from "../css/tree_app.module.css";
 
-export default function FlowsheetSteps({ idaesRunInfo, setShowConfig }: { idaesRunInfo: idaesRunInfo, setShowConfig: React.Dispatch<React.SetStateAction<boolean>> }) {
-    const { setSelectedSteps, isLoading, initError, openPythonFiles, activateFileName } = useContext(AppContext);
+export default function FlowsheetSteps({ idaesRunInfo }: { idaesRunInfo: idaesRunInfo }) {
+    const { setSelectedSteps, isLoading, initError, packageWarnings, openPythonFiles, activateFileName, currentPythonEnv } = useContext(AppContext);
     const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
     // const focuseView = useRef<HTMLSelectElement>(null)
 
@@ -27,6 +27,19 @@ export default function FlowsheetSteps({ idaesRunInfo, setShowConfig }: { idaesR
                 target: targetPath
             });
         }
+    };
+
+    const handleCopyInterpreterPath = () => {
+        if (currentPythonEnv?.path) {
+            navigator.clipboard.writeText(currentPythonEnv.path);
+        }
+    };
+
+    const handleChangeInterpreter = () => {
+        vscode.postMessage({
+            frontendInstruction: 'open_interpreter_picker',
+            fromPanel: 'treeView',
+        });
     };
 
     /**
@@ -65,8 +78,8 @@ export default function FlowsheetSteps({ idaesRunInfo, setShowConfig }: { idaesR
 
         if (initError) {
             return (
-                <div style={{ padding: '10px', backgroundColor: 'var(--vscode-inputValidation-errorBackground, rgba(255, 0, 0, 0.1))', border: '1px solid var(--vscode-inputValidation-errorBorder, red)', color: 'var(--vscode-errorForeground, red)', borderRadius: '4px', marginTop: '15px' }}>
-                    <p style={{ margin: 0, fontWeight: 'bold', whiteSpace: 'pre-wrap' }}>{initError}</p>
+                <div className={css.init_error_box}>
+                    <p className={css.init_error_text}>{initError}</p>
                 </div>
             )
         }
@@ -128,13 +141,13 @@ export default function FlowsheetSteps({ idaesRunInfo, setShowConfig }: { idaesR
     }, [selectedIndices]);
 
     return (
-        <div className={`${css.flowsheet_steps_main_container}`}>
-            <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', margin: '0 0 10px 0', fontSize: '13px', color: 'var(--vscode-foreground)' }}>
+        <div className={css.flowsheet_steps_main_container}>
+            <div className={css.flowsheet_file_section}>
+                <label className={css.section_label}>
                     Flowsheet to inspect:
                 </label>
-                <select 
-                    style={{ width: '100%', padding: '6px', backgroundColor: 'var(--vscode-dropdown-background)', color: 'var(--vscode-dropdown-foreground)', border: '1px solid var(--vscode-dropdown-border)', borderRadius: '2px', cursor: 'pointer' }}
+                <select
+                    className={css.dropdown_select}
                     onChange={handleDocumentSelection}
                     value={openPythonFiles?.find(f => f.name === activateFileName)?.path || ""}
                 >
@@ -143,38 +156,66 @@ export default function FlowsheetSteps({ idaesRunInfo, setShowConfig }: { idaesR
                         <option key={i} value={f.path}>{f.name}</option>
                     ))}
                 </select>
-                <p style={{ margin: '5px 0 0 0', fontSize: '11px', color: 'var(--vscode-descriptionForeground, #cccccc)', fontStyle: 'italic' }}>
+                <p className={css.section_hint}>
                     Open the flowsheet in editor to select
                 </p>
             </div>
 
-            <p style={{ margin: '0 0 10px 0', fontSize: '13px', color: 'var(--vscode-foreground)' }}>
+            <div className={css.python_env_container}>
+                <label className={css.python_env_label}>
+                    Current Python:
+                </label>
+                <div className={css.python_env_actions}>
+                    <span className={css.python_env_path_text}>
+                        {currentPythonEnv?.name || currentPythonEnv?.path || "No interpreter selected"}
+                    </span>
+                    <button
+                        className={css.python_env_icon_btn}
+                        onClick={handleCopyInterpreterPath}
+                        title="Copy interpreter path"
+                        disabled={!currentPythonEnv?.path}
+                    >
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="4" y="4" width="8" height="9" rx="1" stroke="currentColor" strokeWidth="1.2"/>
+                            <rect x="2" y="2" width="8" height="9" rx="1" fill="var(--vscode-sideBar-background, #1e1e1e)" stroke="currentColor" strokeWidth="1.2"/>
+                        </svg>
+                    </button>
+                </div>
+                <button
+                    className={css.change_interpreter_btn}
+                    onClick={handleChangeInterpreter}
+                >
+                    Change Interpreter…
+                </button>
+                {packageWarnings && packageWarnings.length > 0 && (
+                    <div className={css.package_warnings_container}>
+                        {packageWarnings.map((w) => (
+                            <div key={w.name} className={css.package_warning_item}>
+                                <span className={css.package_warning_title}>
+                                    Missing package: {w.name}
+                                </span>
+                                <span className={css.package_warning_cmd}>
+                                    {w.install_command}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            <p className={css.section_label}>
                 Select Steps to Run:
             </p>
-            <div className={`${css.steps_container}`}>
+            <div className={css.steps_container}>
                 {stepDisplay()}
             </div>
 
-            <div style={{ marginTop: '15px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                <TreeNavBar setShowConfig={setShowConfig} />
+            <div className={css.steps_actions_footer}>
+                <TreeNavBar />
 
-                <div className={`${css.open_results_view_container}`}>
+                <div className={css.open_results_view_container}>
                     <button
-                        className={`${css.open_results_view_select}`}
-                        style={{
-                            width: '100%',
-                            padding: '8px',
-                            backgroundColor: 'transparent',
-                            border: '1px solid var(--vscode-editor-foreground)',
-                            color: 'var(--vscode-editor-foreground)',
-                            cursor: 'pointer',
-                            borderRadius: '4px',
-                            display: 'flex',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            gap: '8px',
-                            backgroundImage: 'none'
-                        }}
+                        className={css.open_results_view_btn}
                         onClick={() => handleOpenView('webview')}
                     >
                         Open Inspector Results Panel ↗
