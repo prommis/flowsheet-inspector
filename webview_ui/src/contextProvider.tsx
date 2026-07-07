@@ -11,7 +11,8 @@ import {
     type TerminalLogsType,
     type OpenPythonFilesType,
     type MermaidDiagram,
-    type IdaesHistoryItem
+    type IdaesHistoryItem,
+    type StepStatusMap
 } from "./interface/interface";
 
 
@@ -35,6 +36,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const [openPythonFiles, setOpenPythonFiles] = useState<OpenPythonFilesType>([]);
     const [idaesHistoryList, setIdaesHistoryList] = useState<IdaesHistoryItem[] | null>(null);
     const [osPlatform, setOsPlatform] = useState<string>('');
+    const [stepStatuses, setStepStatuses] = useState<StepStatusMap>({});
 
     return (
         <AppContext.Provider value={{
@@ -69,7 +71,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
             idaesHistoryList,
             setIdaesHistoryList,
             osPlatform,
-            setOsPlatform
+            setOsPlatform,
+            stepStatuses,
+            setStepStatuses
         }}>
             {children}
         </AppContext.Provider>

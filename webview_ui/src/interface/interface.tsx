@@ -41,3 +41,12 @@ export type IdaesHistoryItem = {
     solverError?: string;
     tags?: string;
 };
+
+/**
+ * Live status of a single completed flowsheet step, keyed by step name.
+ * `success` when the step finished with errcode 0, `error` otherwise.
+ * A step that has not produced a row yet is simply absent from the map.
+ */
+export type StepRunState = 'success' | 'error';
+export type StepStatusMap = Record<string, { state: StepRunState; errmsg?: string }>;
+export type SetStepStatusMap = Dispatch<SetStateAction<StepStatusMap>>;

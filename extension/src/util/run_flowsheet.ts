@@ -5,6 +5,7 @@ import { IExtensionConfig } from '../interface';
 import runTerminalCommand from "./run_terminal_command";
 import openWebView from '../web_view/web_view_panel';
 import { buildCommandChain, getIdaesDbPath, buildSqliteCommand } from './platform_config';
+import { getMaxReportId, startStepStatusPolling, stopStepStatusPolling, broadcastFinalStepStatus } from './step_status_polling';
 
 export default async function runFlowsheet(context: vscode.ExtensionContext, webview: vscode.Webview, selectedStep: string | undefined) {
     try {
@@ -55,7 +56,22 @@ export default async function runFlowsheet(context: vscode.ExtensionContext, web
         // Broadcast a signal to clear logs across ALL active webviews BEFORE starting new command
         brodcastMessage({ type: 'clear_terminal_logs' });
 
-        await runTerminalCommand(context, command, shell);
+        // Capture the current highest report id BEFORE launching fi-run. fi-run
+        // inserts an empty report row up front and writes one `status` row per
+        // step as it finishes, so polling for rows belonging to a report id
+        // greater than this baseline lets us surface live per-step progress
+        // (running / success / failure) in the tree view while the run is going.
+        const baselineReportId = await getMaxReportId();
+        let stepStatusPoller: NodeJS.Timeout | undefined;
+        try {
+            stepStatusPoller = startStepStatusPolling(baselineReportId);
+            await runTerminalCommand(context, command, shell);
+        } finally {
+            stopStepStatusPolling(stepStatusPoller);
+            // The interval can miss the very last step row written as fi-run
+            // exits, so emit one final authoritative status broadcast.
+            broadcastFinalStepStatus(baselineReportId);
+        }
 
         console.log('fi-run completed. Reading latest report from SQLite...');
 

@@ -22,7 +22,9 @@ import {
     type SetTerminalLogs,
     type OpenPythonFilesType,
     type SetOpenPythonFiles,
-    type IdaesHistoryItem
+    type IdaesHistoryItem,
+    type StepStatusMap,
+    type SetStepStatusMap
 } from "./interface/interface";
 
 export type ActiveLogTab = 'error' | 'terminal';
@@ -61,6 +63,8 @@ interface AppContextType {
     setIdaesHistoryList: React.Dispatch<React.SetStateAction<IdaesHistoryItem[] | null>>;
     osPlatform: string;
     setOsPlatform: React.Dispatch<React.SetStateAction<string>>;
+    stepStatuses: StepStatusMap;
+    setStepStatuses: SetStepStatusMap;
 }
 // Create context with default values
 export const AppContext = createContext({} as AppContextType);

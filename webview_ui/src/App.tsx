@@ -24,7 +24,8 @@ export default function App() {
     setOpenPythonFiles,
     setIdaesHistoryList,
     setMermaidDiagram,
-    setOsPlatform
+    setOsPlatform,
+    setStepStatuses
   } = useContext(AppContext);
 
   const [appName, setAppName] = useState('');
@@ -158,7 +159,23 @@ export default function App() {
           setFlowsheetRunnerResult(null);
           setMermaidDiagram('');
           setExtensionErrorLogs([]);
+          // Reset per-step run indicators so the tree view starts from a clean slate
+          setStepStatuses({});
           break;
+        case 'step_status_update': {
+          // Live per-step progress from the running fi-run process. Build a map
+          // keyed by step name so the tree view can render running / success /
+          // error icons next to each step.
+          const nextStatuses: Record<string, { state: 'success' | 'error'; errmsg?: string }> = {};
+          for (const row of message.data ?? []) {
+            nextStatuses[row.step_name] = {
+              state: row.errcode === 0 ? 'success' : 'error',
+              errmsg: row.errmsg || undefined
+            };
+          }
+          setStepStatuses(nextStatuses);
+          break;
+        }
         case 'clear_terminal_logs':
           setTerminalLogs([]);
           break;
