@@ -1,3 +1,12 @@
+* 0.0.7
+1. Add live per-step run status indicators in the Run Flowsheet tree view: a spinner for the step currently running, a green check for completed steps, and a red cross for a failed step.
+---
+
+* 0.0.6
+1. Add Python interpreter detection so users can choose which Python environment to run flowsheets with.
+2. Interpreter selection relies on Microsoft's Python extension. It is now optional — if the extension is not installed, the user is prompted to install it.
+---
+
 * 0.0.5
 1. Fix an issue where previous flowsheet results remained visible when starting a new run.
 2. Fix compatibility issues on Windows and Linux.
