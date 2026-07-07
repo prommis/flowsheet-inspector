@@ -25,11 +25,8 @@ export default function App() {
     setIdaesHistoryList,
     setMermaidDiagram,
     setOsPlatform,
-<<<<<<< HEAD
-    setStepStatuses
-=======
+    setStepStatuses,
     setCurrentPythonEnv
->>>>>>> main
   } = useContext(AppContext);
 
   const [appName, setAppName] = useState('');

@@ -5,13 +5,8 @@ import { vscode } from '../vscode';
 import TreeNavBar from "./treeviewNav";
 import css from "../css/tree_app.module.css";
 
-<<<<<<< HEAD
-export default function FlowsheetSteps({ idaesRunInfo, setShowConfig }: { idaesRunInfo: idaesRunInfo, setShowConfig: React.Dispatch<React.SetStateAction<boolean>> }) {
-    const { setSelectedSteps, isLoading, initError, openPythonFiles, activateFileName, stepStatuses, isRunningFlowsheet } = useContext(AppContext);
-=======
 export default function FlowsheetSteps({ idaesRunInfo }: { idaesRunInfo: idaesRunInfo }) {
-    const { setSelectedSteps, isLoading, initError, packageWarnings, openPythonFiles, activateFileName, currentPythonEnv } = useContext(AppContext);
->>>>>>> main
+    const { setSelectedSteps, isLoading, initError, packageWarnings, openPythonFiles, activateFileName, currentPythonEnv, stepStatuses, isRunningFlowsheet } = useContext(AppContext);
     const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
 
     /**

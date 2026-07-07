@@ -101,7 +101,6 @@
     gap: 10px;
 }
 
-<<<<<<< HEAD
 /* Trailing per-step run status icon, floated to the end of the step row. */
 .step_status_icon{
     margin-left: auto;
@@ -139,7 +138,8 @@
 @keyframes step_status_spin{
     from{ transform: rotate(0deg); }
     to{ transform: rotate(360deg); }
-=======
+}
+
 .python_env_container {
     margin-bottom: 20px;
 }
@@ -222,7 +222,6 @@
     border: 1px solid var(--vscode-dropdown-border);
     border-radius: 2px;
     cursor: pointer;
->>>>>>> main
 }
 
 .open_results_view_label{

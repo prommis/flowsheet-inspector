@@ -9,13 +9,10 @@
 import * as vscode from 'vscode';
 import { activateWebviews, brodcastMessage } from './webview_handler';
 import openWebView from '../web_view/web_view_panel';
-<<<<<<< HEAD
-import { buildCommandChain, getIdaesDbPath, buildSqliteCommand } from './platform_config';
-import { getMaxReportId, startStepStatusPolling, stopStepStatusPolling, broadcastFinalStepStatus } from './step_status_polling';
-=======
 import { queryLatestReport } from './sqlite_reader';
 import runTerminalCommand from './run_terminal_command';
 import { getActivePythonEnv, activatedProcessEnv } from './python_env';
+import { getMaxReportId, startStepStatusPolling, stopStepStatusPolling, broadcastFinalStepStatus } from './step_status_polling';
 
 const NO_INTERPRETER_MSG =
     'No Python interpreter selected. Pick the environment with Flowsheet Inspector ' +
@@ -42,7 +39,6 @@ export default async function runFlowsheet(
         webview.postMessage({ type: 'error', message });
         activateWebviews.get('treeView')?.webview.postMessage({ type: 'run_flowsheet_done' });
     };
->>>>>>> main
 
     try {
         const activateFileName = context.globalState.get<string>('activatedFileName');
@@ -78,7 +74,6 @@ export default async function runFlowsheet(
         brodcastMessage({ type: 'start_new_run' });
         brodcastMessage({ type: 'clear_terminal_logs' });
 
-<<<<<<< HEAD
         // Capture the current highest report id BEFORE launching fi-run. fi-run
         // inserts an empty report row up front and writes one `status` row per
         // step as it finishes, so polling for rows belonging to a report id
@@ -88,16 +83,13 @@ export default async function runFlowsheet(
         let stepStatusPoller: NodeJS.Timeout | undefined;
         try {
             stepStatusPoller = startStepStatusPolling(baselineReportId);
-            await runTerminalCommand(context, command, shell);
+            await runTerminalCommand(env.interpreterPath, args, childEnv);
         } finally {
             stopStepStatusPolling(stepStatusPoller);
             // The interval can miss the very last step row written as fi-run
             // exits, so emit one final authoritative status broadcast.
             broadcastFinalStepStatus(baselineReportId);
         }
-=======
-        await runTerminalCommand(env.interpreterPath, args, childEnv);
->>>>>>> main
 
         console.log('fi-run completed. Reading latest report from SQLite...');
 

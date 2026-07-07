@@ -21,14 +21,11 @@ import {
     type OpenPythonFilesType,
     type SetOpenPythonFiles,
     type IdaesHistoryItem,
-<<<<<<< HEAD
     type StepStatusMap,
-    type SetStepStatusMap
-=======
+    type SetStepStatusMap,
     type CurrentPythonEnv,
     type SetCurrentPythonEnv,
     type IPackageWarning
->>>>>>> main
 } from "./interface/interface";
 
 export type ActiveLogTab = 'error' | 'terminal';
@@ -67,13 +64,10 @@ interface AppContextType {
     setIdaesHistoryList: React.Dispatch<React.SetStateAction<IdaesHistoryItem[] | null>>;
     osPlatform: string;
     setOsPlatform: React.Dispatch<React.SetStateAction<string>>;
-<<<<<<< HEAD
     stepStatuses: StepStatusMap;
     setStepStatuses: SetStepStatusMap;
-=======
     currentPythonEnv: CurrentPythonEnv;
     setCurrentPythonEnv: SetCurrentPythonEnv;
->>>>>>> main
 }
 // Create context with default values
 export const AppContext = createContext({} as AppContextType);
