@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { vscode } from './vscode';
 import { useContext } from 'react';
 import { AppContext } from './context';
@@ -31,6 +31,10 @@ export default function App() {
 
   const [appName, setAppName] = useState('');
   const [isHighlight, setIsHighlight] = useState(false);
+  // Step names already reported to the error log this run. step_status_update
+  // is broadcast repeatedly while polling, so this prevents logging the same
+  // failure line on every tick. Cleared at the start of each new run.
+  const loggedStepFailuresRef = useRef<Set<string>>(new Set());
 
   // clear vscode error in console
   // console.clear();
@@ -164,19 +168,46 @@ export default function App() {
           setExtensionErrorLogs([]);
           // Reset per-step run indicators so the tree view starts from a clean slate
           setStepStatuses({});
+          loggedStepFailuresRef.current.clear();
           break;
         case 'step_status_update': {
           // Live per-step progress from the running fi-run process. Build a map
           // keyed by step name so the tree view can render running / success /
           // error icons next to each step.
-          const nextStatuses: Record<string, { state: 'success' | 'error'; errmsg?: string }> = {};
+          //
+          // Two distinct failure kinds:
+          //   - 'error'         — the step's code raised (errcode !== 0): red X
+          //   - 'solver_failed' — a solve step ran without raising but found no
+          //                       solution (solve_ok === 0: infeasible / max
+          //                       iterations): orange X
+          // solve_ok === null means a non-solve step or unknown status and is
+          // never treated as a failure.
+          const nextStatuses: Record<string, { state: 'success' | 'error' | 'solver_failed'; errmsg?: string }> = {};
+          const newErrorLines: string[] = [];
           for (const row of message.data ?? []) {
-            nextStatuses[row.step_name] = {
-              state: row.errcode === 0 ? 'success' : 'error',
-              errmsg: row.errmsg || undefined
-            };
+            let state: 'success' | 'error' | 'solver_failed' = 'success';
+            let errmsg: string | undefined = row.errmsg || undefined;
+            if (row.errcode !== 0) {
+              state = 'error';
+            } else if (row.solve_ok === 0) {
+              state = 'solver_failed';
+              errmsg = errmsg || 'Solver did not find a solution (infeasible or maximum iterations exceeded)';
+            }
+            nextStatuses[row.step_name] = { state, errmsg };
+
+            // Surface each failure in the error log once per run.
+            if (state !== 'success' && !loggedStepFailuresRef.current.has(row.step_name)) {
+              loggedStepFailuresRef.current.add(row.step_name);
+              const reason = state === 'solver_failed'
+                ? (errmsg || 'Solver did not find a solution')
+                : (errmsg || 'Step raised an error');
+              newErrorLines.push(`[${new Date().toLocaleTimeString()}] Step "${row.step_name}" failed: ${reason}`);
+            }
           }
           setStepStatuses(nextStatuses);
+          if (newErrorLines.length > 0) {
+            setExtensionErrorLogs((prev: string[]) => [...prev, ...newErrorLines]);
+          }
           break;
         }
         case 'clear_terminal_logs':

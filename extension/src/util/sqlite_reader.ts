@@ -25,13 +25,24 @@ export interface IHistoryRow {
 
 /**
  * One per-step status row from the `status` table, written live by fi-run as
- * each flowsheet step finishes (0 = success, non-zero = failure).
+ * each flowsheet step finishes.
+ *
+ * `errcode` reflects whether the step's *code* raised (0 = no exception,
+ * non-zero = exception). `solve_ok` is separate and reflects whether the
+ * *solver* actually found a solution on a solve step:
+ *   - null  → not a solve step, or solver status unknown (never an error)
+ *   - 1     → solver reached an optimal solution
+ *   - 0     → solve step ran without raising but did NOT find a solution
+ *             (e.g. infeasible, max iterations exceeded) — still a failure
+ *
+ * A step is therefore "failed" when `errcode !== 0` OR `solve_ok === 0`.
  */
 export interface IStepStatusRow {
     step_num: number;
     step_name: string;
     errcode: number;
     errmsg: string;
+    solve_ok: number | null;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -188,8 +199,13 @@ export function queryStepStatuses(baselineId: number): IStepStatusRow[] {
     }
     const db = new Database(dbPath, { readOnly: true });
     try {
+        // `solve_ok` was added to the status table in a later fi-run version.
+        // Select it only when present so older, un-migrated databases don't
+        // fail the query with "no such column"; treat it as NULL otherwise.
+        const cols = db.all('PRAGMA table_info(status)') as { name: string }[];
+        const solveOkExpr = cols.some((c) => c.name === 'solve_ok') ? 'solve_ok' : 'NULL AS solve_ok';
         const rows = db.all(
-            `SELECT step_num, step_name, errcode, errmsg FROM status
+            `SELECT step_num, step_name, errcode, errmsg, ${solveOkExpr} FROM status
              WHERE run_id = (SELECT MAX(id) FROM reports WHERE id > ?)
              ORDER BY step_num`,
             baselineId,
@@ -199,6 +215,8 @@ export function queryStepStatuses(baselineId: number): IStepStatusRow[] {
             step_name: toStr(r.step_name),
             errcode: Number(r.errcode ?? 0),
             errmsg: toStr(r.errmsg),
+            // Preserve null (unknown / non-solve step); only 0 and 1 are meaningful.
+            solve_ok: r.solve_ok == null ? null : Number(r.solve_ok),
         }));
     } catch {
         // `status` table may not exist (DB created by an older schema).

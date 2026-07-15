@@ -31,6 +31,9 @@ export default function FlowsheetSteps({ idaesRunInfo }: { idaesRunInfo: idaesRu
         if (status?.state === 'error') {
             return <span className={`${css.step_status_icon} ${css.step_status_error}`} title={status.errmsg || 'Step failed'}>✕</span>;
         }
+        if (status?.state === 'solver_failed') {
+            return <span className={`${css.step_status_icon} ${css.step_status_solver_failed}`} title={status.errmsg || 'Solver did not find a solution'}>✕</span>;
+        }
         if (isRunningCandidate) {
             return <span className={`${css.step_status_icon} ${css.step_status_running}`} title="Running" />;
         }
@@ -149,7 +152,10 @@ export default function FlowsheetSteps({ idaesRunInfo }: { idaesRunInfo: idaesRu
             // step has failed. Steps run as a contiguous prefix, so this is the
             // step being executed right now.
             const firstPendingIndex = idaesRunInfo.steps.findIndex(s => !stepStatuses[s]);
-            const anyFailed = idaesRunInfo.steps.some(s => stepStatuses[s]?.state === 'error');
+            const anyFailed = idaesRunInfo.steps.some(s => {
+                const st = stepStatuses[s]?.state;
+                return st === 'error' || st === 'solver_failed';
+            });
             const runningIndex = isRunningFlowsheet && !anyFailed ? firstPendingIndex : -1;
 
             const stepDisplays = idaesRunInfo.steps.map((step: string, index: number) => {

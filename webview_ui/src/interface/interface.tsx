@@ -42,9 +42,12 @@ export type IdaesHistoryItem = {
 
 /**
  * Live status of a single completed flowsheet step, keyed by step name.
- * `success` when the step finished with errcode 0, `error` otherwise.
+ *   - `success`       — step ran and (if a solve step) found a solution
+ *   - `error`         — step's code raised an exception (errcode !== 0)
+ *   - `solver_failed` — solve step ran without raising but found no solution
+ *                       (solve_ok === 0: infeasible, max iterations, etc.)
  * A step that has not produced a row yet is simply absent from the map.
  */
-export type StepRunState = 'success' | 'error';
+export type StepRunState = 'success' | 'error' | 'solver_failed';
 export type StepStatusMap = Record<string, { state: StepRunState; errmsg?: string }>;
 export type SetStepStatusMap = Dispatch<SetStateAction<StepStatusMap>>;

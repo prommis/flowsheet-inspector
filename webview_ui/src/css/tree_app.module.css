@@ -121,9 +121,15 @@
     background-color: #2ea043;
 }
 
-/* Red badge with a white cross — step failed. */
+/* Red badge with a white cross — step's code raised an error. */
 .step_status_error{
     background-color: #d1242f;
+}
+
+/* Orange badge with a white cross — solve step found no solution
+   (infeasible / max iterations), even though no exception was raised. */
+.step_status_solver_failed{
+    background-color: #e0700a;
 }
 
 /* Spinning ring — step is currently running. */
