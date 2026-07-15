@@ -257,6 +257,35 @@ function readStatusRows(whereClause: string, bindValue: number): IStepStatusRow[
 }
 
 /**
+ * Reads the overall run exception (type + traceback) recorded for a run.
+ *
+ * The `status` table stores only `str(exception)` per step, which is empty for
+ * exceptions with no message (e.g. a bare `assert`). The reports table's
+ * `run_exception` column holds the full, human-readable traceback for the run
+ * that failed, so it is used to give the step-failure message real detail.
+ *
+ * @param runId  The report row id of the run.
+ * @returns The run exception text, or '' if none / unavailable (e.g. a legacy
+ *   schema without the `run_exception` column).
+ */
+export function queryRunException(runId: number): string {
+    const dbPath = getIdaesDbPath();
+    if (!fs.existsSync(dbPath)) {
+        return '';
+    }
+    const db = new Database(dbPath, { readOnly: true });
+    try {
+        const row = db.get('SELECT run_exception FROM reports WHERE id = ?', runId) as { run_exception: unknown } | null;
+        return row ? toStr(row.run_exception).trim() : '';
+    } catch {
+        // Legacy schema without a run_exception column.
+        return '';
+    } finally {
+        db.close();
+    }
+}
+
+/**
  * Reads and parses the most recently inserted JSON report blob.
  *
  * @returns The parsed report object, or null if the table is empty.

@@ -11,7 +11,7 @@
  * sqlite_reader.ts (node-sqlite3-wasm), so no sqlite3 CLI is required.
  */
 import { brodcastMessage } from './webview_handler';
-import { queryMaxReportId, queryStepStatuses } from './sqlite_reader';
+import { queryMaxReportId, queryStepStatuses, queryStepStatusesByRunId, queryRunException } from './sqlite_reader';
 
 /**
  * Reads the highest report id currently in the database, to be captured as a
@@ -80,12 +80,28 @@ export function stopStepStatusPolling(handle: NodeJS.Timeout | undefined): void 
  * right after the run completes to guarantee the tree view reflects the final
  * state.
  *
+ * This authoritative broadcast is marked `final: true` and carries the run's
+ * `run_exception`, which is only available once the run has finished and the
+ * report row is filled in. The frontend uses this (not the intermediate
+ * polling broadcasts) to write meaningful step-failure lines to the error log.
+ *
  * @param baselineId  Same baseline used to start the poller
  *   (see {@link getMaxReportId}).
  */
 export function broadcastFinalStepStatus(baselineId: number): void {
-    const rows = queryStepStatuses(baselineId);
-    if (rows.length > 0) {
-        brodcastMessage({ type: 'step_status_update', data: rows });
+    // After the run, the current run is the latest report row (id > baseline).
+    const runId = getMaxReportId();
+    if (runId <= baselineId) {
+        return; // no new run was recorded
     }
+    const rows = queryStepStatusesByRunId(runId);
+    if (rows.length === 0) {
+        return;
+    }
+    brodcastMessage({
+        type: 'step_status_update',
+        data: rows,
+        runException: queryRunException(runId),
+        final: true,
+    });
 }

@@ -4,7 +4,7 @@ import { IFrontendMessage } from "../interface";
 import runFlowsheet from "./run_flowsheet";
 import { getWebview, brodcastMessage } from "./webview_handler";
 import { killProcessTree } from './platform_config';
-import { queryReportById, queryStepStatusesByRunId } from './sqlite_reader';
+import { queryReportById, queryStepStatusesByRunId, queryRunException } from './sqlite_reader';
 import { broadcastCurrentPythonEnv } from './python_env';
 
 export default function webviewReceiveMessageHandler(context: vscode.ExtensionContext, frontendMessage: IFrontendMessage) {
@@ -108,7 +108,12 @@ export default function webviewReceiveMessageHandler(context: vscode.ExtensionCo
                     // from a clean slate (clear stale icons / error log) so it
                     // shows exactly this run's steps.
                     const stepRows = queryStepStatusesByRunId(Number(frontendMessage.id));
-                    brodcastMessage({ type: 'step_status_update', data: stepRows, reset: true });
+                    brodcastMessage({
+                        type: 'step_status_update',
+                        data: stepRows,
+                        runException: queryRunException(Number(frontendMessage.id)),
+                        reset: true,
+                    });
                 } catch (e: any) {
                     brodcastMessage({ type: 'error', message: `Failed to load historical run: ${e.message}` });
                 }

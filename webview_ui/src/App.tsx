@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { vscode } from './vscode';
 import { useContext } from 'react';
 import { AppContext } from './context';
@@ -31,10 +31,6 @@ export default function App() {
 
   const [appName, setAppName] = useState('');
   const [isHighlight, setIsHighlight] = useState(false);
-  // Step names already reported to the error log this run. step_status_update
-  // is broadcast repeatedly while polling, so this prevents logging the same
-  // failure line on every tick. Cleared at the start of each new run.
-  const loggedStepFailuresRef = useRef<Set<string>>(new Set());
 
   // clear vscode error in console
   // console.clear();
@@ -168,12 +164,10 @@ export default function App() {
           setExtensionErrorLogs([]);
           // Reset per-step run indicators so the tree view starts from a clean slate
           setStepStatuses({});
-          loggedStepFailuresRef.current.clear();
           break;
         case 'step_status_update': {
-          // Live per-step progress from the running fi-run process. Build a map
-          // keyed by step name so the tree view can render running / success /
-          // error icons next to each step.
+          // Per-step progress. Build a map keyed by step name so the tree view
+          // can render running / success / error icons next to each step.
           //
           // Two distinct failure kinds:
           //   - 'error'         — the step's code raised (errcode !== 0): red X
@@ -182,31 +176,41 @@ export default function App() {
           //                       iterations): orange X
           // solve_ok === null means a non-solve step or unknown status and is
           // never treated as a failure.
-          // `reset` (sent when loading a historical run) starts from a clean
-          // slate so the tree view and error log reflect only that run.
-          if (message.reset) {
-            loggedStepFailuresRef.current.clear();
-          }
+          //
+          // Error-log lines are written only for authoritative broadcasts:
+          //   - `final` — sent once after the run finishes (carries the run's
+          //               full traceback in `runException`)
+          //   - `reset` — sent when loading a historical run (clears prior log)
+          // Intermediate polling broadcasts only refresh the icons, so a
+          // half-finished / detail-less failure line never lingers.
+          const runException: string = message.runException || '';
+          const exceptionHeadline = runException.split('\n')[0].trim();
+          const SOLVER_FAIL_MSG = 'Solver did not find a solution (infeasible or maximum iterations exceeded)';
+
           const nextStatuses: Record<string, { state: 'success' | 'error' | 'solver_failed'; errmsg?: string }> = {};
           const newErrorLines: string[] = [];
           for (const row of message.data ?? []) {
             let state: 'success' | 'error' | 'solver_failed' = 'success';
-            let errmsg: string | undefined = row.errmsg || undefined;
+            // Tooltip text for the icon — kept short (headline only).
+            let iconMsg: string | undefined = row.errmsg || undefined;
             if (row.errcode !== 0) {
               state = 'error';
+              iconMsg = row.errmsg || exceptionHeadline || undefined;
             } else if (row.solve_ok === 0) {
               state = 'solver_failed';
-              errmsg = errmsg || 'Solver did not find a solution (infeasible or maximum iterations exceeded)';
+              iconMsg = row.errmsg || SOLVER_FAIL_MSG;
             }
-            nextStatuses[row.step_name] = { state, errmsg };
+            nextStatuses[row.step_name] = { state, errmsg: iconMsg };
 
-            // Surface each failure in the error log once per run.
-            if (state !== 'success' && !loggedStepFailuresRef.current.has(row.step_name)) {
-              loggedStepFailuresRef.current.add(row.step_name);
-              const reason = state === 'solver_failed'
-                ? (errmsg || 'Solver did not find a solution')
-                : (errmsg || 'Step raised an error');
-              newErrorLines.push(`[${new Date().toLocaleTimeString()}] Step "${row.step_name}" failed: ${reason}`);
+            if (state !== 'success' && (message.final || message.reset)) {
+              // Full detail for the error log: the step's own message, else the
+              // run's traceback (which has the exception type + file/line even
+              // when the exception itself carries no message, e.g. a bare
+              // assert), else a generic fallback.
+              const detail = state === 'solver_failed'
+                ? (row.errmsg || SOLVER_FAIL_MSG)
+                : (row.errmsg || runException || 'Step raised an error');
+              newErrorLines.push(`[${new Date().toLocaleTimeString()}] Step "${row.step_name}" failed:\n${detail}`);
             }
           }
           setStepStatuses(nextStatuses);
