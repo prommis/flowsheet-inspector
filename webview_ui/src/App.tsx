@@ -182,6 +182,11 @@ export default function App() {
           //                       iterations): orange X
           // solve_ok === null means a non-solve step or unknown status and is
           // never treated as a failure.
+          // `reset` (sent when loading a historical run) starts from a clean
+          // slate so the tree view and error log reflect only that run.
+          if (message.reset) {
+            loggedStepFailuresRef.current.clear();
+          }
           const nextStatuses: Record<string, { state: 'success' | 'error' | 'solver_failed'; errmsg?: string }> = {};
           const newErrorLines: string[] = [];
           for (const row of message.data ?? []) {
@@ -205,7 +210,10 @@ export default function App() {
             }
           }
           setStepStatuses(nextStatuses);
-          if (newErrorLines.length > 0) {
+          if (message.reset) {
+            // Loading a historical run: the error log should show only this run.
+            setExtensionErrorLogs(newErrorLines);
+          } else if (newErrorLines.length > 0) {
             setExtensionErrorLogs((prev: string[]) => [...prev, ...newErrorLines]);
           }
           break;

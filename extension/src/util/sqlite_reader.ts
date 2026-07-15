@@ -193,6 +193,36 @@ export function queryMaxReportId(): number {
  * @returns Step status rows ordered by step number, or [] if none/unavailable.
  */
 export function queryStepStatuses(baselineId: number): IStepStatusRow[] {
+    // The in-progress run is the one with the highest report id greater than
+    // the baseline; scope the status rows to that run.
+    return readStatusRows('run_id = (SELECT MAX(id) FROM reports WHERE id > ?)', baselineId);
+}
+
+/**
+ * Reads the per-step status rows for a specific past run by its report id.
+ *
+ * Used when loading a historical run from the Load Flowsheet view, so the tree
+ * view can show that run's per-step icons (the `status` table's `run_id`
+ * equals the report row id).
+ *
+ * @param runId  The report row id of the run to load.
+ * @returns Step status rows ordered by step number, or [] if none/unavailable.
+ */
+export function queryStepStatusesByRunId(runId: number): IStepStatusRow[] {
+    return readStatusRows('run_id = ?', runId);
+}
+
+/**
+ * Shared reader for the `status` table: applies the given WHERE clause and
+ * bind value, tolerating a missing `solve_ok` column (older schema) and a
+ * missing `status` table entirely.
+ *
+ * @param whereClause  SQL WHERE condition on the `status` table, using `?` for
+ *   the single bind value.
+ * @param bindValue    Value bound to the `?` placeholder in `whereClause`.
+ * @returns Mapped step status rows ordered by step number, or [] on any error.
+ */
+function readStatusRows(whereClause: string, bindValue: number): IStepStatusRow[] {
     const dbPath = getIdaesDbPath();
     if (!fs.existsSync(dbPath)) {
         return [];
@@ -206,9 +236,9 @@ export function queryStepStatuses(baselineId: number): IStepStatusRow[] {
         const solveOkExpr = cols.some((c) => c.name === 'solve_ok') ? 'solve_ok' : 'NULL AS solve_ok';
         const rows = db.all(
             `SELECT step_num, step_name, errcode, errmsg, ${solveOkExpr} FROM status
-             WHERE run_id = (SELECT MAX(id) FROM reports WHERE id > ?)
+             WHERE ${whereClause}
              ORDER BY step_num`,
-            baselineId,
+            bindValue,
         ) as unknown as Record<string, unknown>[];
         return rows.map((r) => ({
             step_num: Number(r.step_num),
