@@ -23,6 +23,28 @@ export interface IHistoryRow {
     tags: string | null;
 }
 
+/**
+ * One per-step status row from the `status` table, written live by fi-run as
+ * each flowsheet step finishes.
+ *
+ * `errcode` reflects whether the step's *code* raised (0 = no exception,
+ * non-zero = exception). `solve_ok` is separate and reflects whether the
+ * *solver* actually found a solution on a solve step:
+ *   - null  → not a solve step, or solver status unknown (never an error)
+ *   - 1     → solver reached an optimal solution
+ *   - 0     → solve step ran without raising but did NOT find a solution
+ *             (e.g. infeasible, max iterations exceeded) — still a failure
+ *
+ * A step is therefore "failed" when `errcode !== 0` OR `solve_ok === 0`.
+ */
+export interface IStepStatusRow {
+    step_num: number;
+    step_name: string;
+    errcode: number;
+    errmsg: string;
+    solve_ok: number | null;
+}
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 /**
@@ -125,6 +147,139 @@ export function queryReportById(id: number): unknown {
             return null;
         }
         return JSON.parse(sanitizeJsonString(toStr(row.report)));
+    } finally {
+        db.close();
+    }
+}
+
+/**
+ * Reads the highest report id currently in the database.
+ *
+ * Captured as a baseline just before fi-run starts so the step-status poller
+ * can distinguish the in-progress report row (created by fi-run up front) from
+ * previous runs. Returns 0 when the database or reports table does not exist
+ * yet (first ever run).
+ *
+ * @returns The current MAX(id) of the reports table, or 0 if unavailable.
+ */
+export function queryMaxReportId(): number {
+    const dbPath = getIdaesDbPath();
+    if (!fs.existsSync(dbPath)) {
+        return 0;
+    }
+    const db = new Database(dbPath, { readOnly: true });
+    try {
+        const row = db.get('SELECT COALESCE(MAX(id), 0) AS maxId FROM reports') as { maxId: unknown } | null;
+        return row ? Number(row.maxId) : 0;
+    } catch {
+        // reports table may not exist yet on a brand-new DB.
+        return 0;
+    } finally {
+        db.close();
+    }
+}
+
+/**
+ * Reads the per-step status rows for the currently in-progress (or just
+ * finished) run — the one whose report id is greater than `baselineId`.
+ *
+ * fi-run writes one `status` row per step as it completes, so this reveals in
+ * real time which steps have finished and whether each succeeded or failed.
+ * Only rows for a report id greater than the baseline are returned, so stale
+ * rows from the previous run are never included. Returns an empty array when
+ * the DB or the `status` table (older, un-migrated schema) is absent.
+ *
+ * @param baselineId  MAX(id) of reports captured before fi-run launched.
+ * @returns Step status rows ordered by step number, or [] if none/unavailable.
+ */
+export function queryStepStatuses(baselineId: number): IStepStatusRow[] {
+    // The in-progress run is the one with the highest report id greater than
+    // the baseline; scope the status rows to that run.
+    return readStatusRows('run_id = (SELECT MAX(id) FROM reports WHERE id > ?)', baselineId);
+}
+
+/**
+ * Reads the per-step status rows for a specific past run by its report id.
+ *
+ * Used when loading a historical run from the Load Flowsheet view, so the tree
+ * view can show that run's per-step icons (the `status` table's `run_id`
+ * equals the report row id).
+ *
+ * @param runId  The report row id of the run to load.
+ * @returns Step status rows ordered by step number, or [] if none/unavailable.
+ */
+export function queryStepStatusesByRunId(runId: number): IStepStatusRow[] {
+    return readStatusRows('run_id = ?', runId);
+}
+
+/**
+ * Shared reader for the `status` table: applies the given WHERE clause and
+ * bind value, tolerating a missing `solve_ok` column (older schema) and a
+ * missing `status` table entirely.
+ *
+ * @param whereClause  SQL WHERE condition on the `status` table, using `?` for
+ *   the single bind value.
+ * @param bindValue    Value bound to the `?` placeholder in `whereClause`.
+ * @returns Mapped step status rows ordered by step number, or [] on any error.
+ */
+function readStatusRows(whereClause: string, bindValue: number): IStepStatusRow[] {
+    const dbPath = getIdaesDbPath();
+    if (!fs.existsSync(dbPath)) {
+        return [];
+    }
+    const db = new Database(dbPath, { readOnly: true });
+    try {
+        // `solve_ok` was added to the status table in a later fi-run version.
+        // Select it only when present so older, un-migrated databases don't
+        // fail the query with "no such column"; treat it as NULL otherwise.
+        const cols = db.all('PRAGMA table_info(status)') as { name: string }[];
+        const solveOkExpr = cols.some((c) => c.name === 'solve_ok') ? 'solve_ok' : 'NULL AS solve_ok';
+        const rows = db.all(
+            `SELECT step_num, step_name, errcode, errmsg, ${solveOkExpr} FROM status
+             WHERE ${whereClause}
+             ORDER BY step_num`,
+            bindValue,
+        ) as unknown as Record<string, unknown>[];
+        return rows.map((r) => ({
+            step_num: Number(r.step_num),
+            step_name: toStr(r.step_name),
+            errcode: Number(r.errcode ?? 0),
+            errmsg: toStr(r.errmsg),
+            // Preserve null (unknown / non-solve step); only 0 and 1 are meaningful.
+            solve_ok: r.solve_ok == null ? null : Number(r.solve_ok),
+        }));
+    } catch {
+        // `status` table may not exist (DB created by an older schema).
+        return [];
+    } finally {
+        db.close();
+    }
+}
+
+/**
+ * Reads the overall run exception (type + traceback) recorded for a run.
+ *
+ * The `status` table stores only `str(exception)` per step, which is empty for
+ * exceptions with no message (e.g. a bare `assert`). The reports table's
+ * `run_exception` column holds the full, human-readable traceback for the run
+ * that failed, so it is used to give the step-failure message real detail.
+ *
+ * @param runId  The report row id of the run.
+ * @returns The run exception text, or '' if none / unavailable (e.g. a legacy
+ *   schema without the `run_exception` column).
+ */
+export function queryRunException(runId: number): string {
+    const dbPath = getIdaesDbPath();
+    if (!fs.existsSync(dbPath)) {
+        return '';
+    }
+    const db = new Database(dbPath, { readOnly: true });
+    try {
+        const row = db.get('SELECT run_exception FROM reports WHERE id = ?', runId) as { run_exception: unknown } | null;
+        return row ? toStr(row.run_exception).trim() : '';
+    } catch {
+        // Legacy schema without a run_exception column.
+        return '';
     } finally {
         db.close();
     }

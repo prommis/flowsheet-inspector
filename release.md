@@ -1,3 +1,18 @@
+* 0.0.8
+1. Distinguish a failed solve step from a code error: a step whose solver ran without raising but found no solution (infeasible or maximum iterations exceeded) now shows an orange cross, separate from the red cross used when a step's code raises an exception.
+2. Report each step failure in the error log, including the reason when the solver did not find a solution.
+3. Show per-step status icons when loading a past run from the Load Flowsheet view, so the tree view and error log reflect the loaded run.
+---
+
+* 0.0.7
+1. Add live per-step run status indicators in the Run Flowsheet tree view: a spinner for the step currently running, a green check for completed steps, and a red cross for a failed step.
+---
+
+* 0.0.6
+1. Add Python interpreter detection so users can choose which Python environment to run flowsheets with.
+2. Interpreter selection relies on Microsoft's Python extension. It is now optional — if the extension is not installed, the user is prompted to install it.
+---
+
 * 0.0.5
 1. Fix an issue where previous flowsheet results remained visible when starting a new run.
 2. Fix compatibility issues on Windows and Linux.

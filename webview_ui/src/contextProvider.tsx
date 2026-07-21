@@ -11,6 +11,7 @@ import {
     type OpenPythonFilesType,
     type MermaidDiagram,
     type IdaesHistoryItem,
+    type StepStatusMap,
     type CurrentPythonEnv,
     type IPackageWarning
 } from "./interface/interface";
@@ -36,6 +37,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const [openPythonFiles, setOpenPythonFiles] = useState<OpenPythonFilesType>([]);
     const [idaesHistoryList, setIdaesHistoryList] = useState<IdaesHistoryItem[] | null>(null);
     const [osPlatform, setOsPlatform] = useState<string>('');
+    const [stepStatuses, setStepStatuses] = useState<StepStatusMap>({});
     const [currentPythonEnv, setCurrentPythonEnv] = useState<CurrentPythonEnv>(null);
 
     return (
@@ -72,6 +74,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
             setIdaesHistoryList,
             osPlatform,
             setOsPlatform,
+            stepStatuses,
+            setStepStatuses,
             currentPythonEnv,
             setCurrentPythonEnv
         }}>

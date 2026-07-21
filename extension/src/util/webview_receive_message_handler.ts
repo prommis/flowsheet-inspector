@@ -4,7 +4,7 @@ import { IFrontendMessage } from "../interface";
 import runFlowsheet from "./run_flowsheet";
 import { getWebview, brodcastMessage } from "./webview_handler";
 import { killProcessTree } from './platform_config';
-import { queryReportById } from './sqlite_reader';
+import { queryReportById, queryStepStatusesByRunId, queryRunException } from './sqlite_reader';
 import { broadcastCurrentPythonEnv } from './python_env';
 
 export default function webviewReceiveMessageHandler(context: vscode.ExtensionContext, frontendMessage: IFrontendMessage) {
@@ -102,6 +102,18 @@ export default function webviewReceiveMessageHandler(context: vscode.ExtensionCo
                     }
                     console.log('Successfully fetched and parsed historical flowsheet JSON blob.');
                     brodcastMessage({ type: 'flowsheet_runner_result', data: parsedData });
+
+                    // Also update the tree view's per-step status icons for this
+                    // historical run. `reset: true` tells the frontend to start
+                    // from a clean slate (clear stale icons / error log) so it
+                    // shows exactly this run's steps.
+                    const stepRows = queryStepStatusesByRunId(Number(frontendMessage.id));
+                    brodcastMessage({
+                        type: 'step_status_update',
+                        data: stepRows,
+                        runException: queryRunException(Number(frontendMessage.id)),
+                        reset: true,
+                    });
                 } catch (e: any) {
                     brodcastMessage({ type: 'error', message: `Failed to load historical run: ${e.message}` });
                 }

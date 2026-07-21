@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { vscode } from './vscode';
 import { useContext } from 'react';
 import { AppContext } from './context';
@@ -25,11 +25,16 @@ export default function App() {
     setIdaesHistoryList,
     setMermaidDiagram,
     setOsPlatform,
+    setStepStatuses,
     setCurrentPythonEnv
   } = useContext(AppContext);
 
   const [appName, setAppName] = useState('');
   const [isHighlight, setIsHighlight] = useState(false);
+  // Tracks the active flowsheet file so step-status icons / error log (which
+  // belong to a specific file's run) can be cleared when the active file
+  // actually changes — not on same-file loading refreshes.
+  const activeFileRef = useRef<string>('');
 
   // clear vscode error in console
   // console.clear();
@@ -90,6 +95,7 @@ export default function App() {
           console.log(`VSCode post message: ${JSON.stringify(message)}`);
           setEditorContent(message.content);
           setActivateFileName(message.fileName);
+          activeFileRef.current = message.fileName;
           setidaesRunInfo(message.idaesRunInfo);
           setAppName(message.loadApp);
           setIsLoading(false);
@@ -103,6 +109,13 @@ export default function App() {
           break;
         case 'switch_tab':
           console.log('Received switch_tab event with payload:', message);
+          // Switching to a different flowsheet file: the previous file's run
+          // results (step icons + error log) no longer apply, so clear them.
+          if (message.activate_tab_name !== undefined && message.activate_tab_name !== activeFileRef.current) {
+            activeFileRef.current = message.activate_tab_name;
+            setStepStatuses({});
+            setExtensionErrorLogs([]);
+          }
           if (message.isLoading !== undefined) {
             console.log('Calling setIsLoading with:', message.isLoading);
             setIsLoading(message.isLoading);
@@ -161,7 +174,66 @@ export default function App() {
           setFlowsheetRunnerResult(null);
           setMermaidDiagram('');
           setExtensionErrorLogs([]);
+          // Reset per-step run indicators so the tree view starts from a clean slate
+          setStepStatuses({});
           break;
+        case 'step_status_update': {
+          // Per-step progress. Build a map keyed by step name so the tree view
+          // can render running / success / error icons next to each step.
+          //
+          // Two distinct failure kinds:
+          //   - 'error'         — the step's code raised (errcode !== 0): red X
+          //   - 'solver_failed' — a solve step ran without raising but found no
+          //                       solution (solve_ok === 0: infeasible / max
+          //                       iterations): orange X
+          // solve_ok === null means a non-solve step or unknown status and is
+          // never treated as a failure.
+          //
+          // Error-log lines are written only for authoritative broadcasts:
+          //   - `final` — sent once after the run finishes (carries the run's
+          //               full traceback in `runException`)
+          //   - `reset` — sent when loading a historical run (clears prior log)
+          // Intermediate polling broadcasts only refresh the icons, so a
+          // half-finished / detail-less failure line never lingers.
+          const runException: string = message.runException || '';
+          const exceptionHeadline = runException.split('\n')[0].trim();
+          const SOLVER_FAIL_MSG = 'Solver did not find a solution (infeasible or maximum iterations exceeded)';
+
+          const nextStatuses: Record<string, { state: 'success' | 'error' | 'solver_failed'; errmsg?: string }> = {};
+          const newErrorLines: string[] = [];
+          for (const row of message.data ?? []) {
+            let state: 'success' | 'error' | 'solver_failed' = 'success';
+            // Tooltip text for the icon — kept short (headline only).
+            let iconMsg: string | undefined = row.errmsg || undefined;
+            if (row.errcode !== 0) {
+              state = 'error';
+              iconMsg = row.errmsg || exceptionHeadline || undefined;
+            } else if (row.solve_ok === 0) {
+              state = 'solver_failed';
+              iconMsg = row.errmsg || SOLVER_FAIL_MSG;
+            }
+            nextStatuses[row.step_name] = { state, errmsg: iconMsg };
+
+            if (state !== 'success' && (message.final || message.reset)) {
+              // Full detail for the error log: the step's own message, else the
+              // run's traceback (which has the exception type + file/line even
+              // when the exception itself carries no message, e.g. a bare
+              // assert), else a generic fallback.
+              const detail = state === 'solver_failed'
+                ? (row.errmsg || SOLVER_FAIL_MSG)
+                : (row.errmsg || runException || 'Step raised an error');
+              newErrorLines.push(`[${new Date().toLocaleTimeString()}] Step "${row.step_name}" failed:\n${detail}`);
+            }
+          }
+          setStepStatuses(nextStatuses);
+          if (message.reset) {
+            // Loading a historical run: the error log should show only this run.
+            setExtensionErrorLogs(newErrorLines);
+          } else if (newErrorLines.length > 0) {
+            setExtensionErrorLogs((prev: string[]) => [...prev, ...newErrorLines]);
+          }
+          break;
+        }
         case 'clear_terminal_logs':
           setTerminalLogs([]);
           break;

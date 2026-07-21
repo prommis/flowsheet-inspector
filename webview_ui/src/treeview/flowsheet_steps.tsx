@@ -6,8 +6,39 @@ import TreeNavBar from "./treeviewNav";
 import css from "../css/tree_app.module.css";
 
 export default function FlowsheetSteps({ idaesRunInfo }: { idaesRunInfo: idaesRunInfo }) {
-    const { setSelectedSteps, isLoading, initError, packageWarnings, openPythonFiles, activateFileName, currentPythonEnv } = useContext(AppContext);
+    const { setSelectedSteps, isLoading, initError, packageWarnings, openPythonFiles, activateFileName, currentPythonEnv, stepStatuses, isRunningFlowsheet } = useContext(AppContext);
     const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
+
+    /**
+     * Renders the trailing status icon for a step, floated to the end of the row.
+     *
+     * The `status` table only gains a row once a step *finishes*, so the step
+     * currently executing has no recorded status yet. We infer it: while a run
+     * is in progress and no earlier step has errored, the first step without a
+     * recorded status is the one running (spinner). Completed steps show a green
+     * check (success) or red cross (error); steps not yet reached show nothing.
+     *
+     * @param stepName - Name of the step (matches the `status` table step_name).
+     * @param isRunningCandidate - True if this is the earliest not-yet-completed
+     *   step in the sequence, i.e. the one currently executing during a run.
+     * @returns The icon element, or null when the step has no status to show.
+     */
+    const renderStepIcon = (stepName: string, isRunningCandidate: boolean) => {
+        const status = stepStatuses[stepName];
+        if (status?.state === 'success') {
+            return <span className={`${css.step_status_icon} ${css.step_status_success}`} title="Completed">✓</span>;
+        }
+        if (status?.state === 'error') {
+            return <span className={`${css.step_status_icon} ${css.step_status_error}`} title={status.errmsg || 'Step failed'}>✕</span>;
+        }
+        if (status?.state === 'solver_failed') {
+            return <span className={`${css.step_status_icon} ${css.step_status_solver_failed}`} title={status.errmsg || 'Solver did not find a solution'}>✕</span>;
+        }
+        if (isRunningCandidate) {
+            return <span className={`${css.step_status_icon} ${css.step_status_running}`} title="Running" />;
+        }
+        return null;
+    };
     // const focuseView = useRef<HTMLSelectElement>(null)
 
     const handleOpenView = (target: string) => {
@@ -116,6 +147,17 @@ export default function FlowsheetSteps({ idaesRunInfo }: { idaesRunInfo: idaesRu
 
         // build step displays
         if (configDataSteps.includes("steps") && idaesRunInfo.steps && idaesRunInfo.steps.length > 0) {
+            // The currently-running step is the first one (in sequence) that has
+            // no recorded status yet, provided a run is in progress and no earlier
+            // step has failed. Steps run as a contiguous prefix, so this is the
+            // step being executed right now.
+            const firstPendingIndex = idaesRunInfo.steps.findIndex(s => !stepStatuses[s]);
+            const anyFailed = idaesRunInfo.steps.some(s => {
+                const st = stepStatuses[s]?.state;
+                return st === 'error' || st === 'solver_failed';
+            });
+            const runningIndex = isRunningFlowsheet && !anyFailed ? firstPendingIndex : -1;
+
             const stepDisplays = idaesRunInfo.steps.map((step: string, index: number) => {
                 return (
                     <div key={step + index}
@@ -129,6 +171,7 @@ export default function FlowsheetSteps({ idaesRunInfo }: { idaesRunInfo: idaesRu
                             onChange={(e) => stepSelectorHandler(e, index)}
                         />
                         <label htmlFor={`${index}`}>{step}</label>
+                        {renderStepIcon(step, index === runningIndex)}
                     </div>
                 )
             })

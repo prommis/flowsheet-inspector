@@ -12,6 +12,7 @@ import openWebView from '../web_view/web_view_panel';
 import { queryLatestReport } from './sqlite_reader';
 import runTerminalCommand from './run_terminal_command';
 import { getActivePythonEnv, activatedProcessEnv } from './python_env';
+import { getMaxReportId, startStepStatusPolling, stopStepStatusPolling, broadcastFinalStepStatus } from './step_status_polling';
 
 const NO_INTERPRETER_MSG =
     'No Python interpreter selected. Pick the environment with Flowsheet Inspector ' +
@@ -73,7 +74,22 @@ export default async function runFlowsheet(
         brodcastMessage({ type: 'start_new_run' });
         brodcastMessage({ type: 'clear_terminal_logs' });
 
-        await runTerminalCommand(env.interpreterPath, args, childEnv);
+        // Capture the current highest report id BEFORE launching fi-run. fi-run
+        // inserts an empty report row up front and writes one `status` row per
+        // step as it finishes, so polling for rows belonging to a report id
+        // greater than this baseline lets us surface live per-step progress
+        // (running / success / failure) in the tree view while the run is going.
+        const baselineReportId = await getMaxReportId();
+        let stepStatusPoller: NodeJS.Timeout | undefined;
+        try {
+            stepStatusPoller = startStepStatusPolling(baselineReportId);
+            await runTerminalCommand(env.interpreterPath, args, childEnv);
+        } finally {
+            stopStepStatusPolling(stepStatusPoller);
+            // The interval can miss the very last step row written as fi-run
+            // exits, so emit one final authoritative status broadcast.
+            broadcastFinalStepStatus(baselineReportId);
+        }
 
         console.log('fi-run completed. Reading latest report from SQLite...');
 

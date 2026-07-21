@@ -21,6 +21,8 @@ import {
     type OpenPythonFilesType,
     type SetOpenPythonFiles,
     type IdaesHistoryItem,
+    type StepStatusMap,
+    type SetStepStatusMap,
     type CurrentPythonEnv,
     type SetCurrentPythonEnv,
     type IPackageWarning
@@ -62,6 +64,8 @@ interface AppContextType {
     setIdaesHistoryList: React.Dispatch<React.SetStateAction<IdaesHistoryItem[] | null>>;
     osPlatform: string;
     setOsPlatform: React.Dispatch<React.SetStateAction<string>>;
+    stepStatuses: StepStatusMap;
+    setStepStatuses: SetStepStatusMap;
     currentPythonEnv: CurrentPythonEnv;
     setCurrentPythonEnv: SetCurrentPythonEnv;
 }
