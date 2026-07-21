@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { vscode } from './vscode';
 import { useContext } from 'react';
 import { AppContext } from './context';
@@ -31,6 +31,10 @@ export default function App() {
 
   const [appName, setAppName] = useState('');
   const [isHighlight, setIsHighlight] = useState(false);
+  // Tracks the active flowsheet file so step-status icons / error log (which
+  // belong to a specific file's run) can be cleared when the active file
+  // actually changes — not on same-file loading refreshes.
+  const activeFileRef = useRef<string>('');
 
   // clear vscode error in console
   // console.clear();
@@ -91,6 +95,7 @@ export default function App() {
           console.log(`VSCode post message: ${JSON.stringify(message)}`);
           setEditorContent(message.content);
           setActivateFileName(message.fileName);
+          activeFileRef.current = message.fileName;
           setidaesRunInfo(message.idaesRunInfo);
           setAppName(message.loadApp);
           setIsLoading(false);
@@ -104,6 +109,13 @@ export default function App() {
           break;
         case 'switch_tab':
           console.log('Received switch_tab event with payload:', message);
+          // Switching to a different flowsheet file: the previous file's run
+          // results (step icons + error log) no longer apply, so clear them.
+          if (message.activate_tab_name !== undefined && message.activate_tab_name !== activeFileRef.current) {
+            activeFileRef.current = message.activate_tab_name;
+            setStepStatuses({});
+            setExtensionErrorLogs([]);
+          }
           if (message.isLoading !== undefined) {
             console.log('Calling setIsLoading with:', message.isLoading);
             setIsLoading(message.isLoading);
