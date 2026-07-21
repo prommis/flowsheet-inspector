@@ -26,7 +26,7 @@ export default function TreePage() {
                     className={view === "loadFlowsheet" ? css.active : ""} 
                     onClick={() => switchViewHandler("loadFlowsheet")}
                 >
-                    Load Flowsheet
+                    History
                 </li>
             </ul>
             {view === "runFlowsheet" && <RunFlowsheetView />}

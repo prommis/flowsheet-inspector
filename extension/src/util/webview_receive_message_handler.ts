@@ -2,9 +2,9 @@ import * as vscode from 'vscode';
 import { activateWebviews } from "./webview_handler";
 import { IFrontendMessage } from "../interface";
 import runFlowsheet from "./run_flowsheet";
-import { getWebview, brodcastMessage } from "./webview_handler";
+import { getWebview, brodcastMessage, setResultsPanelTitle } from "./webview_handler";
 import { killProcessTree } from './platform_config';
-import { queryReportById, queryStepStatusesByRunId, queryRunException } from './sqlite_reader';
+import { queryReportById, queryStepStatusesByRunId, queryRunException, queryReportFilenameById } from './sqlite_reader';
 import { broadcastCurrentPythonEnv } from './python_env';
 
 export default function webviewReceiveMessageHandler(context: vscode.ExtensionContext, frontendMessage: IFrontendMessage) {
@@ -101,6 +101,12 @@ export default function webviewReceiveMessageHandler(context: vscode.ExtensionCo
                         return;
                     }
                     console.log('Successfully fetched and parsed historical flowsheet JSON blob.');
+
+                    // Retitle the results panel to the flowsheet file this run
+                    // actually belongs to — it was titled from the active
+                    // editor when the panel opened.
+                    setResultsPanelTitle(queryReportFilenameById(Number(frontendMessage.id)));
+
                     brodcastMessage({ type: 'flowsheet_runner_result', data: parsedData });
 
                     // Also update the tree view's per-step status icons for this

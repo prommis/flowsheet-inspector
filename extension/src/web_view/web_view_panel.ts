@@ -38,7 +38,7 @@ export default async function openWebView(context: vscode.ExtensionContext, outp
     // Create a Webview Panel with split layout (top and bottom sections)
     const webViewPanel = vscode.window.createWebviewPanel(
         'fi.webView',
-        `Flowsheet Inspector - ${fileName.split('/').pop()}`,
+        `Flowsheet Inspector - ${fileName.split(/[/\\]/).pop()}`,
         // vscode.ViewColumn.Beside, // Open beside current editor
         vscode.ViewColumn.Beside, // Open beside current editor
         // vscode.ViewColumn.Active,
