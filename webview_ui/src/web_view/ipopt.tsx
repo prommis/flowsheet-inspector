@@ -38,8 +38,10 @@ interface IIpoptSections {
     iterations: string;
     /** Number of iteration rows found in `iterations`, used for the toggle button label. */
     iterationCount: number;
-    /** Final result summary, from the `Number of Iterations....:` line to the end (includes the EXIT line). */
+    /** Final result summary, from the `Number of Iterations....:` line to the end (EXIT line removed). */
     result: string;
+    /** The `EXIT: ...` conclusion line, shown as a headline above everything; '' if absent. */
+    exitLine: string;
 }
 
 /**
@@ -72,11 +74,23 @@ function splitIpoptOutput(text: string): IIpoptSections | null {
     // Iteration rows start with the iteration number, optionally suffixed with
     // `r` (restoration phase), e.g. `  12 ...` or `2995r-9.17e+07 ...`.
     const iterationCount = iterationLines.filter((l) => /^\s*\d+r?(\s|-)/.test(l)).length;
+
+    // Pull the `EXIT: ...` conclusion out of the summary — it is the single
+    // most important line of the whole log, so it is shown as a headline
+    // above the summary instead of buried at its end.
+    const resultLines = lines.slice(resultStart);
+    const exitIdx = resultLines.findIndex((l) => l.trim().startsWith('EXIT:'));
+    const exitLine = exitIdx === -1 ? '' : resultLines[exitIdx].trim();
+    if (exitIdx !== -1) {
+        resultLines.splice(exitIdx, 1);
+    }
+
     return {
         statistics: lines.slice(0, iterStart).join('\n').trim(),
         iterations: iterationLines.join('\n').trim(),
         iterationCount,
-        result: lines.slice(resultStart).join('\n').trim(),
+        result: resultLines.join('\n').trim(),
+        exitLine,
     };
 }
 
@@ -102,13 +116,16 @@ function SolverOutput({ text }: { text: string | null | undefined }) {
 
     return (
         <div className={css.solver_sections}>
+            {sections.exitLine && (
+                <p className={css.exit_headline}>{sections.exitLine}</p>
+            )}
             <pre className={`${css.solver_output} ${css.section_body}`}>{sections.result}</pre>
 
             {sections.statistics && (
                 <>
                     <button className={css.section_toggle} onClick={() => setShowStatistics(v => !v)}>
-                        <span className={css.toggle_arrow}>{showStatistics ? '▾' : '▸'}</span>
-                        Problem statistics
+                        <span className={`${css.toggle_chevron} ${showStatistics ? css.toggle_chevron_open : ''}`} />
+                        {showStatistics ? 'Hide problem statistics' : 'Show problem statistics'}
                     </button>
                     {showStatistics && (
                         <pre className={`${css.solver_output} ${css.section_body}`}>{sections.statistics}</pre>
@@ -119,7 +136,7 @@ function SolverOutput({ text }: { text: string | null | undefined }) {
             {sections.iterations && (
                 <>
                     <button className={css.section_toggle} onClick={() => setShowIterations(v => !v)}>
-                        <span className={css.toggle_arrow}>{showIterations ? '▾' : '▸'}</span>
+                        <span className={`${css.toggle_chevron} ${showIterations ? css.toggle_chevron_open : ''}`} />
                         {showIterations
                             ? `Hide iterations (${sections.iterationCount})`
                             : `Show iterations (${sections.iterationCount})`}

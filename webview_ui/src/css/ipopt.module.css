@@ -60,19 +60,35 @@
     overflow-y: auto;
 }
 
+/* The solver's `EXIT: ...` conclusion line — the headline of the whole run,
+   shown above the result summary. */
+.exit_headline {
+    margin: 0;
+    /* Match .solver_output's horizontal padding so the headline text lines
+       up with the summary text in the block below it. */
+    padding: 0 12px;
+    font-size: 20px;
+    font-weight: 600;
+    font-family: var(--vscode-terminal-font-family, var(--vscode-editor-font-family));
+    color: var(--vscode-editor-foreground);
+    word-break: break-word;
+}
+
 .section_toggle {
-    align-self: flex-start;
-    display: inline-flex;
+    align-self: stretch;
+    width: 100%;
+    display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 4px 10px;
+    gap: 8px;
+    padding: 8px 12px;
     background: transparent;
     border: 1px solid var(--vscode-button-secondaryBorder, var(--vscode-panel-border, #444));
     border-radius: 3px;
     color: var(--vscode-foreground);
-    font-size: 13px;
+    font-size: 15px;
     font-weight: normal;
     font-family: var(--vscode-font-family);
+    text-align: left;
     cursor: pointer;
     transition: background 0.15s, border-color 0.15s;
 }
@@ -82,8 +98,21 @@
     border-color: var(--vscode-focusBorder, #007fd4);
 }
 
-.toggle_arrow {
-    font-size: 11px;
+/* Border-drawn chevron for the toggle buttons — text glyphs (▸/▾) render as
+   tiny dots in some webview fonts. Points right when collapsed and down when
+   expanded. */
+.toggle_chevron {
+    flex-shrink: 0;
+    width: 8px;
+    height: 8px;
+    border-top: 2px solid currentColor;
+    border-right: 2px solid currentColor;
+    transform: rotate(45deg);
+    transition: transform 0.15s;
+}
+
+.toggle_chevron_open {
+    transform: rotate(135deg);
 }
 
 /* ─── Tabs ─── */
