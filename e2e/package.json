@@ -1,0 +1,13 @@
+{
+    "name": "flowsheet-inspector-e2e",
+    "private": true,
+    "type": "module",
+    "description": "Playwright/CDP harness that drives a real VS Code extension development host to test the webview UI",
+    "scripts": {
+        "export-sample": "python3 export_sample_report.py",
+        "test:ipopt": "node drive_vscode.mjs"
+    },
+    "devDependencies": {
+        "playwright-core": "^1.61.1"
+    }
+}

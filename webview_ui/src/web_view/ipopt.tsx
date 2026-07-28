@@ -1,4 +1,4 @@
-import { useContext, useState } from "react";
+import { useContext, useMemo, useState } from "react";
 import { AppContext } from "../context";
 import css from "../css/ipopt.module.css";
 import type { Diagnostics } from "../interface/flowsheet_result_interface";
@@ -9,7 +9,11 @@ function stripIpoptBanner(text: string | null | undefined): string {
         return "No solver output available for this step.";
     }
 
-    const lines = text.split('\n');
+    // fi-run captures raw terminal output, which can contain backspace
+    // control characters (e.g. from solver progress rendering); drop them so
+    // they never show up as artifacts in the webview.
+    const cleaned = text.replace(/\u0008/g, '');
+    const lines = cleaned.split('\n');
     let starCount = 0;
     for (let i = 0; i < lines.length; i++) {
         if (lines[i].trim().startsWith('*****')) {
@@ -20,7 +24,130 @@ function stripIpoptBanner(text: string | null | undefined): string {
             }
         }
     }
-    return text; // No banner found, return as-is
+    return cleaned; // No banner found, return as-is
+}
+
+/**
+ * The three logical sections of one IPOPT solver log, in original print order:
+ * problem statistics → iteration table → result summary.
+ */
+interface IIpoptSections {
+    /** Problem statistics printed before the iteration table (Ipopt version, nonzeros, variable/constraint counts). */
+    statistics: string;
+    /** The iteration table: repeated `iter objective ...` headers plus one row per iteration. */
+    iterations: string;
+    /** Number of iteration rows found in `iterations`, used for the toggle button label. */
+    iterationCount: number;
+    /** Final result summary, from the `Number of Iterations....:` line to the end (EXIT line removed). */
+    result: string;
+    /** The `EXIT: ...` conclusion line, shown as a headline above everything; '' if absent. */
+    exitLine: string;
+}
+
+/**
+ * Splits a banner-stripped IPOPT log into statistics / iterations / result
+ * sections, so the result summary can be rendered first and the iteration
+ * table — often thousands of lines long — can be collapsed (issue #34).
+ *
+ * Section boundaries are located via IPOPT's own text markers: the first
+ * `iter  objective ...` table header starts the iteration section, and the
+ * `Number of Iterations....:` line starts the result summary.
+ *
+ * @param text  Banner-stripped solver output for one solve.
+ * @returns The parsed sections, or null when the result marker is missing
+ *   (e.g. the solver crashed before printing a summary) — the caller then
+ *   falls back to rendering the raw text unchanged.
+ */
+function splitIpoptOutput(text: string): IIpoptSections | null {
+    const lines = text.split('\n');
+    const resultStart = lines.findIndex((l) => /^Number of Iterations\s*\.*\s*:/.test(l.trim()));
+    if (resultStart === -1) {
+        return null;
+    }
+    let iterStart = lines.findIndex((l) => /^iter\s+objective/.test(l.trim()));
+    if (iterStart === -1 || iterStart > resultStart) {
+        // No iteration table (e.g. solved in 0 iterations): keep everything
+        // before the summary in the statistics section.
+        iterStart = resultStart;
+    }
+    const iterationLines = lines.slice(iterStart, resultStart);
+    // Iteration rows start with the iteration number, optionally suffixed with
+    // `r` (restoration phase), e.g. `  12 ...` or `2995r-9.17e+07 ...`.
+    const iterationCount = iterationLines.filter((l) => /^\s*\d+r?(\s|-)/.test(l)).length;
+
+    // Pull the `EXIT: ...` conclusion out of the summary — it is the single
+    // most important line of the whole log, so it is shown as a headline
+    // above the summary instead of buried at its end.
+    const resultLines = lines.slice(resultStart);
+    const exitIdx = resultLines.findIndex((l) => l.trim().startsWith('EXIT:'));
+    const exitLine = exitIdx === -1 ? '' : resultLines[exitIdx].trim();
+    if (exitIdx !== -1) {
+        resultLines.splice(exitIdx, 1);
+    }
+
+    return {
+        statistics: lines.slice(0, iterStart).join('\n').trim(),
+        iterations: iterationLines.join('\n').trim(),
+        iterationCount,
+        result: resultLines.join('\n').trim(),
+        exitLine,
+    };
+}
+
+/**
+ * Renders one solver log re-ordered for readability (issue #34): the final
+ * result summary on top, then a collapsible problem-statistics block
+ * (expanded by default), then the collapsible iteration table (collapsed by
+ * default because it can run to thousands of lines).
+ *
+ * Falls back to the raw log when the IPOPT section markers cannot be found.
+ *
+ * @param props.text  Raw solver output for one solve (banner included).
+ */
+function SolverOutput({ text }: { text: string | null | undefined }) {
+    const stripped = stripIpoptBanner(text);
+    const sections = useMemo(() => splitIpoptOutput(stripped), [stripped]);
+    const [showStatistics, setShowStatistics] = useState(true);
+    const [showIterations, setShowIterations] = useState(false);
+
+    if (!sections) {
+        return <pre className={css.solver_output}>{stripped}</pre>;
+    }
+
+    return (
+        <div className={css.solver_sections}>
+            {sections.exitLine && (
+                <p className={css.exit_headline}>{sections.exitLine}</p>
+            )}
+            <pre className={`${css.solver_output} ${css.section_body}`}>{sections.result}</pre>
+
+            {sections.statistics && (
+                <>
+                    <button className={css.section_toggle} onClick={() => setShowStatistics(v => !v)}>
+                        <span className={`${css.toggle_chevron} ${showStatistics ? css.toggle_chevron_open : ''}`} />
+                        {showStatistics ? 'Hide problem statistics' : 'Show problem statistics'}
+                    </button>
+                    {showStatistics && (
+                        <pre className={`${css.solver_output} ${css.section_body}`}>{sections.statistics}</pre>
+                    )}
+                </>
+            )}
+
+            {sections.iterations && (
+                <>
+                    <button className={css.section_toggle} onClick={() => setShowIterations(v => !v)}>
+                        <span className={`${css.toggle_chevron} ${showIterations ? css.toggle_chevron_open : ''}`} />
+                        {showIterations
+                            ? `Hide iterations (${sections.iterationCount})`
+                            : `Show iterations (${sections.iterationCount})`}
+                    </button>
+                    {showIterations && (
+                        <pre className={`${css.solver_output} ${css.iterations_body}`}>{sections.iterations}</pre>
+                    )}
+                </>
+            )}
+        </div>
+    );
 }
 
 export default function Ipopt() {
@@ -90,14 +217,10 @@ export default function Ipopt() {
 
             <div className={css.tab_content}>
                 {activeTab === 'initial' && (
-                    <pre className={`${css.solver_output}`}>
-                        {stripIpoptBanner(solverLogs.solve_initial)}
-                    </pre>
+                    <SolverOutput text={solverLogs.solve_initial} />
                 )}
                 {activeTab === 'optimization' && (
-                    <pre className={`${css.solver_output}`}>
-                        {stripIpoptBanner(solverLogs.solve_optimization)}
-                    </pre>
+                    <SolverOutput text={solverLogs.solve_optimization} />
                 )}
             </div>
         </div>
