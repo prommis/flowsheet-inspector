@@ -31,6 +31,90 @@
     overflow-y: auto;
 }
 
+/* ─── Re-ordered solver sections (issue #34) ─── */
+
+/* Scroll container holding result / statistics / iterations sections. */
+.solver_sections {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Inside the sections container each block sizes to its content; the
+   container scrolls as a whole instead of each <pre> individually. */
+.section_body {
+    flex: none;
+    overflow: visible;
+}
+
+/* The expanded iteration table scrolls inside its own bounded box instead
+   of inflating the whole page: with thousands of iteration rows inline, the
+   result summary and the toggle buttons would otherwise be pushed far out
+   of view and reaching the bottom would take endless scrolling. */
+.iterations_body {
+    flex: none;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+/* The solver's `EXIT: ...` conclusion line — the headline of the whole run,
+   shown above the result summary. */
+.exit_headline {
+    margin: 0;
+    /* Match .solver_output's horizontal padding so the headline text lines
+       up with the summary text in the block below it. */
+    padding: 0 12px;
+    font-size: 20px;
+    font-weight: 600;
+    font-family: var(--vscode-terminal-font-family, var(--vscode-editor-font-family));
+    color: var(--vscode-editor-foreground);
+    word-break: break-word;
+}
+
+.section_toggle {
+    align-self: stretch;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: transparent;
+    border: 1px solid var(--vscode-button-secondaryBorder, var(--vscode-panel-border, #444));
+    border-radius: 3px;
+    color: var(--vscode-foreground);
+    font-size: 15px;
+    font-weight: normal;
+    font-family: var(--vscode-font-family);
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.section_toggle:hover {
+    background: var(--vscode-toolbar-hoverBackground, rgba(255, 255, 255, 0.07));
+    border-color: var(--vscode-focusBorder, #007fd4);
+}
+
+/* Border-drawn chevron for the toggle buttons — text glyphs (▸/▾) render as
+   tiny dots in some webview fonts. Points right when collapsed and down when
+   expanded. */
+.toggle_chevron {
+    flex-shrink: 0;
+    width: 8px;
+    height: 8px;
+    border-top: 2px solid currentColor;
+    border-right: 2px solid currentColor;
+    transform: rotate(45deg);
+    transition: transform 0.15s;
+}
+
+.toggle_chevron_open {
+    transform: rotate(135deg);
+}
+
 /* ─── Tabs ─── */
 .tabs {
     display: flex;
