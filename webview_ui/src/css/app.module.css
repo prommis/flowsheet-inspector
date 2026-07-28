@@ -1,0 +1,20 @@
+/* Root wrapper for every webview page. Sizing is shared by all views;
+   the background comes from the per-surface classes below. */
+.app_root {
+    height: 100vh;
+    width: 100vw;
+    box-sizing: border-box;
+}
+
+/* Editor-area views (results panel, editor page) match the editor background. */
+.app_root_editor {
+    background-color: var(--vscode-editor-background);
+    color: var(--vscode-editor-foreground);
+}
+
+/* The sidebar view must use the side panel background like other extensions,
+   NOT the editor background (issue #9). */
+.app_root_sidebar {
+    background-color: var(--vscode-sideBar-background);
+    color: var(--vscode-sideBar-foreground, var(--vscode-foreground));
+}

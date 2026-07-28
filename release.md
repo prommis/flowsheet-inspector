@@ -1,3 +1,11 @@
+* 0.0.9
+1. Fix a bug where the report tab always showed `hda_flowsheet.py` when loading a history item: the tab title now shows the flowsheet file the loaded run actually belongs to, and is reset to the current file when a new run starts.
+2. Change the extension side panel background to the standard VS Code side panel color (matching other extensions) instead of the editor background.
+3. Rename the "Load Flowsheet" tab in the side panel to "History".
+4. Re-order the IPOPT output: the solver result summary now appears at the top with the `EXIT:` conclusion as a headline, instead of below thousands of iteration lines.
+5. Make the IPOPT problem statistics and iteration table collapsible; the expanded iteration table scrolls inside its own bounded box so the result stays visible.
+---
+
 * 0.0.8
 1. Distinguish a failed solve step from a code error: a step whose solver ran without raising but found no solution (infeasible or maximum iterations exceeded) now shows an orange cross, separate from the red cross used when a step's code raises an exception.
 2. Report each step failure in the error log, including the reason when the solver did not find a solution.

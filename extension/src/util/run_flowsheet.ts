@@ -7,7 +7,7 @@
  * is invoked and makes the runner work on Windows without any extra config.
  */
 import * as vscode from 'vscode';
-import { activateWebviews, brodcastMessage } from './webview_handler';
+import { activateWebviews, brodcastMessage, setResultsPanelTitle } from './webview_handler';
 import openWebView from '../web_view/web_view_panel';
 import { queryLatestReport } from './sqlite_reader';
 import runTerminalCommand from './run_terminal_command';
@@ -69,6 +69,10 @@ export default async function runFlowsheet(
         if (!activateWebviews.get('webView')) {
             await openWebView(context);
         }
+
+        // A reused panel may still carry the title of a previously loaded
+        // historical run — retitle it to the file being run now.
+        setResultsPanelTitle(activateFileName);
 
         // Clear stale run state from the UI before starting
         brodcastMessage({ type: 'start_new_run' });

@@ -153,6 +153,33 @@ export function queryReportById(id: number): unknown {
 }
 
 /**
+ * Reads the source flowsheet file path recorded for a single run by its row ID.
+ *
+ * Used when loading a historical run, so UI surfaces (e.g. the results panel
+ * tab title) can show the file that run actually belongs to rather than
+ * whatever file happens to be active in the editor.
+ *
+ * @param id  The primary-key ID of the reports row to fetch.
+ * @returns   The stored flowsheet file path, or '' if the DB/row is absent.
+ */
+export function queryReportFilenameById(id: number): string {
+    const dbPath = getIdaesDbPath();
+    if (!fs.existsSync(dbPath)) {
+        return '';
+    }
+    const db = new Database(dbPath, { readOnly: true });
+    try {
+        const row = db.get('SELECT filename FROM reports WHERE id = ?', id) as { filename: unknown } | null;
+        return row ? toStr(row.filename) : '';
+    } catch {
+        // reports table may not exist yet on a brand-new DB.
+        return '';
+    } finally {
+        db.close();
+    }
+}
+
+/**
  * Reads the highest report id currently in the database.
  *
  * Captured as a baseline just before fi-run starts so the step-status poller
@@ -201,7 +228,7 @@ export function queryStepStatuses(baselineId: number): IStepStatusRow[] {
 /**
  * Reads the per-step status rows for a specific past run by its report id.
  *
- * Used when loading a historical run from the Load Flowsheet view, so the tree
+ * Used when loading a historical run from the History view, so the tree
  * view can show that run's per-step icons (the `status` table's `run_id`
  * equals the report row id).
  *

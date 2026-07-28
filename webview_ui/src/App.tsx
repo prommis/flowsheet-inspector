@@ -8,6 +8,7 @@ import TreePage from './tree_app.tsx'
 import EditorPage from './editor_page';
 import WebView from './web_view/main_display.tsx';
 import './webviewApp.css'
+import appCss from './css/app.module.css'
 
 export default function App() {
   const {
@@ -259,9 +260,8 @@ export default function App() {
 
   return (
     <div
-      className={isHighlight ? 'flash-highlight' : ''}
+      className={`${appCss.app_root} ${appName === 'treeView' ? appCss.app_root_sidebar : appCss.app_root_editor} ${isHighlight ? 'flash-highlight' : ''}`}
       onAnimationEnd={() => setIsHighlight(false)}
-      style={{ height: '100vh', width: '100vw', boxSizing: 'border-box', backgroundColor: 'var(--vscode-editor-background)', color: 'var(--vscode-editor-foreground)' }}
     >
       {loadWhichApp(appName)}
     </div>
