@@ -16,7 +16,7 @@ import { getMaxReportId, startStepStatusPolling, stopStepStatusPolling, broadcas
 
 const NO_INTERPRETER_MSG =
     'No Python interpreter selected. Pick the environment with Flowsheet Inspector ' +
-    'installed via the Python: Select Interpreter command (bottom-right status bar).';
+    'installed via the interpreter selector in the Flowsheet Inspector sidebar.';
 
 /**
  * Runs fi-run for the flowsheet file currently stored in VS Code global state.

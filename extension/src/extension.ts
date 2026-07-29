@@ -8,6 +8,7 @@ import treeview from './tree_view/treeview';
 import activateTabListener from './util/activate_tab_handler';
 import { startHistoryPolling } from './util/flowsheet_history_polling';
 import { getActivePythonEnv, recommendPythonExtension } from './util/python_env';
+import { initPythonEnvFallback } from './util/python_env_fallback';
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -43,11 +44,17 @@ export function activate(context: vscode.ExtensionContext) {
 	 * This command is used to listen to the tab change event.
 	 * It will load when extension is activated.
 	 */
+	// Must run before anything resolves a Python env: gives the fallback
+	// interpreter store (used when ms-python is not installed) access to
+	// globalState.
+	initPythonEnvFallback(context);
+
 	activateTabListener(context);
 
-	// Recommend (do not force) the Python extension. It is a soft dependency now:
-	// without it interpreter resolution degrades gracefully, so we suggest it via
-	// a non-blocking notification instead of an `extensionDependencies` gate.
+	// Recommend (do not force) the Python extension. It is a soft dependency:
+	// without it, interpreter selection falls back to our own picker
+	// (python_env_fallback.ts), so we suggest it via a non-blocking
+	// notification instead of an `extensionDependencies` gate.
 	recommendPythonExtension(context).catch((e) => console.error(`Failed to recommend Python extension: ${e}`));
 
 	// Start scanning flowsheets sqlite history quietly in the background
