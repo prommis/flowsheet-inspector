@@ -194,15 +194,18 @@ export function queryMaxReportId(): number {
     if (!fs.existsSync(dbPath)) {
         return 0;
     }
-    const db = new Database(dbPath, { readOnly: true });
+    let db: Database | undefined;
     try {
+        db = new Database(dbPath, { readOnly: true });
         const row = db.get('SELECT COALESCE(MAX(id), 0) AS maxId FROM reports') as { maxId: unknown } | null;
         return row ? Number(row.maxId) : 0;
-    } catch {
-        // reports table may not exist yet on a brand-new DB.
+    } catch (e) {
+        // reports table may not exist yet on a brand-new DB, or the open/read
+        // raced a concurrent write.
+        console.warn(`queryMaxReportId failed (non-fatal): ${e instanceof Error ? e.message : e}`);
         return 0;
     } finally {
-        db.close();
+        db?.close();
     }
 }
 
@@ -254,8 +257,12 @@ function readStatusRows(whereClause: string, bindValue: number): IStepStatusRow[
     if (!fs.existsSync(dbPath)) {
         return [];
     }
-    const db = new Database(dbPath, { readOnly: true });
+    let db: Database | undefined;
     try {
+        // Open inside the try: on Windows the open itself can fail while the
+        // fi-run process holds the file, and a throw here must not escape the
+        // polling interval.
+        db = new Database(dbPath, { readOnly: true });
         // `solve_ok` was added to the status table in a later fi-run version.
         // Select it only when present so older, un-migrated databases don't
         // fail the query with "no such column"; treat it as NULL otherwise.
@@ -275,11 +282,44 @@ function readStatusRows(whereClause: string, bindValue: number): IStepStatusRow[
             // Preserve null (unknown / non-solve step); only 0 and 1 are meaningful.
             solve_ok: r.solve_ok == null ? null : Number(r.solve_ok),
         }));
-    } catch {
-        // `status` table may not exist (DB created by an older schema).
+    } catch (e) {
+        // `status` table may not exist (DB created by an older schema), or the
+        // read raced a write from fi-run. Non-fatal, but log it so a platform
+        // where this *always* fails (e.g. Windows locking issues) is visible
+        // in the extension host console instead of silently showing no icons.
+        console.warn(`readStatusRows failed (non-fatal): ${e instanceof Error ? e.message : e}`);
         return [];
     } finally {
-        db.close();
+        db?.close();
+    }
+}
+
+/**
+ * Checks whether the report database contains the `status` table at all.
+ *
+ * The `status` table is written by newer versions of flowsheet-inspector-lib
+ * (one row per completed flowsheet step). Older lib versions never create it,
+ * in which case per-step icons can never appear — this lets callers surface a
+ * precise "upgrade the lib" message instead of failing silently.
+ *
+ * @returns True if the `status` table exists in the database; false when the
+ *   database file is absent, unreadable, or the table is missing.
+ */
+export function queryStatusTableExists(): boolean {
+    const dbPath = getIdaesDbPath();
+    if (!fs.existsSync(dbPath)) {
+        return false;
+    }
+    let db: Database | undefined;
+    try {
+        db = new Database(dbPath, { readOnly: true });
+        const row = db.get("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'status'");
+        return !!row;
+    } catch (e) {
+        console.warn(`queryStatusTableExists failed (non-fatal): ${e instanceof Error ? e.message : e}`);
+        return false;
+    } finally {
+        db?.close();
     }
 }
 
@@ -300,15 +340,17 @@ export function queryRunException(runId: number): string {
     if (!fs.existsSync(dbPath)) {
         return '';
     }
-    const db = new Database(dbPath, { readOnly: true });
+    let db: Database | undefined;
     try {
+        db = new Database(dbPath, { readOnly: true });
         const row = db.get('SELECT run_exception FROM reports WHERE id = ?', runId) as { run_exception: unknown } | null;
         return row ? toStr(row.run_exception).trim() : '';
-    } catch {
-        // Legacy schema without a run_exception column.
+    } catch (e) {
+        // Legacy schema without a run_exception column, or a read race.
+        console.warn(`queryRunException failed (non-fatal): ${e instanceof Error ? e.message : e}`);
         return '';
     } finally {
-        db.close();
+        db?.close();
     }
 }
 
