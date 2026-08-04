@@ -1,3 +1,94 @@
 .stream_table_container {
+    display: flex;
+    align-items: flex-start;
+    gap: 24px;
     padding: 12px 0;
+}
+
+/* ─── Left contents nav ─── */
+.contents_nav {
+    position: sticky;
+    top: 0;
+    flex-shrink: 0;
+    min-width: 190px;
+    padding: 10px 20px 10px 0;
+    border-right: 1px solid var(--vscode-panel-border, #333);
+}
+
+.contents_title {
+    margin: 0 0 12px 0;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    color: var(--vscode-descriptionForeground, #888);
+}
+
+.contents_nav ul {
+    list-style: disc;
+    margin: 0;
+    padding-left: 18px;
+}
+
+.contents_nav li {
+    padding: 4px 0;
+    font-size: 13px;
+    cursor: pointer;
+    user-select: none;
+    color: var(--vscode-foreground, #ccc);
+}
+
+.contents_nav li:hover {
+    color: var(--vscode-textLink-foreground, #4daafc);
+}
+
+/* ─── Right table sections ─── */
+.table_sections {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+}
+
+.table_section {
+    scroll-margin-top: 12px;
+}
+
+.section_title {
+    margin: 0 0 14px 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--vscode-foreground, #ddd);
+}
+
+.section_subtitle {
+    margin: 0 0 12px 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--vscode-foreground, #ddd);
+}
+
+/* Indent the per-unit table block under its unit heading */
+.unit_table {
+    padding-left: 16px;
+}
+
+/* Space between a unit's Stream Table and its performance table,
+   matching the gap between unit sections */
+.unit_table + .unit_table {
+    margin-top: 40px;
+}
+
+.no_data {
+    padding: 12px 0;
+    font-size: 13px;
+    font-style: italic;
+    color: var(--vscode-descriptionForeground, #888);
+}
+
+/* "Found N items" counter under the search bar */
+.match_count {
+    margin: 0 0 10px 0;
+    font-size: 12px;
+    color: var(--vscode-descriptionForeground, #888);
 }

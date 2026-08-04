@@ -472,7 +472,7 @@ export default function RenderVariableTree({ data, dofSteps, treeLayout = true, 
             }}>
                 <input
                     type="text"
-                    placeholder="Search variables..."
+                    placeholder="Search Unit / Parameter / Type / Values"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     style={{
@@ -528,7 +528,7 @@ export default function RenderVariableTree({ data, dofSteps, treeLayout = true, 
                     )}
                 </>
             ) : (
-                <StreamTable />
+                <StreamTable highlight={normalizedSearch} />
             )}
         </div>
     );

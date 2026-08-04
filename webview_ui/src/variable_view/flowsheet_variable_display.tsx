@@ -7,8 +7,8 @@ import css from "../css/webview_page.module.css";
 export default function FlowsheetVariableDisplay() {
     const { flowsheetRunnerResult } = useContext(AppContext);
     // Controls which layout the variable view renders: true = collapsible
-    // variable tree, false = stream table view.
-    const [treeLayout, setTreeLayout] = useState(true);
+    // variable tree, false = stream table view (the default).
+    const [treeLayout, setTreeLayout] = useState(false);
     const diagnostics = flowsheetRunnerResult?.actions?.diagnostics as Diagnostics | undefined;
     const variables = flowsheetRunnerResult?.actions?.model_variables?.variables;
     const runFailed = !!flowsheetRunnerResult && diagnostics?.valid === false;
