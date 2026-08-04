@@ -21,7 +21,7 @@ export async function checkActivePythonEnv(resource?: vscode.Uri): Promise<{ suc
     if (!env) {
         return {
             success: false,
-            errorMsg: 'No Python interpreter selected. Use "Python: Select Interpreter" (bottom-right status bar) to pick the environment with Flowsheet Inspector installed.',
+            errorMsg: 'No Python interpreter selected. Use the interpreter selector in the Flowsheet Inspector sidebar to pick the environment with Flowsheet Inspector installed.',
         };
     }
     return { success: true };

@@ -16,7 +16,7 @@ export interface IFiStepsResult {
 
 const NO_INTERPRETER_MSG =
     'No Python interpreter selected. Pick the environment with Flowsheet Inspector ' +
-    'installed via the Python: Select Interpreter command (bottom-right status bar).';
+    'installed via the interpreter selector in the Flowsheet Inspector sidebar.';
 
 /**
  * Runs `fi-steps --fs <file> -t json` and returns the parsed step list.
