@@ -1,3 +1,13 @@
+
+* 0.0.12
+1. Redesign the step selector in the Run Flowsheet panel: the checkboxes are replaced with a vertical slider-style bar with a dot per step. Click a dot to select that step and every step before it, or press and drag along the bar to adjust the selection; the selected range is highlighted in blue.
+---
+
+* 0.0.11
+1. Fix interpreter selection when the Microsoft Python extension is not installed: the extension now discovers Python environments on its own (conda environments, workspace venvs, `CONDA_PREFIX`, and pythons on `PATH`) and offers a picker with a manual-path option, so conda users no longer need the Python extension.
+2. Add report database checks for users running an older version of flowsheet-inspector-lib: a database with missing tables no longer causes errors, and users get a clear "upgrade the lib" message instead.
+---
+
 * 0.0.10
 1. Fix a bug where the report tab always showed `hda_flowsheet.py` when loading a history item: the tab title now shows the flowsheet file the loaded run actually belongs to, and is reset to the current file when a new run starts.
 2. Change the extension side panel background to the standard VS Code side panel color (matching other extensions) instead of the editor background.

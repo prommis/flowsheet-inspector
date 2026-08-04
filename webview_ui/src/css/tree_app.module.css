@@ -94,11 +94,120 @@
     margin: 0;
 }
 
-.step_selector_container{
+/* Vertical timeline holding all step rows. Rows sit flush (no gap) so the
+   rail segments of adjacent rows join into one continuous line. */
+.steps_timeline{
+    display: flex;
+    flex-direction: column;
+}
+
+/* One step row: rail column + step name + trailing status icon.
+   No vertical padding here — the rail must stretch edge-to-edge so adjacent
+   rows' segments join into a continuous line; row height comes from the
+   label's own padding. */
+.step_row{
     display: flex;
     flex-direction: row;
     align-items: center;
     gap: 10px;
+    padding: 0 8px 0 2px;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+}
+
+.step_row:focus-visible{
+    outline: 1px solid var(--vscode-focusBorder, #007fd4);
+    outline-offset: -1px;
+}
+
+/* Highlighted block behind the selected (prefix) rows. */
+.step_row_selected{
+    background-color: var(--vscode-list-hoverBackground, rgba(128, 128, 128, 0.12));
+}
+
+.step_row_selected_first{
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+}
+
+.step_row_selected_last{
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+
+/* Rail column: positioning context for the dot and the two line segments.
+   Stretches to the full row height so segments meet between rows. */
+.step_rail{
+    position: relative;
+    width: 16px;
+    align-self: stretch;
+    flex-shrink: 0;
+}
+
+/* Half-height piece of the vertical rail line, above or below the dot. */
+.rail_segment{
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    background-color: var(--vscode-descriptionForeground, #8a8a8a);
+    opacity: 0.5;
+}
+
+.rail_segment_top{
+    top: 0;
+    height: 50%;
+}
+
+.rail_segment_bottom{
+    bottom: 0;
+    height: 50%;
+}
+
+/* Blue portion of the rail covering the selected prefix. */
+.rail_segment_active{
+    background-color: #2AAAFF;
+    opacity: 1;
+    width: 3px;
+}
+
+/* Unselected step marker on the rail. */
+.step_dot{
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--vscode-descriptionForeground, #8a8a8a);
+    transition: width 0.12s ease, height 0.12s ease, background-color 0.12s ease;
+}
+
+/* Selected step marker: filled with the accent color. */
+.step_dot_selected{
+    background-color: #2AAAFF;
+    width: 10px;
+    height: 10px;
+}
+
+/* The last selected step gets a larger slider-style thumb dot. */
+.step_dot_thumb{
+    width: 15px;
+    height: 15px;
+}
+
+/* Step name text next to the rail. Carries the row's vertical padding (see
+   .step_row for why the row itself has none). */
+.step_label{
+    flex: 1;
+    min-width: 0;
+    padding: 9px 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 /* Trailing per-step run status icon, floated to the end of the step row. */
@@ -235,34 +344,6 @@
     font-size: 18px;
     margin-bottom: 10px;
     color: var(--vscode-editor-foreground);
-}
-
-.step_selector_checkbox{
-    -webkit-appearance: none;
-    appearance: none;
-    
-    width: 16px;
-    height: 16px;
-    border-radius: 3px;
-    cursor: pointer;
-    position: relative;
-
-    background-color: var(--vscode-sideBar-background);
-    border: 1px solid var(--vscode-editor-foreground);
-}
-
-.step_selector_checkbox:checked {
-    background-color: var(--vscode-editor-foreground);
-}
-
-.step_selector_checkbox:checked::after {
-    content: "✔";
-    color: var(--vscode-sideBar-background);
-    font-size: 12px;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
 }
 
 .open_results_view_container{
