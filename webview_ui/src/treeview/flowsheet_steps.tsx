@@ -1,4 +1,4 @@
-import { useEffect, useState, useContext } from "react";
+import { useEffect, useState, useContext, useRef } from "react";
 import type { idaesRunInfo } from "../interface/interface";
 import { AppContext } from "../context";
 import { vscode } from '../vscode';
@@ -8,6 +8,19 @@ import css from "../css/tree_app.module.css";
 export default function FlowsheetSteps({ idaesRunInfo }: { idaesRunInfo: idaesRunInfo }) {
     const { setSelectedSteps, isLoading, initError, packageWarnings, openPythonFiles, activateFileName, currentPythonEnv, stepStatuses, isRunningFlowsheet } = useContext(AppContext);
     const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
+
+    // DOM refs to each timeline row, used to map a pointer's clientY to a step
+    // index while dragging along the rail.
+    const rowRefs = useRef<(HTMLDivElement | null)[]>([]);
+    // Live drag session info. `moved` flips to true once the pointer leaves the
+    // row it started on, which is how we tell a drag from a plain click.
+    const dragState = useRef<{ startIndex: number; moved: boolean } | null>(null);
+    // Mirror of selectedIndices.length readable from window-level pointer
+    // handlers without suffering from stale closures.
+    const selectedCountRef = useRef(0);
+    // The pointer listeners currently attached to window, kept in a ref so the
+    // exact same instances can be detached on drag end or unmount.
+    const activeDragListeners = useRef<{ move: (e: PointerEvent) => void; up: (e: PointerEvent) => void } | null>(null);
 
     /**
      * Renders the trailing status icon for a step, floated to the end of the row.
@@ -74,27 +87,163 @@ export default function FlowsheetSteps({ idaesRunInfo }: { idaesRunInfo: idaesRu
     };
 
     /**
-     * Handle step selector checkbox change.
-     * Selecting a step automatically selects all preceding steps (0 to index).
-     * Unchecking a step removes it and all subsequent steps, keeping only 0 to index-1.
-     * @param event - checkbox change event
-     * @param index - the index of the clicked step checkbox
+     * Selects the first `count` steps (indices 0..count-1) and writes both the
+     * indices (local state, drives the timeline visuals) and the corresponding
+     * step names (context, consumed by the run command).
+     *
+     * Steps always run as a contiguous prefix of the sequence, so the selection
+     * is fully described by how many steps are selected.
+     *
+     * @param count - Number of leading steps to select; 0 clears the selection.
      */
-    const stepSelectorHandler = (event: React.ChangeEvent<HTMLInputElement>, index: number) => {
-
-        let newSteps = [];
-        if (event.target.checked) {
-            // Add index and sort
-            newSteps = Array.from({ length: index + 1 }, (_, i) => i);
-        } else {
-            newSteps = Array.from({ length: index }, (_, i) => i);
-            newSteps = newSteps.sort((a, b) => a - b);
-        }
+    const applyPrefixSelection = (count: number) => {
+        const newSteps = Array.from({ length: count }, (_, i) => i);
         setSelectedIndices(newSteps);
         // Write selected step NAMES to context
         const stepNames = newSteps.map(i => idaesRunInfo.steps[i]).filter(Boolean);
         setSelectedSteps(stepNames);
     };
+
+    /**
+     * Applies plain-click semantics for a step dot/row: clicking any step
+     * selects it plus every step before it. Clicking the step that is already
+     * the end of the selection deselects just that step (shrinking the prefix
+     * by one), mirroring the old checkbox toggle behavior.
+     *
+     * @param index - Index of the clicked step row.
+     */
+    const handleStepClick = (index: number) => {
+        const lastSelected = selectedCountRef.current - 1;
+        applyPrefixSelection(index === lastSelected ? index : index + 1);
+    };
+
+    /**
+     * Maps a pointer's vertical position to the step row it is over. Positions
+     * above the first row clamp to the first step and below the last row clamp
+     * to the last step, so dragging past either end stays well-behaved.
+     *
+     * @param clientY - Pointer Y coordinate in viewport space.
+     * @returns The step index under (or nearest to) the pointer, or null when
+     *   no rows are rendered yet.
+     */
+    const indexFromClientY = (clientY: number): number | null => {
+        const rows = rowRefs.current;
+        for (let i = 0; i < rows.length; i++) {
+            const rect = rows[i]?.getBoundingClientRect();
+            if (rect && clientY >= rect.top && clientY <= rect.bottom) {
+                return i;
+            }
+        }
+        const firstRect = rows[0]?.getBoundingClientRect();
+        if (firstRect && clientY < firstRect.top) {
+            return 0;
+        }
+        const lastRect = rows[rows.length - 1]?.getBoundingClientRect();
+        if (lastRect && clientY > lastRect.bottom) {
+            return rows.length - 1;
+        }
+        return null;
+    };
+
+    /**
+     * Window-level pointermove handler active only during a drag along the
+     * timeline. Once the pointer moves onto a different row than the one the
+     * drag started on, the selection prefix live-updates to follow the pointer.
+     *
+     * @param event - Native pointermove event.
+     */
+    const handleDragMove = (event: PointerEvent) => {
+        const drag = dragState.current;
+        if (!drag) {
+            return;
+        }
+        const index = indexFromClientY(event.clientY);
+        if (index === null) {
+            return;
+        }
+        if (index !== drag.startIndex) {
+            drag.moved = true;
+        }
+        if (drag.moved) {
+            applyPrefixSelection(index + 1);
+        }
+    };
+
+    /**
+     * Window-level pointerup handler that ends a timeline drag session. If the
+     * pointer never left the starting row, the gesture was a click and the
+     * click toggle semantics are applied instead of the drag semantics.
+     *
+     * @param event - Native pointerup event.
+     */
+    const handleDragEnd = (event: PointerEvent) => {
+        const drag = dragState.current;
+        dragState.current = null;
+        detachDragListeners();
+        if (drag && !drag.moved) {
+            const index = indexFromClientY(event.clientY);
+            handleStepClick(index ?? drag.startIndex);
+        }
+    };
+
+    /**
+     * Removes the window-level drag listeners recorded in
+     * `activeDragListeners`, if any are currently attached.
+     */
+    const detachDragListeners = () => {
+        const listeners = activeDragListeners.current;
+        if (listeners) {
+            window.removeEventListener('pointermove', listeners.move);
+            window.removeEventListener('pointerup', listeners.up);
+            activeDragListeners.current = null;
+        }
+    };
+
+    /**
+     * Keyboard fallback for the pointer-driven timeline: Enter or Space on a
+     * focused step row applies the same semantics as clicking its dot.
+     *
+     * @param event - React keydown event on the row.
+     * @param index - Index of the focused step row.
+     */
+    const handleRowKeyDown = (event: React.KeyboardEvent, index: number) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            handleStepClick(index);
+        }
+    };
+
+    /**
+     * Starts a drag/click gesture on a step row. Registers window-level
+     * listeners so the drag keeps tracking even when the pointer leaves the
+     * sidebar, and defers the click-vs-drag decision to pointerup.
+     *
+     * @param event - React pointerdown event on the row.
+     * @param index - Index of the row the gesture started on.
+     */
+    const handleRowPointerDown = (event: React.PointerEvent, index: number) => {
+        // Only react to the primary button / touch contact.
+        if (event.button !== 0) {
+            return;
+        }
+        event.preventDefault();
+        detachDragListeners();
+        dragState.current = { startIndex: index, moved: false };
+        activeDragListeners.current = { move: handleDragMove, up: handleDragEnd };
+        window.addEventListener('pointermove', handleDragMove);
+        window.addEventListener('pointerup', handleDragEnd);
+    };
+
+    // Keep the ref mirror of the selection size in sync after each commit so
+    // window-level pointer handlers always read the latest value.
+    useEffect(() => {
+        selectedCountRef.current = selectedIndices.length;
+    }, [selectedIndices]);
+
+    // Make sure no window listeners leak if the component unmounts mid-drag.
+    useEffect(() => {
+        return () => detachDragListeners();
+    }, []);
 
     // generate flowsheet steps
     const stepDisplay = () => {
@@ -158,24 +307,46 @@ export default function FlowsheetSteps({ idaesRunInfo }: { idaesRunInfo: idaesRu
             });
             const runningIndex = isRunningFlowsheet && !anyFailed ? firstPendingIndex : -1;
 
+            // The selection is always a contiguous prefix, so the highest
+            // selected index fully describes it. It marks the "thumb" dot and
+            // where the blue portion of the rail ends.
+            const lastSelectedIndex = selectedIndices.length - 1;
+            const lastRowIndex = idaesRunInfo.steps.length - 1;
+
             const stepDisplays = idaesRunInfo.steps.map((step: string, index: number) => {
+                const isSelected = index <= lastSelectedIndex;
+                const rowClasses = [
+                    css.step_row,
+                    isSelected ? css.step_row_selected : '',
+                    index === 0 && isSelected ? css.step_row_selected_first : '',
+                    index === lastSelectedIndex ? css.step_row_selected_last : '',
+                ].filter(Boolean).join(' ');
+
                 return (
                     <div key={step + index}
-                        className={`${css.step_selector_container}`}
+                        ref={(el) => { rowRefs.current[index] = el; }}
+                        className={rowClasses}
+                        role="checkbox"
+                        aria-checked={isSelected}
+                        tabIndex={0}
+                        onPointerDown={(e) => handleRowPointerDown(e, index)}
+                        onKeyDown={(e) => handleRowKeyDown(e, index)}
                     >
-                        <input
-                            type="checkbox"
-                            id={`step_${index}`}
-                            className={`${css.step_selector_checkbox}`}
-                            checked={selectedIndices.includes(index)}
-                            onChange={(e) => stepSelectorHandler(e, index)}
-                        />
-                        <label htmlFor={`${index}`}>{step}</label>
+                        <span className={css.step_rail}>
+                            {index > 0 && (
+                                <span className={`${css.rail_segment} ${css.rail_segment_top} ${isSelected ? css.rail_segment_active : ''}`} />
+                            )}
+                            {index < lastRowIndex && (
+                                <span className={`${css.rail_segment} ${css.rail_segment_bottom} ${index < lastSelectedIndex ? css.rail_segment_active : ''}`} />
+                            )}
+                            <span className={`${css.step_dot} ${isSelected ? css.step_dot_selected : ''} ${index === lastSelectedIndex ? css.step_dot_thumb : ''}`} />
+                        </span>
+                        <span className={css.step_label}>{step}</span>
                         {renderStepIcon(step, index === runningIndex)}
                     </div>
                 )
             })
-            return stepDisplays;
+            return <div className={css.steps_timeline}>{stepDisplays}</div>;
         }
     }
 
