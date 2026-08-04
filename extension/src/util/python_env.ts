@@ -1,17 +1,26 @@
 /**
- * Resolves the Python environment the user has selected in VS Code, via the
- * official Python extension (`ms-python.python`) API.
+ * Resolves the Python environment the user has selected in VS Code.
  *
- * We only read the currently-active interpreter — switching is intentionally
- * left to VS Code's own "Python: Select Interpreter" status-bar command so we
- * don't have to maintain a parallel environment list or fight with VS Code's
- * picker. When the user changes their interpreter we react via
+ * Two mechanisms, in order of preference:
+ *   1. The official Python extension (`ms-python.python`) API, when installed.
+ *      We only read the currently-active interpreter — switching is left to
+ *      VS Code's own "Python: Select Interpreter" command so we don't fight
+ *      with VS Code's picker.
+ *   2. Our own fallback (`python_env_fallback.ts`) when ms-python is NOT
+ *      installed — some conda users refuse to install it, and it must not be
+ *      a hard dependency. The fallback resolves a manually picked interpreter
+ *      (or `$CONDA_PREFIX`) into the same {@link IResolvedPythonEnv} shape,
+ *      so every caller works identically in both modes.
+ *
+ * When the interpreter changes (either mechanism) we react via
  * {@link onDidChangeActivePythonEnv} and re-run fi-steps automatically.
  */
 import * as vscode from 'vscode';
+import * as fs from 'fs';
 import * as path from 'path';
 import { isWindows } from './platform_config';
 import { brodcastMessage } from './webview_handler';
+import { getFallbackInterpreterPath, onDidChangeFallbackInterpreter } from './python_env_fallback';
 
 /** ID of the VS Code Python extension we integrate with for interpreter selection. */
 export const PYTHON_EXTENSION_ID = 'ms-python.python';
@@ -104,19 +113,23 @@ async function getPythonApi(): Promise<IPythonEnvApi | undefined> {
  * Subscribes to "the user changed the selected interpreter" events.
  *
  * Fires whenever the active interpreter changes — via the VS Code status-bar
- * picker or the "Python: Select Interpreter" command. Used to re-run fi-steps
- * and refresh the tree view whenever the user switches environment.
+ * picker / "Python: Select Interpreter" command (ms-python installed), or via
+ * our own fallback QuickPick (ms-python absent). Used to re-run fi-steps and
+ * refresh the tree view whenever the user switches environment.
  *
  * @param listener Callback invoked (with no arguments) on every interpreter change.
- * @returns A Disposable to push onto `context.subscriptions`, or `undefined` if
- *          the Python extension is unavailable.
+ * @returns A Disposable (covering both event sources) to push onto
+ *          `context.subscriptions`.
  */
-export async function onDidChangeActivePythonEnv(listener: () => void): Promise<vscode.Disposable | undefined> {
+export async function onDidChangeActivePythonEnv(listener: () => void): Promise<vscode.Disposable> {
+    const subscriptions: vscode.Disposable[] = [
+        onDidChangeFallbackInterpreter(() => listener()),
+    ];
     const api = await getPythonApi();
-    if (!api?.environments?.onDidChangeActiveEnvironmentPath) {
-        return undefined;
+    if (api?.environments?.onDidChangeActiveEnvironmentPath) {
+        subscriptions.push(api.environments.onDidChangeActiveEnvironmentPath(() => listener()));
     }
-    return api.environments.onDidChangeActiveEnvironmentPath(() => listener());
+    return vscode.Disposable.from(...subscriptions);
 }
 
 export interface IResolvedPythonEnv {
@@ -138,21 +151,80 @@ export interface IResolvedPythonEnv {
 }
 
 /**
+ * Assembles an {@link IResolvedPythonEnv} from an interpreter path and its
+ * environment prefix — the shared final step for both resolution mechanisms
+ * (ms-python API and fallback).
+ *
+ * @param interpreterPath Absolute path to the python executable.
+ * @param prefix Environment root directory.
+ * @param type Environment manager type, if known (e.g. "Conda", "Venv").
+ * @param name Display name, if known.
+ * @returns The fully populated environment descriptor.
+ */
+function buildResolvedEnv(
+    interpreterPath: string,
+    prefix: string,
+    type?: string,
+    name?: string,
+): IResolvedPythonEnv {
+    const binDir = isWindows() ? path.join(prefix, 'Scripts') : path.join(prefix, 'bin');
+
+    const pathPrepend = isWindows()
+        ? [prefix, path.join(prefix, 'Library', 'bin'), path.join(prefix, 'Library', 'mingw-w64', 'bin'), binDir]
+        : [binDir];
+
+    return { interpreterPath, prefix, type, name, binDir, pathPrepend };
+}
+
+/**
+ * Resolves an interpreter path into an environment WITHOUT the ms-python API.
+ *
+ * Derives the env prefix from the executable's location (`bin/` or `Scripts/`
+ * parent for venv-style layouts, the executable's own directory for Windows
+ * conda roots) and sniffs the manager type from on-disk markers
+ * (`conda-meta/` → Conda, `pyvenv.cfg` → Venv).
+ *
+ * @param interpreterPath Absolute path to the python executable.
+ * @returns The resolved environment descriptor.
+ */
+function resolveEnvFromInterpreterPath(interpreterPath: string): IResolvedPythonEnv {
+    const parentDir = path.dirname(interpreterPath);
+    const parentName = path.basename(parentDir).toLowerCase();
+    const prefix = (parentName === 'bin' || parentName === 'scripts')
+        ? path.dirname(parentDir)
+        : parentDir;
+
+    let type: string | undefined;
+    if (fs.existsSync(path.join(prefix, 'conda-meta'))) {
+        type = 'Conda';
+    } else if (fs.existsSync(path.join(prefix, 'pyvenv.cfg'))) {
+        type = 'Venv';
+    }
+
+    return buildResolvedEnv(interpreterPath, prefix, type, path.basename(prefix));
+}
+
+/**
  * Resolves the Python environment the user currently has selected in VS Code.
  *
- * Asks the Python extension for the active interpreter and resolves it into
- * everything needed to run tools from that environment without any shell
- * activation: the interpreter path, the env prefix, the bin/Scripts directory,
- * and the PATH segments a child process needs for compiled dependencies to load.
+ * Prefers the Python extension's active interpreter; when ms-python is not
+ * installed, falls back to the interpreter chosen through our own picker (or
+ * `$CONDA_PREFIX` — see {@link getFallbackInterpreterPath}). Either way the
+ * result contains everything needed to run tools from that environment
+ * without any shell activation: the interpreter path, the env prefix, the
+ * bin/Scripts directory, and the PATH segments a child process needs for
+ * compiled dependencies to load.
  *
  * @param resource Optional file/workspace URI for per-folder interpreter
- *                 resolution in multi-root workspaces.
- * @returns The resolved environment, or `undefined` if no interpreter is selected.
+ *                 resolution in multi-root workspaces (ms-python mode only).
+ * @returns The resolved environment, or `undefined` if no interpreter is
+ *          selected by either mechanism.
  */
 export async function getActivePythonEnv(resource?: vscode.Uri): Promise<IResolvedPythonEnv | undefined> {
     const api = await getPythonApi();
     if (!api?.environments?.getActiveEnvironmentPath) {
-        return undefined;
+        const fallbackPath = getFallbackInterpreterPath();
+        return fallbackPath ? resolveEnvFromInterpreterPath(fallbackPath) : undefined;
     }
 
     const envPath = api.environments.getActiveEnvironmentPath(resource);
@@ -166,20 +238,12 @@ export async function getActivePythonEnv(resource?: vscode.Uri): Promise<IResolv
         ?? resolved?.executable?.sysPrefix
         ?? (isWindows() ? path.dirname(interpreterPath) : path.dirname(path.dirname(interpreterPath)));
 
-    const binDir = isWindows() ? path.join(prefix, 'Scripts') : path.join(prefix, 'bin');
-
-    const pathPrepend = isWindows()
-        ? [prefix, path.join(prefix, 'Library', 'bin'), path.join(prefix, 'Library', 'mingw-w64', 'bin'), binDir]
-        : [binDir];
-
-    return {
+    return buildResolvedEnv(
         interpreterPath,
         prefix,
-        type: resolved?.environment?.type,
-        name: resolved?.environment?.name,
-        binDir,
-        pathPrepend,
-    };
+        resolved?.environment?.type,
+        resolved?.environment?.name,
+    );
 }
 
 /**

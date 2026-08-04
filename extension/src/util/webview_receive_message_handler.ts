@@ -5,7 +5,8 @@ import runFlowsheet from "./run_flowsheet";
 import { getWebview, brodcastMessage, setResultsPanelTitle } from "./webview_handler";
 import { killProcessTree } from './platform_config';
 import { queryReportById, queryStepStatusesByRunId, queryRunException, queryReportFilenameById } from './sqlite_reader';
-import { broadcastCurrentPythonEnv } from './python_env';
+import { broadcastCurrentPythonEnv, isPythonExtensionInstalled } from './python_env';
+import { showFallbackInterpreterPicker } from './python_env_fallback';
 
 export default function webviewReceiveMessageHandler(context: vscode.ExtensionContext, frontendMessage: IFrontendMessage) {
     console.log(`receive frontend instruction: ${JSON.stringify(frontendMessage)}`);
@@ -34,7 +35,16 @@ export default function webviewReceiveMessageHandler(context: vscode.ExtensionCo
             console.log('frontend ready!');
             break;
         case 'open_interpreter_picker':
-            vscode.commands.executeCommand('python.setInterpreter');
+            // With ms-python installed, defer to its official picker; without
+            // it (e.g. conda users who refuse the MS extension), open our own
+            // fallback QuickPick — the sidebar selector must work either way.
+            if (isPythonExtensionInstalled()) {
+                vscode.commands.executeCommand('python.setInterpreter');
+            } else {
+                showFallbackInterpreterPicker().catch(
+                    (e) => console.error(`Fallback interpreter picker failed: ${e}`),
+                );
+            }
             break;
         case 'run_flowsheet':
             console.log(`Receive frontend instruction: run flowsheet`);
