@@ -9,7 +9,7 @@
 import * as vscode from 'vscode';
 import { activateWebviews, brodcastMessage, setResultsPanelTitle } from './webview_handler';
 import openWebView from '../web_view/web_view_panel';
-import { queryLatestReport } from './sqlite_reader';
+import { queryLatestReport, queryStatusTableExists } from './sqlite_reader';
 import runTerminalCommand from './run_terminal_command';
 import { getActivePythonEnv, activatedProcessEnv } from './python_env';
 import { getMaxReportId, startStepStatusPolling, stopStepStatusPolling, broadcastFinalStepStatus } from './step_status_polling';
@@ -85,6 +85,7 @@ export default async function runFlowsheet(
         // (running / success / failure) in the tree view while the run is going.
         const baselineReportId = await getMaxReportId();
         let stepStatusPoller: NodeJS.Timeout | undefined;
+        let finalStepStatusCount = 0;
         try {
             stepStatusPoller = startStepStatusPolling(baselineReportId);
             await runTerminalCommand(env.interpreterPath, args, childEnv);
@@ -92,10 +93,30 @@ export default async function runFlowsheet(
             stopStepStatusPolling(stepStatusPoller);
             // The interval can miss the very last step row written as fi-run
             // exits, so emit one final authoritative status broadcast.
-            broadcastFinalStepStatus(baselineReportId);
+            finalStepStatusCount = await broadcastFinalStepStatus(baselineReportId);
         }
 
         console.log('fi-run completed. Reading latest report from SQLite...');
+
+        // The run completed but no per-step status rows exist for it. That
+        // means the installed flowsheet-inspector-lib is too old to write the
+        // `status` table (or the table could not be read), so the tree view
+        // cannot show per-step success/failure icons. Surface it instead of
+        // failing silently — this is the exact symptom seen on machines whose
+        // Python lib was installed before per-step status support was added.
+        if (finalStepStatusCount === 0) {
+            const tableExists = queryStatusTableExists();
+            const reason = tableExists
+                ? 'the `status` table exists but has no rows for this run'
+                : 'the report database has no `status` table';
+            brodcastMessage({
+                type: 'error',
+                message:
+                    `Per-step status icons unavailable: ${reason}. ` +
+                    'The flowsheet-inspector-lib in this Python environment is likely outdated. Upgrade it with:\n' +
+                    'pip install --upgrade "flowsheet-inspector-lib @ git+https://github.com/prommis/flowsheet-inspector-lib.git"',
+            });
+        }
 
         try {
             const reportData = queryLatestReport();

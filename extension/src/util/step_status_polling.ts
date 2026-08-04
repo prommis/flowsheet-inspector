@@ -80,6 +80,11 @@ export function stopStepStatusPolling(handle: NodeJS.Timeout | undefined): void 
  * right after the run completes to guarantee the tree view reflects the final
  * state.
  *
+ * If the first read returns no rows, the read is retried a few times with a
+ * short delay: on Windows the report database can still be transiently
+ * locked/unreadable in the instant after the fi-run process exits, and without
+ * the retry the tree view would silently show no icons for the whole run.
+ *
  * This authoritative broadcast is marked `final: true` and carries the run's
  * `run_exception`, which is only available once the run has finished and the
  * report row is filled in. The frontend uses this (not the intermediate
@@ -87,16 +92,24 @@ export function stopStepStatusPolling(handle: NodeJS.Timeout | undefined): void 
  *
  * @param baselineId  Same baseline used to start the poller
  *   (see {@link getMaxReportId}).
+ * @returns The number of step-status rows found (and broadcast). 0 means no
+ *   per-step status was recorded for this run at all — the caller can use this
+ *   to warn that the installed flowsheet-inspector-lib is too old to write the
+ *   `status` table.
  */
-export function broadcastFinalStepStatus(baselineId: number): void {
+export async function broadcastFinalStepStatus(baselineId: number): Promise<number> {
     // After the run, the current run is the latest report row (id > baseline).
     const runId = getMaxReportId();
     if (runId <= baselineId) {
-        return; // no new run was recorded
+        return 0; // no new run was recorded
     }
-    const rows = queryStepStatusesByRunId(runId);
+    let rows = queryStepStatusesByRunId(runId);
+    for (let attempt = 0; rows.length === 0 && attempt < 3; attempt++) {
+        await new Promise((resolve) => setTimeout(resolve, 400));
+        rows = queryStepStatusesByRunId(runId);
+    }
     if (rows.length === 0) {
-        return;
+        return 0;
     }
     brodcastMessage({
         type: 'step_status_update',
@@ -104,4 +117,5 @@ export function broadcastFinalStepStatus(baselineId: number): void {
         runException: queryRunException(runId),
         final: true,
     });
+    return rows.length;
 }
