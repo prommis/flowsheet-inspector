@@ -38,3 +38,50 @@
     margin: 0;
     color: var(--vscode-editor-foreground, #ccc);
 }
+
+/* ─── Tree layout toggle switch ─── */
+.layout_toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+}
+
+.layout_toggle_track {
+    position: relative;
+    width: 34px;
+    height: 18px;
+    flex-shrink: 0;
+    border-radius: 9px;
+    background: var(--vscode-input-background, #3a3a3a);
+    border: 1px solid var(--vscode-panel-border, #555);
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.layout_toggle_track_on {
+    background: var(--vscode-button-background, #0e639c);
+    border-color: var(--vscode-button-background, #0e639c);
+}
+
+.layout_toggle_knob {
+    position: absolute;
+    top: 1px;
+    left: 1px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--vscode-foreground, #ccc);
+    transition: left 0.15s ease;
+}
+
+.layout_toggle_track_on .layout_toggle_knob {
+    left: 17px;
+    background: #fff;
+}
+
+.layout_toggle_label {
+    font-size: 12px;
+    color: var(--vscode-foreground, #ccc);
+}

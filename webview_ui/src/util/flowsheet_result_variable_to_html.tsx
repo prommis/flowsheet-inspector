@@ -1,4 +1,6 @@
 import { useState, useMemo } from 'react';
+import StreamTable from '../variable_view/stream_table';
+import css from '../css/webview_page.module.css';
 
 // ============================================================
 // Type Definitions
@@ -387,12 +389,51 @@ function TreeContent({ data, searchTerm, defaultOpen, dofInfo, pathPrefix }: {
 }
 
 // ============================================================
+// Layout Toggle Switch
+// ============================================================
+
+/**
+ * Pill-style toggle switch that flips the variable view between the
+ * collapsible tree layout and the stream table layout.
+ *
+ * Rendered in the toolbar next to the search input. The switch itself is
+ * stateless; the checked state and toggle callback are owned by the parent
+ * (FlowsheetVariableDisplay) so the page can decide which layout to render.
+ *
+ * @param checked - true when the tree layout is active (switch shown "on")
+ * @param onToggle - called when the user clicks the switch to flip layouts
+ * @returns the toggle switch element with its text label
+ */
+function TreeLayoutToggle({ checked, onToggle }: {
+    checked: boolean;
+    onToggle: () => void;
+}) {
+    return (
+        <div
+            className={css.layout_toggle}
+            role="switch"
+            aria-checked={checked}
+            onClick={onToggle}
+        >
+            <span className={`${css.layout_toggle_track} ${checked ? css.layout_toggle_track_on : ''}`}>
+                <span className={css.layout_toggle_knob} />
+            </span>
+            <span className={css.layout_toggle_label}>View in Tree Layout</span>
+        </div>
+    );
+}
+
+// ============================================================
 // Main Export: Variable Tree Renderer (with search + expand all)
 // ============================================================
 
-export default function RenderVariableTree({ data, dofSteps }: {
+export default function RenderVariableTree({ data, dofSteps, treeLayout = true, onTreeLayoutToggle }: {
     data: VariableNode;
     dofSteps?: DOFSteps;
+    /** true = render the variable tree, false = render the stream table view */
+    treeLayout?: boolean;
+    /** flips treeLayout; when provided, the toolbar shows the layout toggle */
+    onTreeLayoutToggle?: () => void;
 }) {
     const [searchTerm, setSearchTerm] = useState('');
     const [allExpanded, setAllExpanded] = useState(false);
@@ -446,37 +487,48 @@ export default function RenderVariableTree({ data, dofSteps }: {
                         fontFamily: 'var(--vscode-font-family, sans-serif)',
                     }}
                 />
-                <span
-                    onClick={handleToggleExpand}
-                    style={{
-                        cursor: 'pointer',
-                        userSelect: 'none',
-                        padding: '5px 14px',
-                        fontSize: '12px',
-                        border: '1px solid var(--vscode-panel-border, #555)',
-                        borderRadius: '4px',
-                        color: 'var(--vscode-foreground, #ccc)',
-                        whiteSpace: 'nowrap',
-                    }}
-                >
-                    {allExpanded && !normalizedSearch ? 'Collapse All ▲' : 'Expand All ▼'}
-                </span>
+                {onTreeLayoutToggle && (
+                    <TreeLayoutToggle checked={treeLayout} onToggle={onTreeLayoutToggle} />
+                )}
+                {treeLayout && (
+                    <span
+                        onClick={handleToggleExpand}
+                        style={{
+                            cursor: 'pointer',
+                            userSelect: 'none',
+                            padding: '5px 14px',
+                            fontSize: '12px',
+                            border: '1px solid var(--vscode-panel-border, #555)',
+                            borderRadius: '4px',
+                            color: 'var(--vscode-foreground, #ccc)',
+                            whiteSpace: 'nowrap',
+                        }}
+                    >
+                        {allExpanded && !normalizedSearch ? 'Collapse All ▲' : 'Expand All ▼'}
+                    </span>
+                )}
             </div>
 
-            {/* Tree */}
-            <div key={effectiveKey}>
-                <TreeContent
-                    data={data}
-                    searchTerm={normalizedSearch}
-                    defaultOpen={effectiveExpand}
-                    dofInfo={dofInfo}
-                    pathPrefix=""
-                />
-            </div>
+            {treeLayout ? (
+                <>
+                    {/* Tree */}
+                    <div key={effectiveKey}>
+                        <TreeContent
+                            data={data}
+                            searchTerm={normalizedSearch}
+                            defaultOpen={effectiveExpand}
+                            dofInfo={dofInfo}
+                            pathPrefix=""
+                        />
+                    </div>
 
-            {/* No results message */}
-            {normalizedSearch && (
-                <NoResultsCheck data={data} searchTerm={normalizedSearch} />
+                    {/* No results message */}
+                    {normalizedSearch && (
+                        <NoResultsCheck data={data} searchTerm={normalizedSearch} />
+                    )}
+                </>
+            ) : (
+                <StreamTable />
             )}
         </div>
     );
