@@ -5,8 +5,13 @@
 
 .data_table {
     border-collapse: collapse;
-    width: 100%;
     font-size: 12px;
+}
+
+/* Keep column gaps consistent instead of stretching to fill the page:
+   headers set a minimum, extra space goes after the last column */
+.data_table th {
+    min-width: 110px;
 }
 
 .data_table th {
