@@ -38,10 +38,18 @@ export default function FlowsheetVariableDisplay() {
     }
 
     const dofSteps = flowsheetRunnerResult.actions?.degrees_of_freedom?.steps;
+    // Whole-model degrees of freedom, shown in the badge above the toolbar
+    const totalDof = flowsheetRunnerResult.actions?.degrees_of_freedom?.model;
 
     return (
         <section>
             <h2 className="page-title">Flowsheet Parameters & Variables:</h2>
+            {totalDof !== undefined && (
+                <div className={css.dof_badge}>
+                    <span className={css.dof_badge_label}>Total Degrees of Freedom</span>
+                    <span className={css.dof_badge_value}>{totalDof}</span>
+                </div>
+            )}
             <RenderVariableTree
                 data={variables}
                 dofSteps={dofSteps}

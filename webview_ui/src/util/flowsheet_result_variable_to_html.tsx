@@ -371,7 +371,10 @@ function TreeContent({ data, searchTerm, defaultOpen, dofInfo, pathPrefix }: {
                         key={key}
                         label={key}
                         childCount={childCount}
-                        defaultOpen={defaultOpen}
+                        // Top-level nodes (fs) stay open by default so users
+                        // immediately see something was generated; Collapse All
+                        // also keeps this first level open
+                        defaultOpen={defaultOpen || pathPrefix === ''}
                         extra={dofBadge}
                     >
                         <TreeContent
@@ -490,27 +493,29 @@ export default function RenderVariableTree({ data, dofSteps, treeLayout = true, 
                 {onTreeLayoutToggle && (
                     <TreeLayoutToggle checked={treeLayout} onToggle={onTreeLayoutToggle} />
                 )}
-                {treeLayout && (
-                    <span
-                        onClick={handleToggleExpand}
-                        style={{
-                            cursor: 'pointer',
-                            userSelect: 'none',
-                            padding: '5px 14px',
-                            fontSize: '12px',
-                            border: '1px solid var(--vscode-panel-border, #555)',
-                            borderRadius: '4px',
-                            color: 'var(--vscode-foreground, #ccc)',
-                            whiteSpace: 'nowrap',
-                        }}
-                    >
-                        {allExpanded && !normalizedSearch ? 'Collapse All ▲' : 'Expand All ▼'}
-                    </span>
-                )}
             </div>
 
             {treeLayout ? (
                 <>
+                    {/* Expand/Collapse control, sitting right above the tree */}
+                    <div className={css.expand_all_bar}>
+                        <span
+                            onClick={handleToggleExpand}
+                            style={{
+                                cursor: 'pointer',
+                                userSelect: 'none',
+                                padding: '5px 14px',
+                                fontSize: '12px',
+                                border: '1px solid var(--vscode-panel-border, #555)',
+                                borderRadius: '4px',
+                                color: 'var(--vscode-foreground, #ccc)',
+                                whiteSpace: 'nowrap',
+                            }}
+                        >
+                            {allExpanded && !normalizedSearch ? 'Collapse All ▲' : 'Expand All ▼'}
+                        </span>
+                    </div>
+
                     {/* Tree */}
                     <div key={effectiveKey}>
                         <TreeContent
