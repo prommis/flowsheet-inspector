@@ -98,11 +98,161 @@ function interpreterInPrefix(prefix: string): string {
 }
 
 /**
+ * Lists likely conda installation roots on this machine.
+ *
+ * A "root" is the base install of a conda distribution (anaconda3,
+ * miniconda3, miniforge3, mambaforge, micromamba, ...) — its named envs
+ * live in `<root>/envs/`. Roots are derived from, in order:
+ *   - `$CONDA_EXE` (points at `<root>/bin/conda` or `<root>\Scripts\conda.exe`)
+ *   - `$CONDA_PREFIX` (the active env: either the root itself for base, or
+ *     `<root>/envs/<name>` for a named env)
+ *   - a conda executable found on PATH
+ *   - well-known install locations (home dir, /opt, Homebrew Caskroom,
+ *     C:\ProgramData)
+ *
+ * A candidate is kept only if it actually looks like a conda root (has a
+ * `conda-meta/` folder or an `envs/` subdirectory).
+ *
+ * @returns Absolute root directories, deduplicated, possibly empty.
+ */
+function condaRootCandidates(): string[] {
+    const roots = new Set<string>();
+
+    /**
+     * Records a directory if it exists and looks like a conda root.
+     *
+     * @param root Candidate root directory.
+     */
+    const addRoot = (root: string | undefined) => {
+        if (!root) {
+            return;
+        }
+        const normalized = path.resolve(root);
+        if (roots.has(normalized)) {
+            return;
+        }
+        if (
+            fs.existsSync(path.join(normalized, 'conda-meta')) ||
+            fs.existsSync(path.join(normalized, 'envs'))
+        ) {
+            roots.add(normalized);
+        }
+    };
+
+    /**
+     * Derives the root from a conda executable path (two levels up from
+     * `bin/conda`, `Scripts\conda.exe`, or `condabin\conda.bat`).
+     *
+     * @param exe Absolute path to a conda executable.
+     */
+    const addRootFromCondaExe = (exe: string | undefined) => {
+        if (exe) {
+            addRoot(path.dirname(path.dirname(exe)));
+        }
+    };
+
+    addRootFromCondaExe(process.env.CONDA_EXE);
+
+    const condaPrefix = process.env.CONDA_PREFIX;
+    if (condaPrefix) {
+        addRoot(
+            path.basename(path.dirname(condaPrefix)) === 'envs'
+                ? path.dirname(path.dirname(condaPrefix))
+                : condaPrefix,
+        );
+    }
+
+    // conda executable on PATH
+    const condaExeNames = isWindows() ? ['conda.exe', 'conda.bat'] : ['conda'];
+    for (const dir of (process.env.PATH ?? '').split(path.delimiter)) {
+        if (!dir) {
+            continue;
+        }
+        for (const exe of condaExeNames) {
+            const exePath = path.join(dir, exe);
+            if (fs.existsSync(exePath)) {
+                addRootFromCondaExe(exePath);
+            }
+        }
+    }
+
+    // Well-known install locations
+    const home = os.homedir();
+    const distros = ['anaconda3', 'miniconda3', 'miniforge3', 'mambaforge', 'micromamba'];
+    const parents = [home, ...(isWindows() ? ['C:\\ProgramData'] : ['/opt', '/usr/local'])];
+    for (const parent of parents) {
+        for (const distro of distros) {
+            addRoot(path.join(parent, distro));
+        }
+    }
+    if (!isWindows()) {
+        for (const caskroom of ['/opt/homebrew/Caskroom', '/usr/local/Caskroom']) {
+            for (const distro of ['miniconda', 'miniforge']) {
+                addRoot(path.join(caskroom, distro, 'base'));
+            }
+        }
+    }
+
+    return [...roots];
+}
+
+/**
+ * Reads custom environment directories (`envs_dirs`) from `~/.condarc`.
+ *
+ * Minimal YAML handling on purpose (no dependency): finds the `envs_dirs:`
+ * block and collects its `- <path>` list entries until the next top-level
+ * key. Quotes are stripped and a leading `~` expands to the home directory.
+ *
+ * @returns Absolute env-directory paths, possibly empty.
+ */
+function envsDirsFromCondarc(): string[] {
+    const result: string[] = [];
+    try {
+        const lines = fs
+            .readFileSync(path.join(os.homedir(), '.condarc'), 'utf-8')
+            .split('\n');
+        let inBlock = false;
+        for (const raw of lines) {
+            const line = raw.replace(/#.*$/, '').trimEnd();
+            if (!line.trim()) {
+                continue;
+            }
+            if (/^envs_dirs\s*:/.test(line)) {
+                inBlock = true;
+                continue;
+            }
+            if (!inBlock) {
+                continue;
+            }
+            const entry = line.match(/^\s*-\s*(.+)$/);
+            if (!entry) {
+                // A new top-level key ends the envs_dirs block
+                if (!/^\s/.test(line)) {
+                    inBlock = false;
+                }
+                continue;
+            }
+            let dir = entry[1].trim().replace(/^['"]|['"]$/g, '');
+            if (dir.startsWith('~')) {
+                dir = path.join(os.homedir(), dir.slice(1));
+            }
+            result.push(dir);
+        }
+    } catch {
+        // No .condarc — fine.
+    }
+    return result;
+}
+
+/**
  * Discovers Python interpreter candidates without the ms-python extension.
  *
  * Sources, in order:
- *   - conda environments listed in `~/.conda/environments.txt` (conda
- *     maintains this file for every env it creates — no need to spawn conda)
+ *   - conda roots found on this machine (see {@link condaRootCandidates}):
+ *     the base env plus everything under `<root>/envs/`
+ *   - custom `envs_dirs` from `~/.condarc`
+ *   - conda environments listed in `~/.conda/environments.txt` (best-effort
+ *     registry — mamba/miniforge sometimes skip it, hence the scans above)
  *   - the currently activated conda env (`$CONDA_PREFIX`), if any
  *   - `.venv` / `venv` folders in each workspace root
  *   - the first `python3` / `python` found on PATH
@@ -130,6 +280,26 @@ export function discoverInterpreterCandidates(): IInterpreterCandidate[] {
         seen.add(interpreterPath);
         candidates.push({ interpreterPath, name, source });
     };
+
+    // Conda envs from scanning install roots directly — most reliable source;
+    // environments.txt alone misses envs on some setups (e.g. mamba/miniforge)
+    const envsDirs: string[] = [];
+    for (const root of condaRootCandidates()) {
+        add(interpreterInPrefix(root), 'base', `conda (${path.basename(root)})`);
+        envsDirs.push(path.join(root, 'envs'));
+    }
+    envsDirs.push(...envsDirsFromCondarc());
+    for (const envsDir of envsDirs) {
+        let children: string[] = [];
+        try {
+            children = fs.readdirSync(envsDir);
+        } catch {
+            continue;
+        }
+        for (const child of children) {
+            add(interpreterInPrefix(path.join(envsDir, child)), child, 'conda');
+        }
+    }
 
     // Conda envs from ~/.conda/environments.txt (same location on all OSes)
     const envsFile = path.join(os.homedir(), '.conda', 'environments.txt');
