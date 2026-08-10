@@ -1,0 +1,46 @@
+.table_wrapper {
+    overflow-x: auto;
+    max-width: 100%;
+}
+
+.data_table {
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+/* Keep column gaps consistent instead of stretching to fill the page:
+   headers set a minimum, extra space goes after the last column */
+.data_table th {
+    min-width: 110px;
+}
+
+.data_table th {
+    text-align: left;
+    background: var(--vscode-editorWidget-background, #2a2a2a);
+    color: var(--vscode-foreground, #ddd);
+    font-weight: 600;
+    padding: 8px 14px;
+    white-space: nowrap;
+}
+
+.data_table td {
+    padding: 5px 14px;
+    color: var(--vscode-foreground, #ccc);
+    white-space: nowrap;
+}
+
+.data_table td:first-child {
+    font-family: var(--vscode-editor-font-family, monospace);
+}
+
+.data_table tbody tr:nth-child(even) {
+    background: var(--vscode-list-hoverBackground, rgba(255, 255, 255, 0.04));
+}
+
+/* Search hit inside a cell; matches the tree view's highlight color */
+.cell_highlight {
+    background: #e6a817;
+    color: #000;
+    border-radius: 2px;
+    padding: 0 1px;
+}
