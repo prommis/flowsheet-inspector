@@ -48,6 +48,49 @@ export interface ModelVariables {
     variables: VariableNode;
 }
 
+// ─── Stream Table Types ───
+
+// One cell of the flowsheet-level stream table: [value, "fixed" | "unfixed"]
+export type StreamTableCell = [number | null, string];
+
+// Flowsheet-level stream table (pandas DataFrame, split orientation):
+// rows are state variables, columns are streams
+export interface FlowsheetStreamTable {
+    index: string[];
+    units: (string | null)[];
+    columns: string[];
+    data: StreamTableCell[][];
+}
+
+// Per-unit stream table (column-oriented): "Units" maps row label → unit
+// string; every other key is a port/stream name (Inlet, Outlet, purge, ...)
+// mapping row label → value
+export interface UnitStreamTable {
+    Units?: Record<string, string>;
+    [portName: string]: Record<string, string | number | null> | undefined;
+}
+
+// Report for one unit at one step, from model_reports
+export interface UnitReport {
+    model_type?: string;
+    performance?: {
+        vars?: Record<string, { value: number | null; units: string | null; fixed: boolean; bounds: (number | null)[] }>;
+        exprs?: Record<string, { value: number | null; units: string | null }>;
+        params?: Record<string, { value: number | null; units: string | null; mutable: boolean }>;
+    };
+    stream_table?: UnitStreamTable;
+    dof?: Record<string, number>;
+    time_point?: number;
+}
+
+// Per-step unit reports; keys of `reports` are component paths like "fs.M101"
+export interface ModelReports {
+    step_reports: {
+        [stepName: string]: { reports: Record<string, UnitReport> };
+    };
+    last_step: string;
+}
+
 // Actions collected from the flowsheet run
 export interface FlowsheetActions {
     degrees_of_freedom?: DegreesOfFreedom;
@@ -57,6 +100,8 @@ export interface FlowsheetActions {
     model_variables?: ModelVariables;
     mermaid_diagram?: { diagram: string[] | string };
     diagnostics?: Diagnostics;
+    stream_table?: FlowsheetStreamTable;
+    model_reports?: ModelReports;
 }
 
 // ─── Diagnostics Types ───

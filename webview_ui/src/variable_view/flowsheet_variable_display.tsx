@@ -1,4 +1,4 @@
-import { useContext } from "react";
+import { useContext, useState } from "react";
 import { AppContext } from "../context";
 import RenderVariableTree from "../util/flowsheet_result_variable_to_html";
 import type { Diagnostics } from "../interface/flowsheet_result_interface";
@@ -6,6 +6,9 @@ import css from "../css/webview_page.module.css";
 
 export default function FlowsheetVariableDisplay() {
     const { flowsheetRunnerResult } = useContext(AppContext);
+    // Controls which layout the variable view renders: true = collapsible
+    // variable tree, false = stream table view (the default).
+    const [treeLayout, setTreeLayout] = useState(false);
     const diagnostics = flowsheetRunnerResult?.actions?.diagnostics as Diagnostics | undefined;
     const variables = flowsheetRunnerResult?.actions?.model_variables?.variables;
     const runFailed = !!flowsheetRunnerResult && diagnostics?.valid === false;
@@ -35,11 +38,24 @@ export default function FlowsheetVariableDisplay() {
     }
 
     const dofSteps = flowsheetRunnerResult.actions?.degrees_of_freedom?.steps;
+    // Whole-model degrees of freedom, shown in the badge above the toolbar
+    const totalDof = flowsheetRunnerResult.actions?.degrees_of_freedom?.model;
 
     return (
         <section>
             <h2 className="page-title">Flowsheet Parameters & Variables:</h2>
-            <RenderVariableTree data={variables} dofSteps={dofSteps} />
+            {totalDof !== undefined && (
+                <div className={css.dof_badge}>
+                    <span className={css.dof_badge_label}>Total Degrees of Freedom</span>
+                    <span className={css.dof_badge_value}>{totalDof}</span>
+                </div>
+            )}
+            <RenderVariableTree
+                data={variables}
+                dofSteps={dofSteps}
+                treeLayout={treeLayout}
+                onTreeLayoutToggle={() => setTreeLayout((prev) => !prev)}
+            />
         </section>
     );
 }
