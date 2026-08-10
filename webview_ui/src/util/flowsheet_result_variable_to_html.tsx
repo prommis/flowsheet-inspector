@@ -421,7 +421,7 @@ function TreeLayoutToggle({ checked, onToggle }: {
             <span className={`${css.layout_toggle_track} ${checked ? css.layout_toggle_track_on : ''}`}>
                 <span className={css.layout_toggle_knob} />
             </span>
-            <span className={css.layout_toggle_label}>View in Tree Layout</span>
+            <span className={css.layout_toggle_label}>View variable tree</span>
         </div>
     );
 }
