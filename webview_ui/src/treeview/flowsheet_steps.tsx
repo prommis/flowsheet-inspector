@@ -240,6 +240,21 @@ export default function FlowsheetSteps({ idaesRunInfo }: { idaesRunInfo: idaesRu
         selectedCountRef.current = selectedIndices.length;
     }, [selectedIndices]);
 
+    // Content fingerprint of the step list. Extension messages recreate the
+    // steps array on every post, so comparing joined names (rather than array
+    // identity) ensures the default-selection effect below only fires when the
+    // steps actually change, not on every re-broadcast.
+    const stepsKey = idaesRunInfo?.steps?.join(' ') ?? '';
+
+    // Default to selecting every step whenever a new step list arrives
+    // (initial load or switching to another flowsheet). An empty selection is
+    // treated by the runner as "run all steps", so the UI must show all steps
+    // selected to match what an untouched Run button actually does.
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot sync of selection state to a new step list pushed from the extension host
+        applyPrefixSelection(idaesRunInfo?.steps?.length ?? 0);
+    }, [stepsKey]);
+
     // Make sure no window listeners leak if the component unmounts mid-drag.
     useEffect(() => {
         return () => detachDragListeners();
