@@ -1,5 +1,6 @@
 import { useContext } from 'react';
 import { AppContext } from '../context';
+import TracebackText from '../util/traceback_text';
 import css from "../css/logview.module.css";
 
 export default function ErrorLog() {
@@ -28,7 +29,7 @@ export default function ErrorLog() {
                 ) : (
                     extensionErrorLogs.map((log, index) => (
                         <div key={index} className={css.log_item}>
-                            {log}
+                            <TracebackText text={log} />
                         </div>
                     ))
                 )}

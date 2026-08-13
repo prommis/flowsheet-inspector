@@ -7,6 +7,7 @@ import { killProcessTree } from './platform_config';
 import { queryReportById, queryStepStatusesByRunId, queryRunException, queryReportFilenameById } from './sqlite_reader';
 import { broadcastCurrentPythonEnv, isPythonExtensionInstalled } from './python_env';
 import { showFallbackInterpreterPicker } from './python_env_fallback';
+import { suppressNextTabSwitchFor } from './activate_tab_handler';
 
 export default function webviewReceiveMessageHandler(context: vscode.ExtensionContext, frontendMessage: IFrontendMessage) {
     console.log(`receive frontend instruction: ${JSON.stringify(frontendMessage)}`);
@@ -65,11 +66,7 @@ export default function webviewReceiveMessageHandler(context: vscode.ExtensionCo
         case 'focus_document':
             console.log(`User selected a document to focus`);
             if (frontendMessage.target) {
-                vscode.workspace.openTextDocument(frontendMessage.target).then(
-                    doc => vscode.window.showTextDocument(doc, vscode.ViewColumn.One, false)
-                ).then(undefined, err => {
-                    console.error(`Failed to show document: ${err}`);
-                });
+                focusDocument(frontendMessage.target, frontendMessage.line);
             }
             break;
         case 'switch_sub_tab':
@@ -143,6 +140,51 @@ export default function webviewReceiveMessageHandler(context: vscode.ExtensionCo
 
 function frontEndReady(context: vscode.ExtensionContext, webview: vscode.Webview) {
     console.log(`received ready`);
+}
+
+/**
+ * Opens a document in the first editor column and, when a line number is
+ * given, jumps to that line and flashes a temporary whole-line highlight.
+ *
+ * Why: the webview terminal / error logs render Python traceback locations
+ * (`File "...", line N`) as clickable links so users can trace a failed run
+ * straight to the offending source line. The highlight uses the theme's
+ * find-match color and disposes itself after a few seconds so it does not
+ * permanently mark the file.
+ *
+ * @param target Absolute path of the file to open (as reported by the
+ *   Python traceback, so it may live outside the workspace, e.g. site-packages).
+ * @param line Optional 1-based line number to reveal and highlight; clamped to
+ *   the document's line count in case the file changed since the run.
+ */
+function focusDocument(target: string, line?: number | string) {
+    if (line !== undefined && line !== null) {
+        // A line-jump comes from a traceback link — a debug action, not the
+        // user switching flowsheets. Keep the tree panel on the current
+        // flowsheet instead of reacting to the editor focus change.
+        suppressNextTabSwitchFor(vscode.Uri.file(target).fsPath);
+    }
+    vscode.workspace.openTextDocument(target).then(
+        doc => vscode.window.showTextDocument(doc, vscode.ViewColumn.One, false)
+    ).then(editor => {
+        const lineNumber = Number(line);
+        if (!editor || !line || isNaN(lineNumber)) {
+            return;
+        }
+        const lineIndex = Math.min(Math.max(lineNumber - 1, 0), editor.document.lineCount - 1);
+        const range = editor.document.lineAt(lineIndex).range;
+        editor.selection = new vscode.Selection(range.start, range.start);
+        editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
+
+        const highlight = vscode.window.createTextEditorDecorationType({
+            isWholeLine: true,
+            backgroundColor: new vscode.ThemeColor('editor.findMatchHighlightBackground'),
+        });
+        editor.setDecorations(highlight, [range]);
+        setTimeout(() => highlight.dispose(), 3000);
+    }).then(undefined, err => {
+        console.error(`Failed to show document: ${err}`);
+    });
 }
 
 
