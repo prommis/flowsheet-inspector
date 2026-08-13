@@ -31,6 +31,18 @@ import {
 export type ActiveLogTab = 'error' | 'terminal';
 export type SetActiveLogTab = React.Dispatch<React.SetStateAction<ActiveLogTab>>;
 
+/**
+ * Which log severity levels are currently visible in the terminal log panel.
+ * Each flag hides (not deletes) the matching log lines when false. When every
+ * flag is true the panel shows all lines, including ones with no level tag.
+ */
+export interface LogLevelFilters {
+    info: boolean;
+    warning: boolean;
+    error: boolean;
+}
+export type SetLogLevelFilters = React.Dispatch<React.SetStateAction<LogLevelFilters>>;
+
 interface AppContextType {
     isLoading: boolean;
     setIsLoading: (isLoading: boolean) => void;
@@ -54,6 +66,8 @@ interface AppContextType {
     setTerminalLogs: SetTerminalLogs;
     activeLogTab: ActiveLogTab;
     setActiveLogTab: SetActiveLogTab;
+    logLevelFilters: LogLevelFilters;
+    setLogLevelFilters: SetLogLevelFilters;
     initError: string | null;
     setInitError: React.Dispatch<React.SetStateAction<string | null>>;
     packageWarnings: IPackageWarning[] | null;

@@ -1,4 +1,4 @@
-import { AppContext, type ActiveLogTab } from "./context";
+import { AppContext, type ActiveLogTab, type LogLevelFilters } from "./context";
 import { type ReactNode, useState } from "react";
 import {
     type FlowsheetSteps,
@@ -32,6 +32,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const [extensionErrorLogs, setExtensionErrorLogs] = useState<ExtensionErrorLogsType>([]);
     const [terminalLogs, setTerminalLogs] = useState<TerminalLogsType>([]);
     const [activeLogTab, setActiveLogTab] = useState<ActiveLogTab>('error');
+    // Default to every level visible so the panel behaves like "Show all logs"
+    // until the user narrows it down.
+    const [logLevelFilters, setLogLevelFilters] = useState<LogLevelFilters>({ info: true, warning: true, error: true });
     const [initError, setInitError] = useState<string | null>(null);
     const [packageWarnings, setPackageWarnings] = useState<IPackageWarning[] | null>(null);
     const [openPythonFiles, setOpenPythonFiles] = useState<OpenPythonFilesType>([]);
@@ -64,6 +67,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
             setTerminalLogs,
             activeLogTab,
             setActiveLogTab,
+            logLevelFilters,
+            setLogLevelFilters,
             initError,
             setInitError,
             packageWarnings,

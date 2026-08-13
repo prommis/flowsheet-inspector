@@ -1,9 +1,11 @@
 import { useContext, useEffect, useRef } from 'react';
 import { AppContext } from '../context';
+import LogLevelCheckbox from '../components/log_level_checkbox';
+import { isLogLineVisible } from '../util/log_level_filter';
 import css from "../css/logview.module.css";
 
 export default function TerminalLogs() {
-    const { terminalLogs, setTerminalLogs } = useContext(AppContext);
+    const { terminalLogs, setTerminalLogs, logLevelFilters } = useContext(AppContext);
     const endRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -13,6 +15,17 @@ export default function TerminalLogs() {
     const handleClearLogs = () => {
         setTerminalLogs([]);
     };
+
+    // Each terminalLogs entry is a raw stdout/stderr chunk that may span
+    // multiple lines, so filtering has to happen per line: keep only the
+    // lines whose level matches the current checkbox selection, and drop
+    // chunks that end up empty. Hidden lines stay in terminalLogs untouched.
+    const visibleLogs = terminalLogs
+        .map(chunk => chunk
+            .split('\n')
+            .filter(line => isLogLineVisible(line, logLevelFilters))
+            .join('\n'))
+        .filter(chunk => chunk.trim() !== '');
 
     return (
         <div className={css.content_section}>
@@ -27,12 +40,16 @@ export default function TerminalLogs() {
                 </button>
             </div>
 
+            <LogLevelCheckbox />
+
             <div className={css.logs_container}>
                 {terminalLogs.length === 0 ? (
                     <span className={css.no_logs}>No terminal output.</span>
+                ) : visibleLogs.length === 0 ? (
+                    <span className={css.no_logs}>No logs match the selected levels.</span>
                 ) : (
-                    terminalLogs.map((log, index) => (
-                        <div key={index} style={{ whiteSpace: 'pre-wrap', fontFamily: 'var(--vscode-editor-font-family, monospace)', marginBottom: '2px', wordBreak: 'break-all' }}>
+                    visibleLogs.map((log, index) => (
+                        <div key={index} className={css.terminal_log_line}>
                             {log}
                         </div>
                     ))
