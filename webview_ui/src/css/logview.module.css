@@ -105,3 +105,20 @@
     color: var(--vscode-descriptionForeground, #888);
     font-style: italic;
 }
+
+.terminal_log_line {
+    white-space: pre-wrap;
+    font-family: var(--vscode-editor-font-family, monospace);
+    margin-bottom: 2px;
+    word-break: break-all;
+}
+
+.trace_link {
+    color: var(--vscode-textLink-foreground, #3794ff);
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.trace_link:hover {
+    color: var(--vscode-textLink-activeForeground, #4daafc);
+}
