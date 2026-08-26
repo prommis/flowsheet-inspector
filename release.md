@@ -1,3 +1,8 @@
+* 0.0.15
+1. Add a feedback panel that lets users submit an issue to the GitHub repo or send a feedback email to flowsheetinspector@lbl.gov.
+2. Add a rerun notice: when a user changes and saves a flowsheet, a notice appears in the control panel reminding them to rerun the inspector.
+3. Add a flowsheet template Emmet-style code snippet. Users can now create an empty Python file, type `flowsheet:idaes`, and hit Enter to automatically generate a default wrapped flowsheet template.
+
 * 0.0.14
 1. The error log panel now displays file paths as clickable links. Clicking a link opens the file in the VS Code editor and highlights the exact line where the error occurred.
 
