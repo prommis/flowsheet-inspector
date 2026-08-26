@@ -172,11 +172,10 @@ export default function FeedbackUi({ onClose }: { onClose: () => void }) {
                 )}
 
                 <p className={css.feedback_privacy_note}>
-                    What you submit here will be posted as an issue in a public
-                    GitHub repository and is visible to everyone. If you would
-                    rather share your thoughts about this extension privately,{" "}
+                    This issue will be visiable on Github public respository. <br />
+                    Alternatively send use an email on
                     <a className={css.feedback_notice_link} href="mailto:flowsheetinspector@lbl.gov">
-                        email us
+                        flowsheetinspector@lbl.gov
                     </a>{" "}
                     instead.
                 </p>
