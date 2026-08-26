@@ -10,8 +10,15 @@ export default function RunFlowsheet() {
         setFlowsheetRunnerResult,
         selectedSteps,
         setExtensionErrorLogs,
-        setTerminalLogs
+        setTerminalLogs,
+        flowsheetSaveNotice,
+        setFlowsheetSaveNotice,
+        activateFileName
     } = useContext(AppContext);
+
+    // Flowsheet name shown in the rerun notice: the active file name without
+    // its .py extension (e.g. "hda_flowsheet.py" → "hda_flowsheet").
+    const flowsheetDisplayName = (activateFileName || 'flowsheet').replace(/\.py$/, '');
 
     const [elapsedTime, setElapsedTime] = useState(0);
     const [dots, setDots] = useState(".");
@@ -37,6 +44,7 @@ export default function RunFlowsheet() {
         setDots(".");
         setExtensionErrorLogs([]); // Clear logs on new run
         setTerminalLogs([]); // Clear terminal on new run
+        setFlowsheetSaveNotice(false); // This run picks up the saved edits
         setIsRunningFlowsheet(true);
     }
 
@@ -126,6 +134,14 @@ export default function RunFlowsheet() {
                     Cancel
                 </button>
             </div>
+
+            {flowsheetSaveNotice && !isRunningFlowsheet && (
+                <div className={css.rerun_notice}>
+                    <p>INFO: ‘{flowsheetDisplayName}’ has been updated.</p>
+                    <p>Steps listed have been updated.</p>
+                    <p>Initiate a new run for testing.</p>
+                </div>
+            )}
 
             <div className={`${css.run_flowsheet_animation_container}`}>
                 <div className={`

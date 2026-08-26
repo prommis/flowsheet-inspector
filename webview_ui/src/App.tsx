@@ -27,7 +27,8 @@ export default function App() {
     setMermaidDiagram,
     setOsPlatform,
     setStepStatuses,
-    setCurrentPythonEnv
+    setCurrentPythonEnv,
+    setFlowsheetSaveNotice
   } = useContext(AppContext);
 
   const [appName, setAppName] = useState('');
@@ -119,6 +120,8 @@ export default function App() {
             activeFileRef.current = message.activate_tab_name;
             setStepStatuses({});
             setExtensionErrorLogs([]);
+            // The rerun notice referred to the previous flowsheet's edits
+            setFlowsheetSaveNotice(false);
           }
           if (message.isLoading !== undefined) {
             console.log('Calling setIsLoading with:', message.isLoading);
@@ -180,6 +183,14 @@ export default function App() {
           setExtensionErrorLogs([]);
           // Reset per-step run indicators so the tree view starts from a clean slate
           setStepStatuses({});
+          // The new run picks up the saved edits, so the rerun notice is satisfied
+          setFlowsheetSaveNotice(false);
+          break;
+        case 'flowsheet_file_saved':
+          // The active flowsheet file was saved after the shown results were
+          // produced — surface the "rerun the flowsheet" notice under Run.
+          console.log('Active flowsheet saved, showing rerun notice');
+          setFlowsheetSaveNotice(true);
           break;
         case 'step_status_update': {
           // Per-step progress. Build a map keyed by step name so the tree view

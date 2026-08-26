@@ -60,6 +60,37 @@ export default function activateTabListener(context: vscode.ExtensionContext) {
         });
     });
 
+    /**
+     * Notifies the webviews when the user saves the flowsheet file the tree
+     * panel is currently targeting.
+     *
+     * Why: a saved edit means the results shown (diagram, variables, step
+     * statuses) were produced from older code, so the frontend uses this
+     * message to surface a "rerun the flowsheet" notice under the Run button.
+     * Saves of any other file — a different Python file, a non-flowsheet
+     * helper opened from a traceback link, etc. — are ignored so the notice
+     * only ever refers to the flowsheet the Run button would actually run.
+     *
+     * @param document - The document VS Code just wrote to disk.
+     */
+    const handleDocumentSave = (document: vscode.TextDocument) => {
+        const activatedFileName = context.globalState.get<string>("activatedFileName");
+        if (!activatedFileName || document.fileName !== activatedFileName) {
+            return;
+        }
+        if (!document.fileName.endsWith('.py') || !isWrappedFlowsheet(document.fileName)) {
+            return;
+        }
+        console.log(`Active flowsheet ${document.fileName} was saved, broadcasting rerun notice`);
+        brodcastMessage({
+            type: 'flowsheet_file_saved',
+            activate_tab_name: trimFileName(document.fileName),
+            time: new Date().toISOString()
+        });
+    };
+
+    vscode.workspace.onDidSaveTextDocument(handleDocumentSave, null, context.subscriptions);
+
     const handleActiveEditor = async (editor: vscode.TextEditor | undefined) => {
         if (editor && suppressedTabSwitch) {
             const { fsPath, expiresAt } = suppressedTabSwitch;

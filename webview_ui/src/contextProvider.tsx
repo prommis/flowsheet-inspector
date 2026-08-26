@@ -39,6 +39,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const [osPlatform, setOsPlatform] = useState<string>('');
     const [stepStatuses, setStepStatuses] = useState<StepStatusMap>({});
     const [currentPythonEnv, setCurrentPythonEnv] = useState<CurrentPythonEnv>(null);
+    // Set when the extension reports the active flowsheet file was saved,
+    // cleared when a new run starts or the user switches flowsheets.
+    const [flowsheetSaveNotice, setFlowsheetSaveNotice] = useState(false);
 
     return (
         <AppContext.Provider value={{
@@ -77,7 +80,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
             stepStatuses,
             setStepStatuses,
             currentPythonEnv,
-            setCurrentPythonEnv
+            setCurrentPythonEnv,
+            flowsheetSaveNotice,
+            setFlowsheetSaveNotice
         }}>
             {children}
         </AppContext.Provider>
