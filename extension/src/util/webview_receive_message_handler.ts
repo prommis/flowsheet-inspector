@@ -7,6 +7,7 @@ import { killProcessTree } from './platform_config';
 import { queryReportById, queryStepStatusesByRunId, queryRunException, queryReportFilenameById } from './sqlite_reader';
 import { broadcastCurrentPythonEnv, isPythonExtensionInstalled } from './python_env';
 import { showFallbackInterpreterPicker } from './python_env_fallback';
+import postGithubIssue, { IGithubIssueRequest } from './post_github_issue';
 
 export default function webviewReceiveMessageHandler(context: vscode.ExtensionContext, frontendMessage: IFrontendMessage) {
     console.log(`receive frontend instruction: ${JSON.stringify(frontendMessage)}`);
@@ -87,6 +88,15 @@ export default function webviewReceiveMessageHandler(context: vscode.ExtensionCo
             } else {
                 console.error('kill_process instruction received but no pid provided.');
             }
+            break;
+        case 'post_github_issue':
+            // Feedback form submission: create a GitHub issue with the user's
+            // own GitHub session, then report the outcome back to the panel
+            // that submitted the form so it can show the success/error notice.
+            console.log('Received feedback submission, posting GitHub issue...');
+            postGithubIssue(frontendMessage as unknown as IGithubIssueRequest).then((result) => {
+                webviewPanel.webview.postMessage({ type: 'github_issue_result', ...result });
+            });
             break;
         case 'pull_flowsheet_history':
             if (frontendMessage.id) {
