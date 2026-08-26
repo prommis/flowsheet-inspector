@@ -402,3 +402,180 @@
     color: var(--vscode-tab-activeForeground, #ffffff);
     border-top: 2px solid var(--vscode-tab-activeBorderTop, #1a85ff);
 }
+
+/* Footer row pinned to the bottom of the tree app that opens the feedback
+   panel. margin-top: auto pushes it to the bottom of the flex column. */
+.feedback_footer_row {
+    margin-top: auto;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 10px;
+    border-top: 1px solid var(--vscode-panel-border, #333);
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    color: var(--vscode-foreground);
+    border-radius: 4px;
+}
+
+.feedback_footer_row:hover {
+    background-color: var(--vscode-list-hoverBackground, rgba(128, 128, 128, 0.12));
+}
+
+.feedback_footer_row:focus-visible {
+    outline: 1px solid var(--vscode-focusBorder, #007fd4);
+    outline-offset: -1px;
+}
+
+.feedback_footer_label {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* Feedback panel replacing the tree app main area. */
+.feedback_panel_container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.feedback_panel_header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--vscode-panel-border, #333);
+    padding-bottom: 8px;
+}
+
+.feedback_panel_title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--vscode-foreground);
+}
+
+.feedback_close_btn {
+    flex-shrink: 0;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 3px;
+    color: var(--vscode-foreground);
+    font-size: 13px;
+    line-height: 1;
+    padding: 4px 6px;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.15s, background-color 0.15s;
+}
+
+.feedback_close_btn:hover {
+    opacity: 1;
+    background-color: var(--vscode-toolbar-hoverBackground, rgba(255, 255, 255, 0.1));
+}
+
+.feedback_form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* Label wrapping its own field so the caption sits right above the input. */
+.feedback_field_label {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-size: 12px;
+    color: var(--vscode-foreground);
+}
+
+.feedback_input,
+.feedback_textarea,
+.feedback_select {
+    width: 100%;
+    padding: 6px;
+    font-size: 13px;
+    font-family: var(--vscode-font-family);
+    background-color: var(--vscode-input-background, #3c3c3c);
+    color: var(--vscode-input-foreground, #cccccc);
+    border: 1px solid var(--vscode-input-border, #3c3c3c);
+    border-radius: 2px;
+    box-sizing: border-box;
+}
+
+.feedback_input:focus,
+.feedback_textarea:focus,
+.feedback_select:focus {
+    outline: 1px solid var(--vscode-focusBorder, #007fd4);
+    outline-offset: -1px;
+}
+
+.feedback_select {
+    background-color: var(--vscode-dropdown-background, #3c3c3c);
+    color: var(--vscode-dropdown-foreground, #cccccc);
+    border-color: var(--vscode-dropdown-border, #3c3c3c);
+    cursor: pointer;
+}
+
+.feedback_textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+/* Green banner shown when the issue was created successfully. */
+.feedback_notice_success {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 10px;
+    font-size: 12px;
+    border-left: 3px solid #2ea043;
+    border-radius: 0 3px 3px 0;
+    background-color: rgba(46, 160, 67, 0.12);
+    color: var(--vscode-foreground);
+}
+
+/* Red banner shown when the submission failed. */
+.feedback_notice_error {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 10px;
+    font-size: 12px;
+    border-left: 3px solid var(--vscode-errorForeground, #f44747);
+    border-radius: 0 3px 3px 0;
+    background-color: var(--vscode-inputValidation-errorBackground, rgba(244, 71, 71, 0.12));
+    color: var(--vscode-errorForeground, #f44747);
+    word-break: break-word;
+}
+
+.feedback_notice_link {
+    color: var(--vscode-textLink-foreground, #3794ff);
+    text-decoration: none;
+}
+
+.feedback_notice_link:hover {
+    text-decoration: underline;
+}
+
+.feedback_submit_btn {
+    width: 100%;
+    padding: 8px;
+    font-size: 13px;
+    font-family: var(--vscode-font-family);
+    background-color: var(--vscode-button-background, #0e639c);
+    color: var(--vscode-button-foreground, #ffffff);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.feedback_submit_btn:hover:not(:disabled) {
+    background-color: var(--vscode-button-hoverBackground, #1177bb);
+}
+
+.feedback_submit_btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
