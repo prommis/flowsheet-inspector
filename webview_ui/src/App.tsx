@@ -112,7 +112,10 @@ export default function App() {
           console.log('Received switch_tab event with payload:', message);
           // Switching to a different flowsheet file: the previous file's run
           // results (step icons + error log) no longer apply, so clear them.
-          if (message.activate_tab_name !== undefined && message.activate_tab_name !== activeFileRef.current) {
+          // Non-flowsheet files (is_flowsheet === false) don't claim the run
+          // results — e.g. a clicked traceback link opening a site-packages
+          // file must not wipe the error log of the run being inspected.
+          if (message.is_flowsheet !== false && message.activate_tab_name !== undefined && message.activate_tab_name !== activeFileRef.current) {
             activeFileRef.current = message.activate_tab_name;
             setStepStatuses({});
             setExtensionErrorLogs([]);
@@ -216,13 +219,20 @@ export default function App() {
             nextStatuses[row.step_name] = { state, errmsg: iconMsg };
 
             if (state !== 'success' && (message.final || message.reset)) {
-              // Full detail for the error log: the step's own message, else the
-              // run's traceback (which has the exception type + file/line even
-              // when the exception itself carries no message, e.g. a bare
-              // assert), else a generic fallback.
-              const detail = state === 'solver_failed'
-                ? (row.errmsg || SOLVER_FAIL_MSG)
-                : (row.errmsg || runException || 'Step raised an error');
+              // Full detail for the error log. For raised errors prefer the
+              // run's traceback: it carries the `File "...", line N` locations
+              // the log view turns into clickable links, while the step's own
+              // errmsg is usually just the exception message. Keep the errmsg
+              // too when the traceback doesn't already contain it.
+              let detail: string;
+              if (state === 'solver_failed') {
+                detail = row.errmsg || SOLVER_FAIL_MSG;
+              } else if (runException) {
+                const errmsg = row.errmsg || '';
+                detail = runException.includes(errmsg) ? runException : `${errmsg}\n${runException}`;
+              } else {
+                detail = row.errmsg || 'Step raised an error';
+              }
               newErrorLines.push(`[${new Date().toLocaleTimeString()}] Step "${row.step_name}" failed:\n${detail}`);
             }
           }

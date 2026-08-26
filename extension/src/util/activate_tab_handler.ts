@@ -28,6 +28,28 @@ function getOpenPythonFiles() {
     return pyFiles;
 }
 
+// One-shot record of a file that is about to gain editor focus because of a
+// traceback-link jump (not because the user chose to work on it). Consumed by
+// handleActiveEditor to skip the whole switch_tab flow for that activation.
+let suppressedTabSwitch: { fsPath: string; expiresAt: number } | null = null;
+
+/**
+ * Marks the next editor activation of `fsPath` as a programmatic jump that
+ * must not be treated as the user switching flowsheets.
+ *
+ * Why: clicking a traceback link in the webview logs opens the referenced file
+ * in the editor, which fires onDidChangeActiveTextEditor exactly like a manual
+ * tab switch. Without this, every debug jump makes the tree panel re-run
+ * fi-steps / show a "not a wrapped flowsheet" banner and re-targets the
+ * activated file. The record is one-shot (cleared on first match) and expires
+ * after 2 s so a stale mark can never swallow a genuine tab switch later.
+ *
+ * @param fsPath Normalized filesystem path of the file about to be opened.
+ */
+export function suppressNextTabSwitchFor(fsPath: string) {
+    suppressedTabSwitch = { fsPath, expiresAt: Date.now() + 2000 };
+}
+
 export default function activateTabListener(context: vscode.ExtensionContext) {
     vscode.window.tabGroups.onDidChangeTabs(() => {
         const openFiles = getOpenPythonFiles();
@@ -39,6 +61,18 @@ export default function activateTabListener(context: vscode.ExtensionContext) {
     });
 
     const handleActiveEditor = async (editor: vscode.TextEditor | undefined) => {
+        if (editor && suppressedTabSwitch) {
+            const { fsPath, expiresAt } = suppressedTabSwitch;
+            if (Date.now() > expiresAt) {
+                suppressedTabSwitch = null;
+            } else if (editor.document.fileName === fsPath) {
+                // This activation is a traceback-link jump, not the user
+                // switching flowsheets — leave the tree panel untouched.
+                suppressedTabSwitch = null;
+                console.log(`Skipping switch_tab for traceback jump to ${fsPath}`);
+                return;
+            }
+        }
         if (editor) {
             const currentActivateTabFileName = editor.document.fileName;
             if (currentActivateTabFileName.endsWith('.py')) {
@@ -68,6 +102,11 @@ export default function activateTabListener(context: vscode.ExtensionContext) {
                         activate_tab_name: activateFileName,
                         idaesRunInfo: null,
                         initError: `"${activateFileName}" is not a wrapped flowsheet file.\nFlowsheet Inspector requires @FS.step("build") to be present in the file.`,
+                        // Tells the frontend this file doesn't take over the
+                        // run results: e.g. clicking a traceback link opens a
+                        // lib/site-packages file, which must not wipe the
+                        // error log of the run being inspected.
+                        is_flowsheet: false,
                         isLoading: false,
                         open_python_files: getOpenPythonFiles(),
                         time: new Date().toISOString(),

@@ -63,6 +63,12 @@ export default async function openWebView(context: vscode.ExtensionContext, outp
                 type: "init",
                 loadApp: 'webView'
             });
+        } else {
+            // Route every other instruction (e.g. focus_document from a
+            // clicked traceback link in the logs) to the shared handler,
+            // same as the tree view does — otherwise messages posted from
+            // this panel are silently dropped.
+            webviewReceiveMessageHandler(context, message);
         }
     });
 

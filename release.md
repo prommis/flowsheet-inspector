@@ -1,3 +1,10 @@
+* 0.0.14
+1. The error log panel now displays file paths as clickable links. Clicking a link opens the file in the VS Code editor and highlights the exact line where the error occurred.
+
+* 0.0.13
+1. Added a stream table view to the Variable tab.
+2. Added a toggle button to switch between the variable tree view and the stream table view.
+3. Added a shared badge to show degrees of freedom across the stream table view and variable tree view.
 
 * 0.0.12
 1. Redesign the step selector in the Run Flowsheet panel: the checkboxes are replaced with a vertical slider-style bar with a dot per step. Click a dot to select that step and every step before it, or press and drag along the bar to adjust the selection; the selected range is highlighted in blue.

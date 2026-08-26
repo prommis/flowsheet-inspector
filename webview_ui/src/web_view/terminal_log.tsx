@@ -1,5 +1,6 @@
 import { useContext, useEffect, useRef } from 'react';
 import { AppContext } from '../context';
+import TracebackText from '../util/traceback_text';
 import css from "../css/logview.module.css";
 
 export default function TerminalLogs() {
@@ -32,8 +33,8 @@ export default function TerminalLogs() {
                     <span className={css.no_logs}>No terminal output.</span>
                 ) : (
                     terminalLogs.map((log, index) => (
-                        <div key={index} style={{ whiteSpace: 'pre-wrap', fontFamily: 'var(--vscode-editor-font-family, monospace)', marginBottom: '2px', wordBreak: 'break-all' }}>
-                            {log}
+                        <div key={index} className={css.terminal_log_line}>
+                            <TracebackText text={log} />
                         </div>
                     ))
                 )}
