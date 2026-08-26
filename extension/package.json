@@ -78,7 +78,13 @@
                     "type": "webview"
                 }
             ]
-        }
+        },
+        "snippets": [
+            {
+                "language": "python",
+                "path": "./snippets/flowsheet_python.json"
+            }
+        ]
     },
     "scripts": {
         "package": "cd ../webview_ui && npm run build && cd ../extension && npm run compile && npx vsce package --out ../",
