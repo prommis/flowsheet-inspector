@@ -25,6 +25,21 @@
     font-weight: 500;
 }
 
+.rerun_notice {
+    margin-top: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--vscode-focusBorder, #3794ff);
+    border-radius: 6px;
+    background-color: var(--vscode-editorWidget-background, transparent);
+    color: var(--vscode-foreground);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.rerun_notice p {
+    margin: 0;
+}
+
 .run_flowsheet_animation_container{
   display:flex;
   flex-direction: row;

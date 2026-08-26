@@ -68,6 +68,10 @@ interface AppContextType {
     setStepStatuses: SetStepStatusMap;
     currentPythonEnv: CurrentPythonEnv;
     setCurrentPythonEnv: SetCurrentPythonEnv;
+    // True when the active flowsheet file was saved after its shown results
+    // were produced; drives the "rerun the flowsheet" notice under Run.
+    flowsheetSaveNotice: boolean;
+    setFlowsheetSaveNotice: React.Dispatch<React.SetStateAction<boolean>>;
 }
 // Create context with default values
 export const AppContext = createContext({} as AppContextType);
