@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as fs from 'fs';
 import { activateWebviews } from "./webview_handler";
 import { IFrontendMessage } from "../interface";
 import runFlowsheet from "./run_flowsheet";
@@ -57,6 +58,10 @@ export default function webviewReceiveMessageHandler(context: vscode.ExtensionCo
             }
             runFlowsheet(context, webviewPanel.webview, selectedStep);
             console.log(`Done.`);
+            break;
+        case 'open_documentation':
+            console.log('User requested the extension documentation page');
+            openDocumentation(context);
             break;
         case 'focus_view':
             console.log(`User is choosing focus view`);
@@ -150,6 +155,61 @@ export default function webviewReceiveMessageHandler(context: vscode.ExtensionCo
 
 function frontEndReady(context: vscode.ExtensionContext, webview: vscode.Webview) {
     console.log(`received ready`);
+}
+
+/**
+ * Opens this extension's own details page (the same "Details" view users get
+ * when they click the extension in the Marketplace / Extensions sidebar).
+ * VS Code renders the extension's bundled README there.
+ *
+ * Why: the sidebar "Documentation" row should land users on the full,
+ * nicely rendered docs without leaving VS Code or hunting through the
+ * Extensions view. The built-in `extension.open` command does exactly that
+ * when given the extension id (`publisher.name`).
+ *
+ * Caveat: VS Code's Extensions view only lists *installed* extensions, so an
+ * extension loaded via F5 (Extension Development Host) is not there and
+ * `extension.open` throws "Extension not found". In that case, and whenever
+ * `extension.open` fails for any other reason, fall back to the Markdown
+ * preview of the bundled README so the user still gets the docs.
+ *
+ * @param context Extension context, used for the extension id, the mode
+ *   (development vs. production) and the install location of the README.
+ */
+function openDocumentation(context: vscode.ExtensionContext) {
+    if (context.extensionMode === vscode.ExtensionMode.Development) {
+        console.log('Development mode: opening README markdown preview instead of the extension page');
+        openReadmePreview(context);
+        return;
+    }
+    vscode.commands.executeCommand('extension.open', context.extension.id).then(undefined, (err) => {
+        console.error(`extension.open failed, falling back to markdown preview: ${err}`);
+        openReadmePreview(context);
+    });
+}
+
+/**
+ * Opens the bundled README in VS Code's built-in Markdown preview.
+ *
+ * Why: this is the fallback for {@link openDocumentation} when the extension
+ * details page cannot be shown (e.g. while debugging with F5). The file name
+ * is looked up case-insensitively because VS Code / vsce accept
+ * `README.md`, `readme.md`, etc., and Linux file systems are case-sensitive.
+ *
+ * @param context Extension context, used for the extension install location.
+ */
+function openReadmePreview(context: vscode.ExtensionContext) {
+    const readmeName = fs.readdirSync(context.extensionUri.fsPath)
+        .find((name) => /^readme(\.md|\.txt|)$/i.test(name));
+    if (!readmeName) {
+        vscode.window.showErrorMessage('Flowsheet Inspector: README not found in the extension folder.');
+        return;
+    }
+    const readmeUri = vscode.Uri.joinPath(context.extensionUri, readmeName);
+    vscode.commands.executeCommand('markdown.showPreview', readmeUri).then(undefined, (previewErr) => {
+        console.error(`Failed to open README preview: ${previewErr}`);
+        vscode.window.showErrorMessage('Flowsheet Inspector: could not open the documentation page.');
+    });
 }
 
 /**
