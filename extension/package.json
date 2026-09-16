@@ -3,7 +3,7 @@
     "publisher": "idaes-team",
     "displayName": "Flowsheet-inspector",
     "description": "Run and inspect IDAES / PrOMMiS chemical process flowsheets in VS Code: run steps one by one, view the flowsheet diagram, variables, solver output and run history.",
-    "version": "0.0.15",
+    "version": "0.0.16",
     "engines": {
         "vscode": "^1.106.0"
     },
