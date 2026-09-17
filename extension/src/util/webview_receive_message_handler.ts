@@ -9,6 +9,10 @@ import { broadcastCurrentPythonEnv, isPythonExtensionInstalled } from './python_
 import { showFallbackInterpreterPicker } from './python_env_fallback';
 import { suppressNextTabSwitchFor } from './activate_tab_handler';
 import postGithubIssue, { IGithubIssueRequest } from './post_github_issue';
+import { getActivePythonEnv } from './python_env';
+import { migrateReportDb, checkReportDb } from './report_db_tools';
+import { pauseHistoryPolling, resumeHistoryPolling } from './flowsheet_history_polling';
+import { refreshFlowsheetTab } from './activate_tab_handler';
 
 export default function webviewReceiveMessageHandler(context: vscode.ExtensionContext, frontendMessage: IFrontendMessage) {
     console.log(`receive frontend instruction: ${JSON.stringify(frontendMessage)}`);
@@ -95,6 +99,27 @@ export default function webviewReceiveMessageHandler(context: vscode.ExtensionCo
                 webviewPanel.webview.postMessage({ type: 'github_issue_result', ...result });
             });
             break;
+        case 'migrate_report_db':
+            // "Upgrade FI DB" button: migrate the report DB to the schema of
+            // the installed lib, then push the fresh check result so the
+            // banner clears (or reports why the migration was refused).
+            console.log('Received migrate_report_db instruction');
+            migrateReportDbForActiveFile(context).then((result) => {
+                brodcastMessage({ type: 'report_db_migration_result', data: result.migration });
+                if (result.status) {
+                    brodcastMessage({ type: 'report_db_status', data: result.status });
+                }
+                // fi-steps refuses to run on an outdated DB, so the step list
+                // was empty while the banner showed. Now that the DB is
+                // current, reload the active flowsheet to fetch its steps.
+                const fileName = context.globalState.get<string>('activatedFileName');
+                if (result.migration.migrated && fileName) {
+                    refreshFlowsheetTab(context, fileName).catch(
+                        (e) => console.error(`Failed to reload flowsheet after DB migration: ${e}`),
+                    );
+                }
+            });
+            break;
         case 'pull_flowsheet_history':
             if (frontendMessage.id) {
                 console.log(`Loading historical run for ID: ${frontendMessage.id}`);
@@ -150,6 +175,50 @@ export default function webviewReceiveMessageHandler(context: vscode.ExtensionCo
 
 function frontEndReady(context: vscode.ExtensionContext, webview: vscode.Webview) {
     console.log(`received ready`);
+}
+
+/**
+ * Migrates the report database using the interpreter selected for the active
+ * flowsheet, then re-checks its status.
+ *
+ * SQLite history polling is paused for the duration: the lib finishes the
+ * migration with a rename of the rebuilt file onto the original path, which
+ * fails on Windows while another process holds the old file open. Polling is
+ * always resumed, even when the migration fails.
+ *
+ * @param context Extension context holding the active flowsheet file name.
+ * @returns The migration outcome plus the post-migration check (null when no
+ *          interpreter is selected, in which case `migration` explains why).
+ */
+async function migrateReportDbForActiveFile(context: vscode.ExtensionContext) {
+    const fileName = context.globalState.get<string>('activatedFileName');
+    const env = await getActivePythonEnv(fileName ? vscode.Uri.file(fileName) : undefined);
+    if (!env) {
+        return {
+            migration: {
+                status: 'unavailable' as const,
+                is_db_version_low: false,
+                db_file: '',
+                client_db_version: null,
+                lib_db_version: null,
+                message: 'No Python interpreter selected. Pick the environment with Flowsheet Inspector installed first.',
+                ok: false,
+                migrated: false,
+                backup_file: null,
+                rows_migrated: 0,
+            },
+            status: null,
+        };
+    }
+    pauseHistoryPolling();
+    try {
+        const migration = await migrateReportDb(env);
+        console.log(`[report_db] migration result: ${JSON.stringify(migration)}`);
+        const status = await checkReportDb(env);
+        return { migration, status };
+    } finally {
+        resumeHistoryPolling();
+    }
 }
 
 /**

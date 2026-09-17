@@ -6,6 +6,7 @@ import { checkActivePythonEnv } from './extension_initial_check';
 import { checkRequiredPackages } from './check_required_packages';
 import { runFiSteps } from './run_fi_steps';
 import { onDidChangeActivePythonEnv, broadcastCurrentPythonEnv, getActivePythonEnv } from './python_env';
+import { checkReportDb, reportDbBlocksRun, STEPS_BLOCKED_BY_DB_MSG, type IReportDbCheck } from './report_db_tools';
 
 function getOpenPythonFiles() {
     const pyFiles: { name: string, path: string }[] = [];
@@ -48,6 +49,161 @@ let suppressedTabSwitch: { fsPath: string; expiresAt: number } | null = null;
  */
 export function suppressNextTabSwitchFor(fsPath: string) {
     suppressedTabSwitch = { fsPath, expiresAt: Date.now() + 2000 };
+}
+
+/**
+ * Loads (or reloads) the tree panel for a flowsheet file: records it as the
+ * active flowsheet, validates it, runs the interpreter / package / report DB
+ * checks and fi-steps, and broadcasts the resulting `switch_tab` messages.
+ *
+ * Extracted from the active-editor listener so it can also be re-run
+ * without an editor event, e.g. after the report database was migrated
+ * (fi-steps refuses to run on an outdated DB, so the step list must be
+ * fetched again once the DB is current).
+ *
+ * @param context Extension context (active file name is stored in global state).
+ * @param currentActivateTabFileName Absolute path of the file to load.
+ */
+export async function refreshFlowsheetTab(context: vscode.ExtensionContext, currentActivateTabFileName: string): Promise<void> {
+    if (currentActivateTabFileName.endsWith('.py')) {
+        // update global state activateFileName to current activated file's name
+        console.log("Current activate tab file name is:", currentActivateTabFileName);
+        console.log(`Updating global state activated file name to ${currentActivateTabFileName}`);
+        const previousActivatedFileName = context.globalState.get("activatedFileName");
+        context.globalState.update("activatedFileName", currentActivateTabFileName);
+        console.log('Activated file name is updated!');
+
+        // trim file name and let it can be use by frontend app
+        console.log('Get file name from activate file path');
+        const activateFileName = trimFileName(currentActivateTabFileName);
+        console.log(`Current activate file name is: ${activateFileName}`);
+
+        // Update webview panel title to reflect the current file
+        const webViewPanel = activateWebviews.get('webView') as vscode.WebviewPanel | undefined;
+        if (webViewPanel) {
+            webViewPanel.title = `Prommis Flowsheet Inspector - ${activateFileName}`;
+        }
+
+        if (!isWrappedFlowsheet(currentActivateTabFileName)) {
+            console.log(`File ${currentActivateTabFileName} does not appear to be a flowsheet (no @FS.step("build") found), skipping fi-steps.`);
+            context.globalState.update("activatedFileName", currentActivateTabFileName);
+            brodcastMessage({
+                type: 'switch_tab',
+                activate_tab_name: activateFileName,
+                idaesRunInfo: null,
+                initError: `"${activateFileName}" is not a wrapped flowsheet file.\nFlowsheet Inspector requires @FS.step("build") to be present in the file.`,
+                // Tells the frontend this file doesn't take over the
+                // run results: e.g. clicking a traceback link opens a
+                // lib/site-packages file, which must not wipe the
+                // error log of the run being inspected.
+                is_flowsheet: false,
+                isLoading: false,
+                open_python_files: getOpenPythonFiles(),
+                time: new Date().toISOString(),
+            });
+            return;
+        }
+
+
+        brodcastMessage(
+            {
+                type: 'switch_tab',
+                message: `Starting fetch for ${currentActivateTabFileName}`,
+                activate_tab_name: activateFileName,
+                isLoading: true,
+                open_python_files: getOpenPythonFiles(),
+                time: new Date().toISOString(),
+            }
+        );
+
+        const envCheck = await checkActivePythonEnv(vscode.Uri.file(currentActivateTabFileName));
+        if (!envCheck.success) {
+            brodcastMessage({
+                type: 'switch_tab',
+                activate_tab_name: activateFileName,
+                idaesRunInfo: null,
+                initError: envCheck.errorMsg,
+                packageWarnings: [],
+                isLoading: false,
+                open_python_files: getOpenPythonFiles(),
+                time: new Date().toISOString(),
+            });
+            return;
+        }
+
+        // Check required packages — non-blocking; missing ones become warnings
+        const resolvedEnv = await getActivePythonEnv(vscode.Uri.file(currentActivateTabFileName));
+        // Report DB schema check runs alongside the package check so an
+        // outdated DB shows its "Upgrade FI DB" banner on every tab
+        // switch, not only at sidebar startup.
+        const [packageWarnings, reportDbStatus]: [any[], IReportDbCheck | null] = resolvedEnv
+            ? await Promise.all([checkRequiredPackages(resolvedEnv), checkReportDb(resolvedEnv)])
+            : [[], null];
+
+        // A blocking report DB (outdated or newer than the lib) means fi-steps
+        // would only refuse with exit 3: skip it, show the banner and the
+        // "steps unavailable" line, and let the post-migration reload fetch
+        // the steps once the DB is current.
+        if (reportDbBlocksRun(reportDbStatus)) {
+            console.log(`Skipping fi-steps for ${currentActivateTabFileName}: report DB ${reportDbStatus?.status}`);
+            brodcastMessage({
+                type: 'switch_tab',
+                activate_tab_name: activateFileName,
+                idaesRunInfo: null,
+                initError: STEPS_BLOCKED_BY_DB_MSG,
+                packageWarnings,
+                reportDbStatus,
+                isLoading: false,
+                open_python_files: getOpenPythonFiles(),
+                time: new Date().toISOString(),
+            });
+            return;
+        }
+
+        let stepsData: any;
+        try {
+            stepsData = await runFiSteps(currentActivateTabFileName);
+        } catch (err: any) {
+            console.error(`Error running fi-steps during tab switch: ${err.message}`);
+            stepsData = null;
+            // fi-steps reports the DB state itself when it refuses to run
+            // (exit 3); that is fresher than the check made just before.
+            const dbStatus: IReportDbCheck | null = err.dbCheck ?? reportDbStatus;
+            brodcastMessage({
+                type: 'switch_tab',
+                message: `Failed to load flowsheet info for new tab: ${err.message}`,
+                activate_tab_name: activateFileName,
+                idaesRunInfo: null,
+                initError: reportDbBlocksRun(dbStatus)
+                    ? STEPS_BLOCKED_BY_DB_MSG
+                    : `Failed to load flowsheet info for new tab: ${err.message}`,
+                packageWarnings,
+                reportDbStatus: dbStatus,
+                isLoading: false,
+                open_python_files: getOpenPythonFiles(),
+                time: new Date().toISOString(),
+            });
+            return;
+        }
+
+        // brodcast to all web app panel notice tab is switched
+        console.log('Brodcast switch_tab to all web app panels');
+        brodcastMessage({
+            type: 'switch_tab',
+            message: `switch tab from ${previousActivatedFileName} to ${currentActivateTabFileName}`,
+            activate_tab_name: activateFileName,
+            idaesRunInfo: stepsData,
+            initError: null,
+            packageWarnings,
+            reportDbStatus,
+            isLoading: false,
+            open_python_files: getOpenPythonFiles(),
+            time: new Date().toISOString(),
+        });
+        console.log('Brodcast done.');
+    } else {
+        console.log(`User switched tab, but current activate tab file name is not a python file! The activated tab file is: ${currentActivateTabFileName}`);
+    }
 }
 
 export default function activateTabListener(context: vscode.ExtensionContext) {
@@ -105,116 +261,7 @@ export default function activateTabListener(context: vscode.ExtensionContext) {
             }
         }
         if (editor) {
-            const currentActivateTabFileName = editor.document.fileName;
-            if (currentActivateTabFileName.endsWith('.py')) {
-                // update global state activateFileName to current activated file's name
-                console.log("Current activate tab file name is:", currentActivateTabFileName);
-                console.log(`Updating global state activated file name to ${currentActivateTabFileName}`);
-                const previousActivatedFileName = context.globalState.get("activatedFileName");
-                context.globalState.update("activatedFileName", currentActivateTabFileName);
-                console.log('Activated file name is updated!');
-
-                // trim file name and let it can be use by frontend app
-                console.log('Get file name from activate file path');
-                const activateFileName = trimFileName(currentActivateTabFileName);
-                console.log(`Current activate file name is: ${activateFileName}`);
-
-                // Update webview panel title to reflect the current file
-                const webViewPanel = activateWebviews.get('webView') as vscode.WebviewPanel | undefined;
-                if (webViewPanel) {
-                    webViewPanel.title = `Prommis Flowsheet Inspector - ${activateFileName}`;
-                }
-
-                if (!isWrappedFlowsheet(currentActivateTabFileName)) {
-                    console.log(`File ${currentActivateTabFileName} does not appear to be a flowsheet (no @FS.step("build") found), skipping fi-steps.`);
-                    context.globalState.update("activatedFileName", currentActivateTabFileName);
-                    brodcastMessage({
-                        type: 'switch_tab',
-                        activate_tab_name: activateFileName,
-                        idaesRunInfo: null,
-                        initError: `"${activateFileName}" is not a wrapped flowsheet file.\nFlowsheet Inspector requires @FS.step("build") to be present in the file.`,
-                        // Tells the frontend this file doesn't take over the
-                        // run results: e.g. clicking a traceback link opens a
-                        // lib/site-packages file, which must not wipe the
-                        // error log of the run being inspected.
-                        is_flowsheet: false,
-                        isLoading: false,
-                        open_python_files: getOpenPythonFiles(),
-                        time: new Date().toISOString(),
-                    });
-                    return;
-                }
-
-
-                brodcastMessage(
-                    {
-                        type: 'switch_tab',
-                        message: `Starting fetch for ${currentActivateTabFileName}`,
-                        activate_tab_name: activateFileName,
-                        isLoading: true,
-                        open_python_files: getOpenPythonFiles(),
-                        time: new Date().toISOString(),
-                    }
-                );
-
-                const envCheck = await checkActivePythonEnv(vscode.Uri.file(currentActivateTabFileName));
-                if (!envCheck.success) {
-                    brodcastMessage({
-                        type: 'switch_tab',
-                        activate_tab_name: activateFileName,
-                        idaesRunInfo: null,
-                        initError: envCheck.errorMsg,
-                        packageWarnings: [],
-                        isLoading: false,
-                        open_python_files: getOpenPythonFiles(),
-                        time: new Date().toISOString(),
-                    });
-                    return;
-                }
-
-                // Check required packages — non-blocking; missing ones become warnings
-                const resolvedEnv = await getActivePythonEnv(vscode.Uri.file(currentActivateTabFileName));
-                const packageWarnings = resolvedEnv
-                    ? await checkRequiredPackages(resolvedEnv)
-                    : [];
-
-                let stepsData: any;
-                try {
-                    stepsData = await runFiSteps(currentActivateTabFileName);
-                } catch (err: any) {
-                    console.error(`Error running fi-steps during tab switch: ${err.message}`);
-                    stepsData = null;
-                    brodcastMessage({
-                        type: 'switch_tab',
-                        message: `Failed to load flowsheet info for new tab: ${err.message}`,
-                        activate_tab_name: activateFileName,
-                        idaesRunInfo: null,
-                        initError: `Failed to load flowsheet info for new tab: ${err.message}`,
-                        packageWarnings,
-                        isLoading: false,
-                        open_python_files: getOpenPythonFiles(),
-                        time: new Date().toISOString(),
-                    });
-                    return;
-                }
-
-                // brodcast to all web app panel notice tab is switched
-                console.log('Brodcast switch_tab to all web app panels');
-                brodcastMessage({
-                    type: 'switch_tab',
-                    message: `switch tab from ${previousActivatedFileName} to ${currentActivateTabFileName}`,
-                    activate_tab_name: activateFileName,
-                    idaesRunInfo: stepsData,
-                    initError: null,
-                    packageWarnings,
-                    isLoading: false,
-                    open_python_files: getOpenPythonFiles(),
-                    time: new Date().toISOString(),
-                });
-                console.log('Brodcast done.');
-            } else {
-                console.log(`User switched tab, but current activate tab file name is not a python file! The activated tab file is: ${currentActivateTabFileName}`);
-            }
+            await refreshFlowsheetTab(context, editor.document.fileName);
         } else {
             console.log("User switched tab, and it's not an editor tab!");
         }

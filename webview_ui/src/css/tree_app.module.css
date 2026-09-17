@@ -82,6 +82,87 @@
     word-break: break-all;
 }
 
+/* Report database banner (schema mismatch / migration outcome). Sits
+   between the interpreter section and the step list. */
+.report_db_notice {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 10px;
+    margin-bottom: 12px;
+    border-left: 3px solid var(--vscode-editorWarning-foreground, #cca700);
+    background-color: var(--vscode-inputValidation-warningBackground, rgba(204, 167, 0, 0.08));
+    border-radius: 0 3px 3px 0;
+}
+
+.report_db_notice_title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--vscode-editorWarning-foreground, #cca700);
+}
+
+.report_db_notice_text {
+    font-size: 12px;
+    line-height: 1.45;
+    color: var(--vscode-foreground);
+    white-space: pre-wrap;
+}
+
+.report_db_notice_meta {
+    font-size: 11px;
+    line-height: 1.4;
+    color: var(--vscode-descriptionForeground, #9d9d9d);
+}
+
+.report_db_notice_cmd {
+    font-size: 11px;
+    font-family: var(--vscode-editor-font-family, monospace);
+    color: var(--vscode-descriptionForeground, #9d9d9d);
+    word-break: break-all;
+}
+
+.report_db_update_btn {
+    align-self: flex-start;
+    padding: 5px 12px;
+    background-color: var(--vscode-button-background, #0e639c);
+    color: var(--vscode-button-foreground, #fff);
+    border: 1px solid var(--vscode-button-border, transparent);
+    border-radius: 3px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+
+.report_db_update_btn:hover:not(:disabled) {
+    background-color: var(--vscode-button-hoverBackground, #1177bb);
+}
+
+.report_db_update_btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.report_db_result_success {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding-top: 6px;
+    border-top: 1px solid var(--vscode-panel-border, rgba(128, 128, 128, 0.3));
+}
+
+.report_db_result_success .report_db_notice_text {
+    color: var(--vscode-testing-iconPassed, var(--vscode-foreground));
+}
+
+.report_db_result_error {
+    padding-top: 6px;
+    border-top: 1px solid var(--vscode-panel-border, rgba(128, 128, 128, 0.3));
+}
+
+.report_db_result_error .report_db_notice_text {
+    color: var(--vscode-errorForeground, #f44747);
+}
+
 .init_error_box {
     padding: 8px;
     border: 1px solid var(--vscode-errorForeground, #f44747);

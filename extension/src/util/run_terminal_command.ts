@@ -11,6 +11,30 @@ import { brodcastMessage } from './webview_handler';
 import { getSpawnOptions } from './platform_config';
 
 /**
+ * Rejection error for a process that ran but exited non-zero. Exposes the
+ * exit code so callers can distinguish well-defined failures (fi-run uses
+ * dedicated codes for report DB problems) from generic crashes.
+ */
+export class ProcessExitError extends Error {
+    /** The process exit code (null when the process was killed by a signal). */
+    exitCode: number | null;
+    /** Full captured stdout, for callers that parse structured output. */
+    stdout: string;
+
+    /**
+     * @param message  Human-readable failure text including captured output.
+     * @param exitCode The child's exit code as reported by the `close` event.
+     * @param stdout   Everything the child wrote to stdout.
+     */
+    constructor(message: string, exitCode: number | null, stdout: string = '') {
+        super(message);
+        this.name = 'ProcessExitError';
+        this.exitCode = exitCode;
+        this.stdout = stdout;
+    }
+}
+
+/**
  * Spawns `executable` with `args` in `childEnv` and streams output to the
  * terminal log panel in all webviews.
  *
@@ -25,7 +49,10 @@ import { getSpawnOptions } from './platform_config';
  *                   the result of activatedProcessEnv() with PYTHONUNBUFFERED
  *                   and FORCE_COLOR added.
  * @returns Promise that resolves on exit code 0, rejects on non-zero exit,
- *          spawn error, or user cancellation (CANCELED_BY_USER:<pid>).
+ *          spawn error, or user cancellation (CANCELED_BY_USER:<pid>). A
+ *          non-zero-exit rejection is a {@link ProcessExitError} carrying the
+ *          exit code so callers can react to specific codes (e.g. fi-run's
+ *          "report DB needs migration").
  */
 export default function runTerminalCommand(
     executable: string,
@@ -85,7 +112,7 @@ export default function runTerminalCommand(
                     const lines = fullStdout.trim().split('\n');
                     errMsg += `[ERROR TRACE]:\n${lines.slice(-15).join('\n')}`;
                 }
-                reject(new Error(errMsg));
+                reject(new ProcessExitError(errMsg, code, fullStdout));
                 return;
             }
 

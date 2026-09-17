@@ -13,8 +13,19 @@ export default function RunFlowsheet() {
         setTerminalLogs,
         flowsheetSaveNotice,
         setFlowsheetSaveNotice,
-        activateFileName
+        activateFileName,
+        reportDbStatus,
+        isMigratingDb
     } = useContext(AppContext);
+
+    // fi-run refuses to write to a report DB whose schema is too old or too
+    // new (fi-run exit code 3), so Run is disabled while the banner above asks
+    // the user to update the database or the library, and while a migration
+    // is in progress.
+    const dbBlocksRun = isMigratingDb
+        || reportDbStatus?.is_db_version_low === true
+        || reportDbStatus?.status === 'incompatible_newer';
+    const runDisabled = isLoading || dbBlocksRun;
 
     // Flowsheet name shown in the rerun notice: the active file name without
     // its .py extension (e.g. "hda_flowsheet.py" → "hda_flowsheet").
@@ -29,7 +40,7 @@ export default function RunFlowsheet() {
      * Also this will set isRunningFlowsheet to true, this will start the loading animation.   
      */
     const runFlowsheetHandler = () => {
-        if (isLoading) return;
+        if (runDisabled) return;
         const lastSelectedStep = selectedSteps.length > 0
             ? selectedSteps[selectedSteps.length - 1]
             : "";
@@ -116,8 +127,8 @@ export default function RunFlowsheet() {
                 <button
                     className={`${css.run_flowsheet_button} ${isRunningFlowsheet ? css.cancel_flowsheet_run_btn_hidden : ''}`}
                     onClick={() => runFlowsheetHandler()}
-                    disabled={isLoading}
-                    style={{ opacity: isLoading ? 0.5 : 1, cursor: isLoading ? 'not-allowed' : 'pointer' }}
+                    disabled={runDisabled}
+                    title={dbBlocksRun ? 'Upgrade the FI report database before running' : undefined}
                 >
                     Run
                     <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">

@@ -25,6 +25,11 @@
     font-weight: 500;
 }
 
+.run_flowsheet_button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 .rerun_notice {
     margin-top: 10px;
     padding: 10px 12px;

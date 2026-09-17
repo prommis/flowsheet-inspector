@@ -28,7 +28,10 @@ export default function App() {
     setOsPlatform,
     setStepStatuses,
     setCurrentPythonEnv,
-    setFlowsheetSaveNotice
+    setFlowsheetSaveNotice,
+    setReportDbStatus,
+    setIsMigratingDb,
+    setReportDbMigrationResult
   } = useContext(AppContext);
 
   const [appName, setAppName] = useState('');
@@ -122,6 +125,8 @@ export default function App() {
             setExtensionErrorLogs([]);
             // The rerun notice referred to the previous flowsheet's edits
             setFlowsheetSaveNotice(false);
+            // The migration outcome note belongs to the previous view
+            setReportDbMigrationResult(null);
           }
           if (message.isLoading !== undefined) {
             console.log('Calling setIsLoading with:', message.isLoading);
@@ -147,6 +152,30 @@ export default function App() {
           if (message.open_python_files !== undefined) {
             setOpenPythonFiles(message.open_python_files);
           }
+          // Report DB check result travels with the same switch_tab payload as
+          // the package warnings. A fresh check supersedes any old migration
+          // outcome message.
+          if (message.reportDbStatus !== undefined) {
+            setReportDbStatus(message.reportDbStatus);
+            // A successful migration triggers a step reload that arrives as
+            // this same message with a healthy status; keep the "database
+            // updated" outcome visible then, and only drop it when a new
+            // problem is reported.
+            const s = message.reportDbStatus;
+            if (s && (s.is_db_version_low || s.status === 'incompatible_newer' || s.status === 'invalid')) {
+              setReportDbMigrationResult(null);
+            }
+          }
+          break;
+        case 'report_db_status':
+          // Standalone re-check (after a refused fi-run or a migration).
+          console.log('Received report_db_status:', message.data);
+          setReportDbStatus(message.data ?? null);
+          break;
+        case 'report_db_migration_result':
+          console.log('Received report_db_migration_result:', message.data);
+          setIsMigratingDb(false);
+          setReportDbMigrationResult(message.data ?? null);
           break;
         case 'python_env_update':
           console.log('Received python_env_update:', message);

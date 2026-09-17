@@ -13,7 +13,9 @@ import {
     type IdaesHistoryItem,
     type StepStatusMap,
     type CurrentPythonEnv,
-    type IPackageWarning
+    type IPackageWarning,
+    type IReportDbStatus,
+    type IReportDbMigrationResult
 } from "./interface/interface";
 
 
@@ -42,6 +44,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // Set when the extension reports the active flowsheet file was saved,
     // cleared when a new run starts or the user switches flowsheets.
     const [flowsheetSaveNotice, setFlowsheetSaveNotice] = useState(false);
+    // Report DB schema state (from `fi-db check`) and migration progress.
+    const [reportDbStatus, setReportDbStatus] = useState<IReportDbStatus | null>(null);
+    const [isMigratingDb, setIsMigratingDb] = useState(false);
+    const [reportDbMigrationResult, setReportDbMigrationResult] = useState<IReportDbMigrationResult | null>(null);
 
     return (
         <AppContext.Provider value={{
@@ -82,7 +88,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
             currentPythonEnv,
             setCurrentPythonEnv,
             flowsheetSaveNotice,
-            setFlowsheetSaveNotice
+            setFlowsheetSaveNotice,
+            reportDbStatus,
+            setReportDbStatus,
+            isMigratingDb,
+            setIsMigratingDb,
+            reportDbMigrationResult,
+            setReportDbMigrationResult
         }}>
             {children}
         </AppContext.Provider>

@@ -3,6 +3,7 @@ import type { idaesRunInfo } from "../interface/interface";
 import { AppContext } from "../context";
 import { vscode } from '../vscode';
 import TreeNavBar from "./treeviewNav";
+import ReportDbNotice from "./report_db_notice";
 import css from "../css/tree_app.module.css";
 
 export default function FlowsheetSteps({ idaesRunInfo }: { idaesRunInfo: idaesRunInfo }) {
@@ -431,6 +432,8 @@ export default function FlowsheetSteps({ idaesRunInfo }: { idaesRunInfo: idaesRu
                     </div>
                 )}
             </div>
+
+            <ReportDbNotice />
 
             <p className={css.section_label}>
                 Select Steps to Run:

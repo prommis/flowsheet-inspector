@@ -25,7 +25,11 @@ import {
     type SetStepStatusMap,
     type CurrentPythonEnv,
     type SetCurrentPythonEnv,
-    type IPackageWarning
+    type IPackageWarning,
+    type IReportDbStatus,
+    type SetReportDbStatus,
+    type IReportDbMigrationResult,
+    type SetReportDbMigrationResult
 } from "./interface/interface";
 
 export type ActiveLogTab = 'error' | 'terminal';
@@ -72,6 +76,16 @@ interface AppContextType {
     // were produced; drives the "rerun the flowsheet" notice under Run.
     flowsheetSaveNotice: boolean;
     setFlowsheetSaveNotice: React.Dispatch<React.SetStateAction<boolean>>;
+    // Latest `fi-db check` result for the selected interpreter; drives the
+    // "Upgrade FI DB" banner. null until a check has run.
+    reportDbStatus: IReportDbStatus | null;
+    setReportDbStatus: SetReportDbStatus;
+    // True while `fi-db migrate` is running in the extension host.
+    isMigratingDb: boolean;
+    setIsMigratingDb: React.Dispatch<React.SetStateAction<boolean>>;
+    // Outcome of the last migration attempt, cleared on the next attempt.
+    reportDbMigrationResult: IReportDbMigrationResult | null;
+    setReportDbMigrationResult: SetReportDbMigrationResult;
 }
 // Create context with default values
 export const AppContext = createContext({} as AppContextType);

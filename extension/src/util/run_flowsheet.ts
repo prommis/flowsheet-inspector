@@ -10,8 +10,9 @@ import * as vscode from 'vscode';
 import { activateWebviews, brodcastMessage, setResultsPanelTitle } from './webview_handler';
 import openWebView from '../web_view/web_view_panel';
 import { queryLatestReport, queryStatusTableExists } from './sqlite_reader';
-import runTerminalCommand from './run_terminal_command';
+import runTerminalCommand, { ProcessExitError } from './run_terminal_command';
 import { getActivePythonEnv, activatedProcessEnv } from './python_env';
+import { checkReportDb, parseReportDbCheckFromOutput, FI_RUN_EXIT_DB_ERROR, type IReportDbCheck } from './report_db_tools';
 import { getMaxReportId, startStepStatusPolling, stopStepStatusPolling, broadcastFinalStepStatus } from './step_status_polling';
 
 const NO_INTERPRETER_MSG =
@@ -148,6 +149,16 @@ export default async function runFlowsheet(
 
         console.error(`runFlowsheet error: ${e}`);
 
+        // fi-run exits with a dedicated code on any report DB problem (schema
+        // too old, too new, unreadable) before writing any row, printing the
+        // check-db-version JSON as its last stdout line. Surface that state so
+        // the sidebar shows the banner (and the "Upgrade FI DB" button when
+        // the DB is merely outdated) instead of only a raw error; re-run the
+        // check when the output carries no JSON (older lib, unreadable file).
+        if (e instanceof ProcessExitError && e.exitCode === FI_RUN_EXIT_DB_ERROR) {
+            await broadcastReportDbStatus(activateFileNameForDbCheck(context), parseReportDbCheckFromOutput(e.stdout));
+        }
+
         let webViewPanel = activateWebviews.get('webView');
         if (!webViewPanel) {
             await openWebView(context);
@@ -156,4 +167,42 @@ export default async function runFlowsheet(
         webViewPanel?.webview.postMessage({ type: 'error', message: errorMessage });
         activateWebviews.get('treeView')?.webview.postMessage({ type: 'run_flowsheet_done' });
     }
+}
+
+
+/**
+ * Resolves the file whose interpreter should be used for a report DB check
+ * after a failed run: the flowsheet stored as active in global state.
+ *
+ * @param context Extension context holding `activatedFileName`.
+ * @returns The active flowsheet path, or undefined when none is recorded.
+ */
+function activateFileNameForDbCheck(context: vscode.ExtensionContext): string | undefined {
+    return context.globalState.get<string>('activatedFileName');
+}
+
+/**
+ * Pushes the report DB state to every webview as a `report_db_status`
+ * message, so the sidebar can show or clear its database banner without a
+ * full tab reload.
+ *
+ * Uses `known` when the failed process already reported the state (fi-run
+ * prints the check JSON on exit 3); otherwise runs `check-db-version` with
+ * the interpreter selected for `fileName`. Silently does nothing when no
+ * interpreter is selected: the run that triggered this already reported it.
+ *
+ * @param fileName Flowsheet path used to resolve the workspace interpreter.
+ * @param known    Check result parsed from the failed process, if any.
+ */
+export async function broadcastReportDbStatus(fileName: string | undefined, known: IReportDbCheck | null = null): Promise<void> {
+    if (known) {
+        brodcastMessage({ type: 'report_db_status', data: known });
+        return;
+    }
+    const env = await getActivePythonEnv(fileName ? vscode.Uri.file(fileName) : undefined);
+    if (!env) {
+        return;
+    }
+    const status = await checkReportDb(env);
+    brodcastMessage({ type: 'report_db_status', data: status });
 }

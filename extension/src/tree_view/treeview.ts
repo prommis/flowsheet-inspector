@@ -9,6 +9,7 @@ import { checkRequiredPackages } from '../util/check_required_packages';
 import { runFiSteps } from '../util/run_fi_steps';
 import { getActivePythonEnv, broadcastCurrentPythonEnv } from '../util/python_env';
 import { getPlatform } from '../util/platform_config';
+import { checkReportDb, reportDbBlocksRun, STEPS_BLOCKED_BY_DB_MSG, type IReportDbCheck } from '../util/report_db_tools';
 
 export default function treeview(context: vscode.ExtensionContext) {
     return {
@@ -106,37 +107,67 @@ export default function treeview(context: vscode.ExtensionContext) {
 
                 // 5. Check required packages — non-blocking; missing ones become warnings
                 const resolvedEnv = await getActivePythonEnv(fileName ? vscode.Uri.file(fileName) : undefined);
-                const packageWarnings = resolvedEnv
-                    ? await checkRequiredPackages(resolvedEnv)
-                    : [];
+                // The report DB schema check runs alongside the package check:
+                // an outdated DB is surfaced as a banner with an "Update
+                // database" button rather than blocking the step list.
+                const [packageWarnings, reportDbStatus]: [any[], IReportDbCheck | null] = resolvedEnv
+                    ? await Promise.all([checkRequiredPackages(resolvedEnv), checkReportDb(resolvedEnv)])
+                    : [[], null];
                 console.log(`[treeview] package warnings: ${JSON.stringify(packageWarnings)}`);
+                console.log(`[treeview] report db status: ${JSON.stringify(reportDbStatus)}`);
 
-                // 6. Run fi-steps with the selected interpreter to get step info
-                let resolvedStepsData: any = null;
-                try {
-                    resolvedStepsData = await runFiSteps(fileName);
-                    console.log(resolvedStepsData);
-                } catch (err: any) {
-                    console.error(`Error running fi-steps during tree view load: ${err.message}`);
+                // 6. A blocking report DB (outdated or newer than the lib) means
+                // fi-steps would only refuse with exit 3: skip it, show the banner
+                // and the "steps unavailable" line; the post-migration reload
+                // fetches the steps once the DB is current.
+                if (reportDbBlocksRun(reportDbStatus)) {
+                    console.log(`[treeview] skipping fi-steps: report DB ${reportDbStatus?.status}`);
                     webviewView.webview.postMessage({
                         type: 'switch_tab',
                         activate_tab_name: trimFileName(fileName),
                         idaesRunInfo: null,
-                        initError: `Failed to load flowsheet info: ${err.message}`,
+                        initError: STEPS_BLOCKED_BY_DB_MSG,
                         packageWarnings,
+                        reportDbStatus,
                         isLoading: false,
                         time: new Date().toISOString(),
                     });
                     return;
                 }
 
-                // 7. Update UI with the result (success, with any non-blocking warnings)
+                // 7. Run fi-steps with the selected interpreter to get step info
+                let resolvedStepsData: any = null;
+                try {
+                    resolvedStepsData = await runFiSteps(fileName);
+                    console.log(resolvedStepsData);
+                } catch (err: any) {
+                    console.error(`Error running fi-steps during tree view load: ${err.message}`);
+                    // fi-steps reports the DB state itself when it refuses to
+                    // run (exit 3); that is fresher than the check made before.
+                    const dbStatus: IReportDbCheck | null = err.dbCheck ?? reportDbStatus;
+                    webviewView.webview.postMessage({
+                        type: 'switch_tab',
+                        activate_tab_name: trimFileName(fileName),
+                        idaesRunInfo: null,
+                        initError: reportDbBlocksRun(dbStatus)
+                            ? STEPS_BLOCKED_BY_DB_MSG
+                            : `Failed to load flowsheet info: ${err.message}`,
+                        packageWarnings,
+                        reportDbStatus: dbStatus,
+                        isLoading: false,
+                        time: new Date().toISOString(),
+                    });
+                    return;
+                }
+
+                // 8. Update UI with the result (success, with any non-blocking warnings)
                 webviewView.webview.postMessage({
                     type: 'switch_tab',
                     activate_tab_name: trimFileName(fileName),
                     idaesRunInfo: resolvedStepsData || null,
                     initError: null,
                     packageWarnings,
+                    reportDbStatus,
                     isLoading: false,
                     time: new Date().toISOString(),
                 });
