@@ -150,6 +150,34 @@
     border-top: 1px solid var(--vscode-panel-border, rgba(128, 128, 128, 0.3));
 }
 
+/* Success-only banner (DB healthy after the upgrade): green instead of the
+   warning colours, and the result block no longer needs its divider. */
+.report_db_notice_ok {
+    border-left-color: var(--vscode-testing-iconPassed, #73c991);
+    background-color: color-mix(in srgb, var(--vscode-testing-iconPassed, #73c991) 14%, transparent);
+}
+
+.report_db_notice_ok .report_db_result_success {
+    padding-top: 0;
+    border-top: none;
+}
+
+.report_db_dismiss_btn {
+    align-self: flex-start;
+    margin-top: 4px;
+    padding: 4px 12px;
+    background-color: var(--vscode-button-secondaryBackground, #3a3d41);
+    color: var(--vscode-button-secondaryForeground, var(--vscode-foreground));
+    border: 1px solid var(--vscode-button-border, transparent);
+    border-radius: 3px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.report_db_dismiss_btn:hover {
+    background-color: var(--vscode-button-secondaryHoverBackground, #45494e);
+}
+
 .report_db_result_success .report_db_notice_text {
     color: var(--vscode-testing-iconPassed, var(--vscode-foreground));
 }
