@@ -7,9 +7,9 @@ import css from "../css/tree_app.module.css";
  * Sidebar banner describing the state of the SQLite report database when it
  * does not match the installed flowsheet-inspector-lib.
  *
- * Rendered only for actionable states of the `check-db-version` result:
+ * Rendered only for actionable states of the `fi-check-db-version` result:
  *   - is_db_version_low   older schema → "Upgrade FI DB" button runs
- *                         `db-migration` through the extension host
+ *                         `fi-db-migration` through the extension host
  *   - incompatible_newer  DB written by a newer lib → tell the user to
  *                         upgrade the lib (migration would refuse)
  *   - invalid             file is not a usable report DB → show the reason
@@ -31,7 +31,7 @@ export default function ReportDbNotice() {
     } = useContext(AppContext);
 
     /**
-     * Asks the extension host to run `db-migration` for the active
+     * Asks the extension host to run `fi-db-migration` for the active
      * interpreter. The host replies with `report_db_migration_result` and a
      * fresh `report_db_status`, which App.tsx writes back into context.
      */
@@ -54,6 +54,23 @@ export default function ReportDbNotice() {
         return null;
     }
 
+    // "ok" only means the DB is not outdated afterwards; a newer-than-lib DB
+    // also comes back ok with migrated=false, and that is not a success.
+    const r = reportDbMigrationResult;
+    const succeeded = !!r && r.ok && (r.migrated || r.status === "ok" || r.status === "missing");
+    // Once the DB is healthy the banner only carries the success note: render
+    // it in the success (green) style with a dismiss button instead of the
+    // warning style that the problem states use.
+    const successOnly = !actionable && succeeded;
+
+    /**
+     * Dismisses the migration outcome note ("Got it"); the banner disappears
+     * entirely since no problem state is left to show.
+     */
+    const handleDismiss = () => {
+        setReportDbMigrationResult(null);
+    };
+
     const versionLine = reportDbStatus && (reportDbStatus.client_db_version || reportDbStatus.lib_db_version)
         ? `Database schema ${reportDbStatus.client_db_version ?? "unknown"}, library requires ${reportDbStatus.lib_db_version ?? "unknown"}.`
         : "";
@@ -64,13 +81,9 @@ export default function ReportDbNotice() {
      * @returns The result block, or null when no attempt has been made.
      */
     const renderMigrationResult = () => {
-        const r = reportDbMigrationResult;
         if (!r) {
             return null;
         }
-        // "ok" only means the DB is not outdated afterwards; a newer-than-lib
-        // DB also comes back ok with migrated=false, and that is not a success.
-        const succeeded = r.ok && (r.migrated || r.status === 'ok' || r.status === 'missing');
         if (!succeeded) {
             return (
                 <div className={css.report_db_result_error}>
@@ -92,12 +105,17 @@ export default function ReportDbNotice() {
                         Backup: <span className={css.report_db_notice_cmd}>{r.backup_file}</span>
                     </span>
                 )}
+                {successOnly && (
+                    <button className={css.report_db_dismiss_btn} onClick={handleDismiss}>
+                        Got it
+                    </button>
+                )}
             </div>
         );
     };
 
     return (
-        <div className={css.report_db_notice}>
+        <div className={`${css.report_db_notice} ${successOnly ? css.report_db_notice_ok : ""}`}>
             {needsUpdate && (
                 <>
                     <span className={css.report_db_notice_title}>Report database needs an update</span>

@@ -1,8 +1,8 @@
 /**
  * Report-database version check and migration, driven through the
  * `idaes_fi.structfs.check_db_version` and `idaes_fi.structfs.db_migration`
- * CLIs of flowsheet-inspector-lib (console scripts `check-db-version` and
- * `db-migration`, one module per command, no subcommands).
+ * CLIs of flowsheet-inspector-lib (console scripts `fi-check-db-version` and
+ * `fi-db-migration`, one module per command, no subcommands).
  *
  * The SQLite report DB carries a schema version (`version` table, one row of
  * major/minor). When the user upgrades the Python lib, an old DB can be
@@ -19,16 +19,16 @@ import * as cp from 'child_process';
 import { type IResolvedPythonEnv, activatedProcessEnv } from './python_env';
 import { getIdaesDbPath } from './platform_config';
 
-/** Python module implementing `check-db-version`. */
+/** Python module implementing `fi-check-db-version`. */
 export const CHECK_DB_VERSION_MODULE = 'idaes_fi.structfs.check_db_version';
 
-/** Python module implementing `db-migration`. */
+/** Python module implementing `fi-db-migration`. */
 export const DB_MIGRATION_MODULE = 'idaes_fi.structfs.db_migration';
 
 /**
  * Exit code fi-run uses for any report DB problem (schema too old, too new,
  * or unreadable) before writing anything. The frontend re-runs
- * `check-db-version` on it to learn which case applies.
+ * `fi-check-db-version` on it to learn which case applies.
  */
 export const FI_RUN_EXIT_DB_ERROR = 3;
 
@@ -68,7 +68,7 @@ export interface IReportDbCheck {
 }
 
 /**
- * Outcome of `db-migration`: the pre-migration check plus what happened.
+ * Outcome of `fi-db-migration`: the pre-migration check plus what happened.
  * `ok` mirrors the exit code (true when the DB is not outdated afterwards,
  * whether it was migrated, already current, missing, or newer than the lib).
  */
@@ -103,7 +103,7 @@ export function reportDbBlocksRun(check: IReportDbCheck | null): boolean {
  *
  * Why a plain runner instead of execFile: stdout and stderr must both be
  * captured in full so a failure can be reported with the lib's own message,
- * and a non-zero exit is a legitimate result for `db-migration` (refusal)
+ * and a non-zero exit is a legitimate result for `fi-db-migration` (refusal)
  * rather than a spawn failure.
  *
  * @param env    The resolved Python environment selected in VS Code.
@@ -182,11 +182,11 @@ function parseLastJsonLine(stdout: string): Record<string, unknown> | null {
 }
 
 /**
- * Parses the check-db-version JSON that fi-steps / fi-run print as the last
+ * Parses the fi-check-db-version JSON that fi-steps / fi-run print as the last
  * stdout line when they refuse to run on a mismatched report DB (exit 3).
  *
  * Lets callers show the exact DB state without spawning a separate
- * `check-db-version`. Returns null when the output carries no such line
+ * `fi-check-db-version`. Returns null when the output carries no such line
  * (older lib, or a different failure), in which case callers fall back to
  * running the check themselves.
  *
@@ -286,7 +286,7 @@ function classifyFailure(result: { stdout: string; stderr: string; code: number 
 }
 
 /**
- * Runs `check-db-version` and reports the compatibility of the report DB with
+ * Runs `fi-check-db-version` and reports the compatibility of the report DB with
  * the installed flowsheet-inspector-lib.
  *
  * Never throws: any failure to run or parse the check collapses into status
@@ -318,7 +318,7 @@ export async function checkReportDb(env: IResolvedPythonEnv, dbPath?: string): P
 }
 
 /**
- * Runs `db-migration`, which (only when the DB is older than the lib) rebuilds
+ * Runs `fi-db-migration`, which (only when the DB is older than the lib) rebuilds
  * the report DB with the current schema, copies every row across (ids
  * preserved), keeps a backup of the old file and atomically swaps the new
  * file into place.

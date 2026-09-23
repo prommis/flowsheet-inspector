@@ -151,7 +151,7 @@ export default async function runFlowsheet(
 
         // fi-run exits with a dedicated code on any report DB problem (schema
         // too old, too new, unreadable) before writing any row, printing the
-        // check-db-version JSON as its last stdout line. Surface that state so
+        // fi-check-db-version JSON as its last stdout line. Surface that state so
         // the sidebar shows the banner (and the "Upgrade FI DB" button when
         // the DB is merely outdated) instead of only a raw error; re-run the
         // check when the output carries no JSON (older lib, unreadable file).
@@ -187,7 +187,7 @@ function activateFileNameForDbCheck(context: vscode.ExtensionContext): string | 
  * full tab reload.
  *
  * Uses `known` when the failed process already reported the state (fi-run
- * prints the check JSON on exit 3); otherwise runs `check-db-version` with
+ * prints the check JSON on exit 3); otherwise runs `fi-check-db-version` with
  * the interpreter selected for `fileName`. Silently does nothing when no
  * interpreter is selected: the run that triggered this already reported it.
  *

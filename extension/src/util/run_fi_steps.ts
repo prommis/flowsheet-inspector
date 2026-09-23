@@ -13,7 +13,7 @@ import { parseReportDbCheckFromOutput, type IReportDbCheck } from './report_db_t
 /**
  * Rejection error for a fi-steps run that exited non-zero. When fi-steps
  * refused to run because of the report DB (exit 3), `dbCheck` carries the
- * check-db-version result it printed, so callers can show the exact DB state
+ * fi-check-db-version result it printed, so callers can show the exact DB state
  * without another check.
  */
 export class FiStepsError extends Error {

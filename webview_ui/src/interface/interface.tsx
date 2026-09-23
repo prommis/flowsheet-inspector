@@ -31,7 +31,7 @@ export type SetCurrentPythonEnv = Dispatch<SetStateAction<CurrentPythonEnv>>;
 export type IPackageWarning = { name: string; install_command: string };
 
 /**
- * Result of `check-db-version` as forwarded by the extension host. See
+ * Result of `fi-check-db-version` as forwarded by the extension host. See
  * extension/src/util/report_db_tools.ts for the meaning of each status.
  * `is_db_version_low` is the flag that drives the "Upgrade FI DB" button;
  * versions are display-only strings and must never be compared here.
@@ -54,7 +54,7 @@ export type IReportDbStatus = {
 export type SetReportDbStatus = Dispatch<SetStateAction<IReportDbStatus | null>>;
 
 /**
- * Outcome of `db-migration`: the pre-migration check plus what happened.
+ * Outcome of `fi-db-migration`: the pre-migration check plus what happened.
  * `ok` is true when the DB is at the current version afterwards.
  */
 export type IReportDbMigrationResult = IReportDbStatus & {
