@@ -2,7 +2,7 @@
 
 [Provide feedback, request features, and report bugs.](https://github.com/prommis/flowsheet-inspector/issues)
 
-<h2 id='requirement'>About</h2>
+<h2 id='about'>About</h2>
 
 Flowsheet Inspector is an all-in-one VS Code extension that helps you run and inspect [IDAES](https://idaes.org/), [PrOMMiS](https://netl.doe.gov/prommis), and [WaterTAP](https://www.nawihub.org/knowledge/watertap/) chemical process flowsheets without leaving the editor.
 
@@ -16,6 +16,32 @@ To install, make sure you have python 3.12+ installed and run:
 ```bash
 pip install git+https://github.com/prommis/flowsheet-inspector-lib.git
 ```
+
+<h2 id='quick_start'>Quick Start</h2>
+
+### For testing:  
+For our extension you can use the example flowsheet located in `./flowsheet/had_flowsheet.py`
+
+### For install:
+1. Download latest extension `VSIX` file located in root in this repo.
+1. Click on `VSCode marketplace icon` located on VS Code tool bar on the left side of VS Code editor.
+
+    <img src='./resources/doc_image/marketplace_icon.png' width="40%"> 
+
+1. Click the `three dot button` on the top right corner from the opened VS Code marketplace panel and select `Install from VSIX...`.  
+    <img src='./resources/doc_image/install_vsix.png' width="90%">
+
+1. Select the VSIX file you just downloaded and click install.
+    <img src='./resources/doc_image/select_install_file.png' width="90%">
+
+1. After install VSIX you should see our extension icon shown in the VS Code tool bar which is located on the left side of the VS Code editor.  
+    <img src='./resources/doc_image/installed_extension_icon.png' width="60%">
+
+1. Click On our extension icon it will bring up the control panel into view.  
+    <img src='./resources/doc_image/control_panel.png' width="40%">
+
+1. Then open one or our example flowsheet localed in `./flosheet/` or open your new flowsheet,
+
 
 ## Wrap a flowsheet  
 To run your flowsheet, you first need to wrap it.  
