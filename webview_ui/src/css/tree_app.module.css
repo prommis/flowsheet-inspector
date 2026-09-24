@@ -403,10 +403,16 @@
     border-top: 2px solid var(--vscode-tab-activeBorderTop, #1a85ff);
 }
 
-/* Footer row pinned to the bottom of the tree app that opens the feedback
-   panel. margin-top: auto pushes it to the bottom of the flex column. */
-.feedback_footer_row {
+/* Footer pinned to the bottom of the tree app holding the Documentation and
+   feedback rows. margin-top: auto pushes it to the bottom of the flex column. */
+.tree_footer {
     margin-top: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+/* One clickable row in the footer (Documentation, feedback, ...). */
+.footer_row {
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -420,18 +426,23 @@
     border-radius: 4px;
 }
 
-.feedback_footer_row:hover {
+.footer_row:hover {
     background-color: var(--vscode-list-hoverBackground, rgba(128, 128, 128, 0.12));
 }
 
-.feedback_footer_row:focus-visible {
+.footer_row:focus-visible {
     outline: 1px solid var(--vscode-focusBorder, #007fd4);
     outline-offset: -1px;
 }
 
-.feedback_footer_label {
+.footer_row_label {
     font-size: 13px;
     font-weight: 600;
+}
+
+/* Marker class for the feedback row (kept for tests / targeting). */
+.feedback_footer_row {
+    border-top-style: solid;
 }
 
 /* Feedback panel replacing the tree app main area. */
