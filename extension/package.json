@@ -87,7 +87,7 @@
         ]
     },
     "scripts": {
-        "package": "cd ../webview_ui && npm run build && cd ../extension && npm run compile && npx vsce package --out ../",
+        "package": "cd ../webview_ui && npm run build && cd ../extension && npm run compile && npx vsce package --out ../ --baseContentUrl https://github.com/prommis/flowsheet-inspector/blob/main --baseImagesUrl https://github.com/prommis/flowsheet-inspector/raw/main",
         "vscode:prepublish": "npm run compile",
         "compile": "tsc -p ./",
         "watch:build": "tsc -watch -p ./",
