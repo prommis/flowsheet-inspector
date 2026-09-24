@@ -8,11 +8,11 @@ Flowsheet Inspector is an all-in-one VS Code extension that helps you run and in
 
 <h2 id='requirement'>Requirements</h2>
 
-This extension require another python cli tool called `flowsheet-inspector-lib` to run.
+This extension requires a Python CLI tool called `flowsheet-inspector-lib` to run.
 
-[Flowhseet Inspector Lib source code on Github](https://github.com/prommis/flowsheet-inspector-lib)  
+[Flowsheet Inspector Lib source code on GitHub](https://github.com/prommis/flowsheet-inspector-lib)  
 
-To install, make sure you have python 3.12+ installed and run:
+To install it, make sure you have Python 3.12+ installed and run:
 ```bash
 pip install git+https://github.com/prommis/flowsheet-inspector-lib.git
 ```
@@ -20,27 +20,27 @@ pip install git+https://github.com/prommis/flowsheet-inspector-lib.git
 <h2 id='quick_start'>Quick Start</h2>
 
 ### For testing:  
-For our extension you can use the example flowsheet located in `./flowsheet/had_flowsheet.py`
+You can use the example flowsheet in the repo's `flowsheet/hda_flowsheet.py` to try out the extension.
 
-### For install:
-1. Download latest extension `VSIX` file located in root in this repo.
-1. Click on `VSCode marketplace icon` located on VS Code tool bar on the left side of VS Code editor.
+### For installation:
+1. Download the latest extension `VSIX` file from the root of this repo.
+1. Click the `Extensions` icon in the activity bar on the left side of the VS Code editor.
 
     <img src='./resources/doc_image/marketplace_icon.png' width="40%"> 
 
-1. Click the `three dot button` on the top right corner from the opened VS Code marketplace panel and select `Install from VSIX...`.  
+1. Click the `three dot button` in the top right corner of the Extensions panel and select `Install from VSIX...`.  
     <img src='./resources/doc_image/install_vsix.png' width="90%">
 
-1. Select the VSIX file you just downloaded and click install.
+1. Select the VSIX file you just downloaded and click Install.
     <img src='./resources/doc_image/select_install_file.png' width="90%">
 
-1. After install VSIX you should see our extension icon shown in the VS Code tool bar which is located on the left side of the VS Code editor.  
+1. After the VSIX is installed, you should see our extension icon in the activity bar on the left side of the VS Code editor.  
     <img src='./resources/doc_image/installed_extension_icon.png' width="60%">
 
-1. Click On our extension icon it will bring up the control panel into view.  
+1. Click our extension icon to bring up the control panel.  
     <img src='./resources/doc_image/control_panel.png' width="40%">
 
-1. Then open one or our example flowsheet localed in `./flosheet/` or open your new flowsheet,
+1. Then open one of our example flowsheets in `flowsheet/`, or open your own flowsheet in the VS Code editor. The extension will pick it up and try to run it automatically.
 
 
 ## Wrap a flowsheet  
@@ -75,21 +75,21 @@ To run your flowsheet, you first need to wrap it.
 
     The step selector is a draggable vertical selector bar, which allows you to select which steps you would like to run.
 
-    - *Steps are defined in your flowsheet with the Python decorator `@FS.substep(base:str, name:str)`.*  
+    - *Steps are defined in your flowsheet with the Python decorator `@FS.label(base: str, name: str)`.*  
     - *If no step is selected, clicking Run will run all steps by default.*
 
     <img src='./resources/doc_image/selected_steps.png' width="400px">
 
 1. <h3 id='history'>Load and review the run history of a flowsheet</h3>
 
-    - There are two tabs at the very top of the control panel. To review previous run result, click on the History tab.
-    - To find a specific run, type keywords in search bar to search.
-    - Click on one row of history will render that flowsheet result to screen.
+    - There are two tabs at the very top of the control panel. To review previous run results, click on the History tab.
+    - To find a specific run, type keywords in the search bar.
+    - Clicking a history row renders that run's result on screen.
 
     <img src='./resources/doc_image/history.png' width="400px">
 
 1.  <h3 id='interpreter'>Select the Python interpreter used to run your flowsheet</h3>
-    - The Python interpreter selector is located in the control panel. It controls which Python interpreter (environment) is used to run current flowsheet.
+    - The Python interpreter selector is located in the control panel. It controls which Python interpreter (environment) is used to run the current flowsheet.
     - If Microsoft's Python extension is installed, it uses that extension's API to read the interpreter you selected there. Otherwise, it uses the interpreter you picked in the Flowsheet Inspector picker (which lists conda environments, workspace virtual environments, and interpreters on your PATH), or, if you have not picked one yet, the conda environment VS Code was launched from.
     <img src='./resources/doc_image/python_interpreter.png' width="800px">
 
@@ -98,7 +98,7 @@ To run your flowsheet, you first need to wrap it.
 
     - To change the interpreter, click the Change Interpreter button. A list of environments will appear on your screen; select the one you need.
     <img src='./resources/doc_image/interpreter_click.png' width="800px">
-    - ENV list:
+    - Environment list:
     <img src='./resources/doc_image/interpreter_env_list.png' width="800px">
 ## While editing
 
@@ -117,7 +117,7 @@ To run your flowsheet, you first need to wrap it.
 1.  <h3 id='stream_variable'>Review the stream table and the variables used in the flowsheet</h3>
 
     - The Flowsheet Variable tab is the second tab of the result panel. Clicking the tab switches to that view.
-    - The view contains two sections: `table view` and `variable tree view`. Click on `View variable tree` radio button which is located on the right side of the search bar to switch between these views. 
+    - The view contains two sections: `table view` and `variable tree view`. Click the `View variable tree` radio button, located on the right side of the search bar, to switch between these views.
     
     <img src='./resources/doc_image/variable_switch_view.png' width="800px">
 
@@ -141,9 +141,9 @@ To run your flowsheet, you first need to wrap it.
 
 1.  <h3 id='ipopt'>Review the IPOPT solver output</h3>
 
-    - The fourth tab IPOPT view, Flowsheet inspector will run the IPOPT solver and out put solver result to screen while you running your flowsheet.
+    - The fourth tab is the IPOPT view. Flowsheet Inspector runs the IPOPT solver while your flowsheet is running and outputs the solver results to the screen.
 
-    - There are two tabs represent two stage of solver output you can find on the screen, they are `Initial Solver Output` and `Optimization Solver Output`. Click on each one will bring up the dedicated result view to screen.
+    - There are two tabs on the screen representing the two stages of solver output: `Initial Solver Output` and `Optimization Solver Output`. Clicking either one brings up its dedicated result view.
 
     <img src='./resources/doc_image/ipopt.png' width="800px">
 
