@@ -10,8 +10,7 @@ export default function Mermaid() {
     const { flowsheetRunnerResult } = useContext(AppContext);
     const mermaidRef = useRef<HTMLDivElement>(null);
     const renderIdCounter = useRef(0);
-    // This state increments on every mount, ensuring useEffect always re-runs
-    const [mountKey, setMountKey] = useState(0);
+    const [diagramDirection, setDiagramDirection] = useState<'TB' | 'LR'>('TB');
 
     const diagnostics = flowsheetRunnerResult?.actions?.diagnostics as Diagnostics | undefined;
     const runFailed = !!flowsheetRunnerResult && diagnostics?.valid === false;
@@ -19,8 +18,6 @@ export default function Mermaid() {
     useEffect(() => {
         // initial mermaid
         mermaid.initialize({ startOnLoad: false, theme: 'dark' });
-        // Trigger a re-render on mount so the diagram effect runs
-        setMountKey(k => k + 1);
     }, []);
 
     useEffect(() => {
@@ -103,7 +100,13 @@ export default function Mermaid() {
             return;
         }
 
-        const diagramText = filteredDiagram.join('\n');
+        const diagramText = filteredDiagram
+        .join('\n')
+        .replace(
+
+            /^(\s*(?:graph|flowchart)\s+)(?:TB|TD|BT|LR|RL)\b/m,
+            `$1${diagramDirection}`
+        );
         console.log(`mermaid diagram text:\n${diagramText}`);
 
         // Use mermaid.render() with a unique ID each time to avoid ID conflicts
@@ -128,11 +131,23 @@ export default function Mermaid() {
         renderDiagram();
         postReloadMermaidDone({ reload_mermaid: 'done' });
 
-    }, [flowsheetRunnerResult, mountKey]);
+    }, [flowsheetRunnerResult, diagramDirection]);
 
     return (
         <div className={`${css.mermaid_container}`}>
             <h2 className="page-title">Diagram:</h2>
+            <label className={css.direction_control}>
+                Direction:{' '}
+                <select
+                    value={diagramDirection}
+                    onChange={(event) =>
+                        setDiagramDirection(event.target.value as 'TB' | 'LR')
+                    }
+                >
+                    <option value="TB">Top to Bottom</option>
+                    <option value="LR">Left to Right</option>
+                </select>
+            </label>
             {/* Leave this div empty — mermaid.run() will inject the SVG via innerHTML */}
             <div className={`${css.diagram_container}`}>
                 <div ref={mermaidRef} className={`${css.diagram}`}></div>
