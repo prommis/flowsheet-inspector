@@ -1,4 +1,4 @@
-import { useContext, useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useRef } from "react";
 import { AppContext } from "../context";
 
 import mermaid from "mermaid";
@@ -7,10 +7,13 @@ import css from '../css/mermaid.module.css';
 import type { Diagnostics } from "../interface/flowsheet_result_interface";
 
 export default function Mermaid() {
-    const { flowsheetRunnerResult } = useContext(AppContext);
+    const {
+        flowsheetRunnerResult,
+        diagramDirection,
+        setDiagramDirection
+    } = useContext(AppContext);
     const mermaidRef = useRef<HTMLDivElement>(null);
     const renderIdCounter = useRef(0);
-    const [diagramDirection, setDiagramDirection] = useState<'TB' | 'LR'>('TB');
 
     const diagnostics = flowsheetRunnerResult?.actions?.diagnostics as Diagnostics | undefined;
     const runFailed = !!flowsheetRunnerResult && diagnostics?.valid === false;
@@ -140,9 +143,12 @@ export default function Mermaid() {
                 Direction:{' '}
                 <select
                     value={diagramDirection}
-                    onChange={(event) =>
-                        setDiagramDirection(event.target.value as 'TB' | 'LR')
-                    }
+                    onChange={(event) => {
+                        const direction = event.target.value;
+                        if (direction === 'TB' || direction === 'LR') {
+                            setDiagramDirection(direction);
+                        }
+                    }}
                 >
                     <option value="TB">Top to Bottom</option>
                     <option value="LR">Left to Right</option>

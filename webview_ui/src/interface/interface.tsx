@@ -15,6 +15,8 @@ export type ActivateFileName = string;
 export type SetActivateFileName = Dispatch<SetStateAction<ActivateFileName>>;
 export type MermaidDiagram = string;
 export type SetMermaidDiagram = Dispatch<SetStateAction<MermaidDiagram>>;
+export type DiagramDirection = 'TB' | 'LR';
+export type SetDiagramDirection = Dispatch<SetStateAction<DiagramDirection>>;
 export type ExtensionErrorLogsType = string[];
 export type SetExtensionErrorLogs = Dispatch<SetStateAction<ExtensionErrorLogsType>>;
 
