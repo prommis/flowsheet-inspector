@@ -1,4 +1,4 @@
-import { useContext, useEffect, useRef } from "react";
+import { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { AppContext } from "../context";
 
 import mermaid from "mermaid";
@@ -6,17 +6,88 @@ import { postReloadMermaidDone } from '../util/post_message';
 import css from '../css/mermaid.module.css';
 import type { Diagnostics } from "../interface/flowsheet_result_interface";
 
+const MIN_ZOOM = 0.25;
+const MAX_ZOOM = 4;
+
 export default function Mermaid() {
     const {
         flowsheetRunnerResult,
         diagramDirection,
-        setDiagramDirection
+        setDiagramDirection,
+        diagramZoom,
+        setDiagramZoom
     } = useContext(AppContext);
+    // A new report or direction needs its own completed SVG before zoom is usable.
+    const renderRequest = useMemo(() => ({
+        result: flowsheetRunnerResult,
+        direction: diagramDirection,
+    }), [flowsheetRunnerResult, diagramDirection]);
+    const [completedRequest, setCompletedRequest] = useState<typeof renderRequest | null>(null);
+    const isDiagramReady = !!flowsheetRunnerResult && completedRequest === renderRequest;
     const mermaidRef = useRef<HTMLDivElement>(null);
+    const viewportRef = useRef<HTMLDivElement>(null);
+    const zoomRef = useRef(diagramZoom);
+    const zoomAnchorRef = useRef<{
+        svg: SVGSVGElement;
+        x: number;
+        y: number;
+        clientX: number;
+        clientY: number;
+    } | null>(null);
     const renderIdCounter = useRef(0);
 
     const diagnostics = flowsheetRunnerResult?.actions?.diagnostics as Diagnostics | undefined;
     const runFailed = !!flowsheetRunnerResult && diagnostics?.valid === false;
+
+    useLayoutEffect(() => {
+        zoomRef.current = diagramZoom;
+        const anchor = zoomAnchorRef.current;
+        zoomAnchorRef.current = null;
+        const viewport = viewportRef.current;
+        if (!anchor || !viewport || !mermaidRef.current?.contains(anchor.svg)) return;
+
+        // After CSS resizes the SVG, keep the same diagram point under the
+        // pointer. Native scrolling clamps the position at the diagram edges.
+        const bounds = anchor.svg.getBoundingClientRect();
+        viewport.scrollLeft += bounds.left + anchor.x * bounds.width - anchor.clientX;
+        viewport.scrollTop += bounds.top + anchor.y * bounds.height - anchor.clientY;
+    }, [diagramZoom]);
+
+    useEffect(() => {
+        const viewport = viewportRef.current;
+        if (!viewport || !isDiagramReady) return;
+
+        const handleWheel = (event: WheelEvent) => {
+            if (!event.ctrlKey || event.deltaY === 0) return;
+            const svg = mermaidRef.current?.querySelector("svg");
+            if (!svg) return;
+            const bounds = svg.getBoundingClientRect();
+            if (bounds.width <= 0 || bounds.height <= 0) return;
+
+            event.preventDefault();
+            // Wheel devices report pixels, lines, or pages. Normalize to pixels.
+            const unit = event.deltaMode === WheelEvent.DOM_DELTA_LINE ? 16
+                : event.deltaMode === WheelEvent.DOM_DELTA_PAGE ? viewport.clientHeight : 1;
+            const nextZoom = Math.min(MAX_ZOOM, Math.max(
+                MIN_ZOOM, zoomRef.current * Math.exp(-event.deltaY * unit * 0.002)
+            ));
+            if (nextZoom === zoomRef.current) return;
+
+            zoomAnchorRef.current = {
+                svg,
+                x: (event.clientX - bounds.left) / bounds.width,
+                y: (event.clientY - bounds.top) / bounds.height,
+                clientX: event.clientX,
+                clientY: event.clientY,
+            };
+            zoomRef.current = nextZoom;
+            setDiagramZoom(nextZoom);
+        };
+
+        // A non-passive listener lets Ctrl+wheel zoom only the diagram.
+        viewport.addEventListener("wheel", handleWheel, { passive: false });
+        return () => viewport.removeEventListener("wheel", handleWheel);
+    }, [setDiagramZoom, isDiagramReady]);
 
     useEffect(() => {
         // initial mermaid
@@ -26,6 +97,7 @@ export default function Mermaid() {
     useEffect(() => {
         // no mermaid ref found
         if (!mermaidRef.current) return;
+        zoomAnchorRef.current = null;
 
         // 1. Not run yet
         if (!flowsheetRunnerResult) {
@@ -114,49 +186,117 @@ export default function Mermaid() {
 
         // Use mermaid.render() with a unique ID each time to avoid ID conflicts
         // when the component is re-mounted after tab switches
+        let cancelled = false;
         const renderDiagram = async () => {
             try {
                 renderIdCounter.current += 1;
                 const uniqueId = `mermaid-diagram-${renderIdCounter.current}`;
                 const { svg } = await mermaid.render(uniqueId, diagramText);
-                if (mermaidRef.current) {
+                if (!cancelled && mermaidRef.current) {
                     mermaidRef.current.innerHTML = svg;
+                    const svgElement =
+                        mermaidRef.current.querySelector("svg");
+
+                    if (svgElement) {
+                        const naturalWidth = svgElement.viewBox.baseVal.width;
+
+                        if (naturalWidth > 0 && svgElement.viewBox.baseVal.height > 0) {
+                            svgElement.style.setProperty(
+                                "--diagram-natural-width",
+                                `${naturalWidth}px`
+                            );
+                            setCompletedRequest(renderRequest);
+                        }
+                    }
                 }
             } catch (error) {
+                if (cancelled) return;
                 console.error('mermaid render error:', error);
                 if (mermaidRef.current) {
                     mermaidRef.current.innerHTML = `
                     <p style="color: #f88;">Mermaid render error: ${error}</p>
                     <pre style="color: #888; font-size: 12px;">${diagramText}</pre>`;
                 }
+            } finally {
+                if (!cancelled) {
+                    postReloadMermaidDone({ reload_mermaid: 'done' });
+                }
             }
         };
         renderDiagram();
-        postReloadMermaidDone({ reload_mermaid: 'done' });
+        return () => { cancelled = true; };
 
-    }, [flowsheetRunnerResult, diagramDirection]);
+    }, [renderRequest]);
 
     return (
         <div className={`${css.mermaid_container}`}>
             <h2 className="page-title">Diagram:</h2>
-            <label className={css.direction_control}>
-                Direction:{' '}
-                <select
-                    value={diagramDirection}
-                    onChange={(event) => {
-                        const direction = event.target.value;
-                        if (direction === 'TB' || direction === 'LR') {
-                            setDiagramDirection(direction);
-                        }
-                    }}
+            <div className={css.diagram_toolbar}>
+                <label className={css.direction_control}>
+                    Direction:{' '}
+                    <select
+                        value={diagramDirection}
+                        onChange={(event) => {
+                            const direction = event.target.value;
+                            if (direction === 'TB' || direction === 'LR') {
+                                setDiagramDirection(direction);
+                            }
+                        }}
+                    >
+                        <option value="TB">Top to Bottom</option>
+                        <option value="LR">Left to Right</option>
+                    </select>
+                </label>
+
+                <div
+                    className={css.zoom_controls}
+                    role="group"
+                    aria-label="Diagram zoom"
                 >
-                    <option value="TB">Top to Bottom</option>
-                    <option value="LR">Left to Right</option>
-                </select>
-            </label>
+                    <button
+                        type="button"
+                        aria-label="Zoom out"
+                        disabled={!isDiagramReady || diagramZoom <= MIN_ZOOM}
+                        onClick={() =>
+                            setDiagramZoom((zoom) => Math.max(MIN_ZOOM, zoom - 0.25))
+                        }
+                    >
+                        −
+                    </button>
+
+                    <span>{Math.round(diagramZoom * 100)}%</span>
+
+                    <button
+                        type="button"
+                        aria-label="Zoom in"
+                        disabled={!isDiagramReady || diagramZoom >= MAX_ZOOM}
+                        onClick={() =>
+                            setDiagramZoom((zoom) => Math.min(MAX_ZOOM, zoom + 0.25))
+                        }
+                    >
+                        +
+                    </button>
+
+                    <button
+                        type="button"
+                        disabled={!isDiagramReady}
+                        onClick={() => setDiagramZoom(1)}
+                    >
+                        Reset
+                    </button>
+                </div>
+            </div>
             {/* Leave this div empty — mermaid.run() will inject the SVG via innerHTML */}
-            <div className={`${css.diagram_container}`}>
-                <div ref={mermaidRef} className={`${css.diagram}`}></div>
+            <div
+                ref={viewportRef}
+                className={css.diagram_container}
+                title={isDiagramReady ? "Hold Ctrl and scroll to zoom" : undefined}
+            >
+                <div
+                    ref={mermaidRef}
+                    className={css.diagram}
+                    style={{ "--diagram-zoom": diagramZoom } as CSSProperties}
+                ></div>
             </div>
         </div>
     );
