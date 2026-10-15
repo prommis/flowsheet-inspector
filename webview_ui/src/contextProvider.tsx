@@ -34,6 +34,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // Preserve the selected layout across results-tab switches.
     const [diagramDirection, setDiagramDirection] =
         useState<DiagramDirection>('LR');
+    const [diagramZoom, setDiagramZoom] = useState(1);
     const [extensionErrorLogs, setExtensionErrorLogs] = useState<ExtensionErrorLogsType>([]);
     const [terminalLogs, setTerminalLogs] = useState<TerminalLogsType>([]);
     const [activeLogTab, setActiveLogTab] = useState<ActiveLogTab>('error');
@@ -68,6 +69,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
             setMermaidDiagram,
             diagramDirection,
             setDiagramDirection,
+            diagramZoom,
+            setDiagramZoom,
             extensionErrorLogs,
             setExtensionErrorLogs,
             terminalLogs,

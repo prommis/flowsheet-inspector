@@ -52,6 +52,8 @@ interface AppContextType {
     setMermaidDiagram: SetMermaidDiagram;
     diagramDirection: DiagramDirection;
     setDiagramDirection: SetDiagramDirection;
+    diagramZoom: number;
+    setDiagramZoom: React.Dispatch<React.SetStateAction<number>>;
     extensionErrorLogs: ExtensionErrorLogsType;
     setExtensionErrorLogs: SetExtensionErrorLogs;
     terminalLogs: TerminalLogsType;
