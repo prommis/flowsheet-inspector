@@ -52,6 +52,15 @@ button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
+select:enabled {
+  cursor: pointer;
+}
+
+button:disabled,
+select:disabled {
+  cursor: not-allowed;
+}
+
 body {
   background-color: var(--vscode-sideBar-background);
   color: var(--vscode-editor-foreground);

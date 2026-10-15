@@ -10,6 +10,7 @@ import {
     type TerminalLogsType,
     type OpenPythonFilesType,
     type MermaidDiagram,
+    type DiagramDirection,
     type IdaesHistoryItem,
     type StepStatusMap,
     type CurrentPythonEnv,
@@ -29,6 +30,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const [editorContent, setEditorContent] = useState<EditorContent>("");
     const [activateFileName, setActivateFileName] = useState<ActivateFileName>("");
     const [mermaidDiagram, setMermaidDiagram] = useState<MermaidDiagram>('');
+
+    // Preserve the selected layout across results-tab switches.
+    const [diagramDirection, setDiagramDirection] =
+        useState<DiagramDirection>('LR');
     const [extensionErrorLogs, setExtensionErrorLogs] = useState<ExtensionErrorLogsType>([]);
     const [terminalLogs, setTerminalLogs] = useState<TerminalLogsType>([]);
     const [activeLogTab, setActiveLogTab] = useState<ActiveLogTab>('error');
@@ -61,6 +66,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
             setActivateFileName,
             mermaidDiagram,
             setMermaidDiagram,
+            diagramDirection,
+            setDiagramDirection,
             extensionErrorLogs,
             setExtensionErrorLogs,
             terminalLogs,
