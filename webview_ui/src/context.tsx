@@ -14,8 +14,8 @@ import {
     type SetActivateFileName,
     type MermaidDiagram,
     type SetMermaidDiagram,
-    type DiagramDirection,
-    type SetDiagramDirection,
+    type DiagramViewState,
+    type SetDiagramViewState,
     type SetExtensionErrorLogs,
     type ExtensionErrorLogsType,
     type TerminalLogsType,
@@ -50,8 +50,8 @@ interface AppContextType {
     setActivateFileName: SetActivateFileName;
     mermaidDiagram: MermaidDiagram;
     setMermaidDiagram: SetMermaidDiagram;
-    diagramDirection: DiagramDirection;
-    setDiagramDirection: SetDiagramDirection;
+    diagramViewState: DiagramViewState;
+    setDiagramViewState: SetDiagramViewState;
     extensionErrorLogs: ExtensionErrorLogsType;
     setExtensionErrorLogs: SetExtensionErrorLogs;
     terminalLogs: TerminalLogsType;
