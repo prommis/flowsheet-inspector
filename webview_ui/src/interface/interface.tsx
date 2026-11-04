@@ -15,8 +15,15 @@ export type ActivateFileName = string;
 export type SetActivateFileName = Dispatch<SetStateAction<ActivateFileName>>;
 export type MermaidDiagram = string;
 export type SetMermaidDiagram = Dispatch<SetStateAction<MermaidDiagram>>;
-export type DiagramDirection = 'TB' | 'LR';
-export type SetDiagramDirection = Dispatch<SetStateAction<DiagramDirection>>;
+export type DiagramViewState = {
+    direction: 'TB' | 'LR';
+    transform: {
+        scale: number;
+        x: number;
+        y: number;
+    } | null;
+};
+export type SetDiagramViewState = Dispatch<SetStateAction<DiagramViewState>>;
 export type ExtensionErrorLogsType = string[];
 export type SetExtensionErrorLogs = Dispatch<SetStateAction<ExtensionErrorLogsType>>;
 
