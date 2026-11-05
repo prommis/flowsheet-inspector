@@ -68,6 +68,19 @@ Environment overrides:
 
 ## Adapting for new tests
 
+### Diagram control regression checks
+
+Build the webview with `cd webview_ui && npm run build`, then run
+`cd e2e && npm run test:diagram` from the repository root.
+The script serves the production build on an available local port and uses headless
+Chrome to check zoom limits, drag cleanup, wheel handling, tab and direction
+persistence, and Fit after a hidden viewport becomes visible.
+It closes the browser and server when finished. No flowsheet database is needed.
+The default browser is the standard macOS Chrome installation. Set `CHROME_BIN`
+to the executable path on other systems.
+
+### VS Code host checks
+
 `drive_vscode.mjs` is deliberately small and linear: launch → connect → open
 panel → find frame → inject data → interact → measure. To test a different
 view or regression, copy the file and change only the "interact + measure"
