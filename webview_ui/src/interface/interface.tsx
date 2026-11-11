@@ -17,6 +17,8 @@ export type MermaidDiagram = string;
 export type SetMermaidDiagram = Dispatch<SetStateAction<MermaidDiagram>>;
 export type DiagramViewState = {
     direction: 'TB' | 'LR';
+    /** Numeric identity of the result this view belongs to. No result data is stored here. */
+    resultVersion: number;
     transform: {
         scale: number;
         x: number;

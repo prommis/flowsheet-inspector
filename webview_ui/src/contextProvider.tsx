@@ -34,6 +34,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // Preserve the layout, zoom and pan across results-tab switches.
     const [diagramViewState, setDiagramViewState] = useState<DiagramViewState>({
         direction: 'LR',
+        resultVersion: 0,
         transform: null
     });
 
