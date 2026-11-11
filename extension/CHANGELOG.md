@@ -1,4 +1,7 @@
 # Change Log
+* 0.0.16
+1. Add control buttons to control diagram. Now Zoom In, Zoom Out, Fit, and Top to Bottom, Left to Right view controls are available.
+
 * 0.0.15
 1. Add a feedback panel that lets users submit an issue to the GitHub repo or send a feedback email to flowsheetinspector@lbl.gov.
 2. Add a rerun notice: when a user changes and saves a flowsheet, a notice appears in the control panel reminding them to rerun the inspector.

@@ -1,5 +1,6 @@
-import { useContext, useEffect, useRef } from "react";
+import { useContext, useEffect, useId, useRef } from "react";
 import { AppContext } from "../context";
+import { useDiagramControl, useResetDiagramViewOnResult } from "../util/diagram_control";
 
 import mermaid from "mermaid";
 import { postReloadMermaidDone } from '../util/post_message';
@@ -7,25 +8,26 @@ import css from '../css/mermaid.module.css';
 import type { Diagnostics } from "../interface/flowsheet_result_interface";
 
 export default function Mermaid() {
+    const { flowsheetRunnerResult } = useContext(AppContext);
+    useResetDiagramViewOnResult();
     const {
-        flowsheetRunnerResult,
-        diagramDirection,
-        setDiagramDirection
-    } = useContext(AppContext);
-    const mermaidRef = useRef<HTMLDivElement>(null);
+        viewportRef, mermaidRef, prepareDiagram, restoreDiagram,
+        fitDiagram, zoomIn, zoomOut, applyDirection, directionSelectProps, pointerHandlers
+    } = useDiagramControl();
     const renderIdCounter = useRef(0);
+    const renderId = useId().replace(/[^a-zA-Z0-9_-]/g, '');
 
     const diagnostics = flowsheetRunnerResult?.actions?.diagnostics as Diagnostics | undefined;
     const runFailed = !!flowsheetRunnerResult && diagnostics?.valid === false;
 
     useEffect(() => {
         // initial mermaid
-        mermaid.initialize({ startOnLoad: false, theme: 'dark' });
+        mermaid.initialize({ startOnLoad: false, theme: 'dark', flowchart: { useMaxWidth: false } });
     }, []);
 
     useEffect(() => {
-        // no mermaid ref found
         if (!mermaidRef.current) return;
+        prepareDiagram();
 
         // 1. Not run yet
         if (!flowsheetRunnerResult) {
@@ -103,59 +105,59 @@ export default function Mermaid() {
             return;
         }
 
-        const diagramText = filteredDiagram
-        .join('\n')
-        .replace(
-
-            /^(\s*(?:graph|flowchart)\s+)(?:TB|TD|BT|LR|RL)\b/m,
-            `$1${diagramDirection}`
-        );
+        const diagramText = applyDirection(filteredDiagram.join('\n'));
         console.log(`mermaid diagram text:\n${diagramText}`);
 
-        // Use mermaid.render() with a unique ID each time to avoid ID conflicts
-        // when the component is re-mounted after tab switches
+        // Ignore an older render after a direction change or tab switch.
+        let cancelled = false;
         const renderDiagram = async () => {
             try {
                 renderIdCounter.current += 1;
-                const uniqueId = `mermaid-diagram-${renderIdCounter.current}`;
+                const uniqueId = `mermaid-diagram-${renderId}-${renderIdCounter.current}`;
                 const { svg } = await mermaid.render(uniqueId, diagramText);
-                if (mermaidRef.current) {
+                if (!cancelled && mermaidRef.current) {
                     mermaidRef.current.innerHTML = svg;
+                    restoreDiagram();
                 }
             } catch (error) {
+                if (cancelled) return;
                 console.error('mermaid render error:', error);
                 if (mermaidRef.current) {
                     mermaidRef.current.innerHTML = `
                     <p style="color: #f88;">Mermaid render error: ${error}</p>
                     <pre style="color: #888; font-size: 12px;">${diagramText}</pre>`;
                 }
+            } finally {
+                if (!cancelled) postReloadMermaidDone({ reload_mermaid: 'done' });
             }
         };
         renderDiagram();
-        postReloadMermaidDone({ reload_mermaid: 'done' });
+        return () => { cancelled = true; };
 
-    }, [flowsheetRunnerResult, diagramDirection]);
+    }, [flowsheetRunnerResult, applyDirection, runFailed, renderId, mermaidRef, prepareDiagram, restoreDiagram]);
 
     return (
         <div className={`${css.mermaid_container}`}>
             <h2 className="page-title">Diagram:</h2>
-            <label className={css.direction_control}>
-                Direction:{' '}
-                <select
-                    value={diagramDirection}
-                    onChange={(event) => {
-                        const direction = event.target.value;
-                        if (direction === 'TB' || direction === 'LR') {
-                            setDiagramDirection(direction);
-                        }
-                    }}
-                >
-                    <option value="TB">Top to Bottom</option>
-                    <option value="LR">Left to Right</option>
-                </select>
-            </label>
-            {/* Leave this div empty — mermaid.run() will inject the SVG via innerHTML */}
-            <div className={`${css.diagram_container}`}>
+            <div className={css.toolbar}>
+                <label className={css.direction_control}>
+                    Direction:{' '}
+                    <select {...directionSelectProps}>
+                        <option value="TB">Top to Bottom</option>
+                        <option value="LR">Left to Right</option>
+                    </select>
+                </label>
+                <button type="button" onClick={zoomIn}>Zoom In</button>
+                <button type="button" onClick={zoomOut}>Zoom Out</button>
+                <button type="button" onClick={fitDiagram}>Fit</button>
+            </div>
+            <p className={css.hint}>Drag to pan. Hold Ctrl or Cmd and scroll to zoom.</p>
+            <div
+                ref={viewportRef}
+                className={css.diagram_container}
+                aria-label="Flowsheet diagram"
+                {...pointerHandlers}
+            >
                 <div ref={mermaidRef} className={`${css.diagram}`}></div>
             </div>
         </div>
