@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
 import { brodcastMessage, activateWebviews } from './webview_handler';
-import { isWrappedFlowsheet } from './validate_flowsheet';
+import { getFlowsheetRunners } from './validate_flowsheet';
 import { trimFileName } from './trim_file_name';
 import { checkActivePythonEnv } from './extension_initial_check';
 import { checkRequiredPackages } from './check_required_packages';
-import { runFiSteps } from './run_fi_steps';
+import { getFlowsheetSteps } from './get_flowsheet_steps';
 import { onDidChangeActivePythonEnv, broadcastCurrentPythonEnv, getActivePythonEnv } from './python_env';
 
 function getOpenPythonFiles() {
@@ -78,7 +78,7 @@ export default function activateTabListener(context: vscode.ExtensionContext) {
         if (!activatedFileName || document.fileName !== activatedFileName) {
             return;
         }
-        if (!document.fileName.endsWith('.py') || !isWrappedFlowsheet(document.fileName)) {
+        if (!document.fileName.endsWith('.py') || !getFlowsheetRunners(document.fileName)) {
             return;
         }
         console.log(`Active flowsheet ${document.fileName} was saved, broadcasting rerun notice`);
@@ -108,31 +108,32 @@ export default function activateTabListener(context: vscode.ExtensionContext) {
             const currentActivateTabFileName = editor.document.fileName;
             if (currentActivateTabFileName.endsWith('.py')) {
                 // update global state activateFileName to current activated file's name
-                console.log("Current activate tab file name is:", currentActivateTabFileName);
-                console.log(`Updating global state activated file name to ${currentActivateTabFileName}`);
+                console.log("Current active tab file name is:", currentActivateTabFileName);
+                console.log(`Updating global state active file name to ${currentActivateTabFileName}`);
                 const previousActivatedFileName = context.globalState.get("activatedFileName");
                 context.globalState.update("activatedFileName", currentActivateTabFileName);
-                console.log('Activated file name is updated!');
+                console.log('Active file name is updated!');
 
                 // trim file name and let it can be use by frontend app
-                console.log('Get file name from activate file path');
-                const activateFileName = trimFileName(currentActivateTabFileName);
-                console.log(`Current activate file name is: ${activateFileName}`);
+                console.log('Get file name from active file path');
+                const activeFile = trimFileName(currentActivateTabFileName);
+                console.log(`Current active file name is: ${activeFile}`);
 
                 // Update webview panel title to reflect the current file
                 const webViewPanel = activateWebviews.get('webView') as vscode.WebviewPanel | undefined;
                 if (webViewPanel) {
-                    webViewPanel.title = `Prommis Flowsheet Inspector - ${activateFileName}`;
+                    webViewPanel.title = `Prommis Flowsheet Inspector - ${activeFile}`;
                 }
 
-                if (!isWrappedFlowsheet(currentActivateTabFileName)) {
-                    console.log(`File ${currentActivateTabFileName} does not appear to be a flowsheet (no @FS.step("build") found), skipping fi-steps.`);
+                const runners = getFlowsheetRunners(currentActivateTabFileName);
+                if (!runners.length) {
+                    console.log(`File ${currentActivateTabFileName} does not appear to have a FlowsheetRunner`);
                     context.globalState.update("activatedFileName", currentActivateTabFileName);
                     brodcastMessage({
                         type: 'switch_tab',
-                        activate_tab_name: activateFileName,
+                        activate_tab_name: activeFile,
                         idaesRunInfo: null,
-                        initError: `"${activateFileName}" is not a wrapped flowsheet file.\nFlowsheet Inspector requires @FS.step("build") to be present in the file.`,
+                        initError: `"${activeFile}" does not appear to have a FlowsheetRunner defined`,
                         // Tells the frontend this file doesn't take over the
                         // run results: e.g. clicking a traceback link opens a
                         // lib/site-packages file, which must not wipe the
@@ -150,7 +151,7 @@ export default function activateTabListener(context: vscode.ExtensionContext) {
                     {
                         type: 'switch_tab',
                         message: `Starting fetch for ${currentActivateTabFileName}`,
-                        activate_tab_name: activateFileName,
+                        activate_tab_name: activeFile,
                         isLoading: true,
                         open_python_files: getOpenPythonFiles(),
                         time: new Date().toISOString(),
@@ -161,7 +162,7 @@ export default function activateTabListener(context: vscode.ExtensionContext) {
                 if (!envCheck.success) {
                     brodcastMessage({
                         type: 'switch_tab',
-                        activate_tab_name: activateFileName,
+                        activate_tab_name: activeFile,
                         idaesRunInfo: null,
                         initError: envCheck.errorMsg,
                         packageWarnings: [],
@@ -180,14 +181,14 @@ export default function activateTabListener(context: vscode.ExtensionContext) {
 
                 let stepsData: any;
                 try {
-                    stepsData = await runFiSteps(currentActivateTabFileName);
+                    stepsData = await getFlowsheetSteps(currentActivateTabFileName);
                 } catch (err: any) {
-                    console.error(`Error running fi-steps during tab switch: ${err.message}`);
+                    console.error(`Error getting flowsheet steps during tab switch: ${err.message}`);
                     stepsData = null;
                     brodcastMessage({
                         type: 'switch_tab',
                         message: `Failed to load flowsheet info for new tab: ${err.message}`,
-                        activate_tab_name: activateFileName,
+                        activate_tab_name: activeFile,
                         idaesRunInfo: null,
                         initError: `Failed to load flowsheet info for new tab: ${err.message}`,
                         packageWarnings,
@@ -203,7 +204,7 @@ export default function activateTabListener(context: vscode.ExtensionContext) {
                 brodcastMessage({
                     type: 'switch_tab',
                     message: `switch tab from ${previousActivatedFileName} to ${currentActivateTabFileName}`,
-                    activate_tab_name: activateFileName,
+                    activate_tab_name: activeFile,
                     idaesRunInfo: stepsData,
                     initError: null,
                     packageWarnings,

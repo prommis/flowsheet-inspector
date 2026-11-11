@@ -18,12 +18,12 @@
 
 ### Running the dev environment
 1. Make sure you are using VS Code as your editor and Node.js >= 24.11.0.
-1. Change to the `extension` folder and run: `npm run watch:build` to enable live compilation
-1. Change to the `webview_ui` folder and run: `npm run watch:build` to rebuild the React UI on every change
 1. Open the project in VS Code and open `/extension/src/extension.ts`
 1. Press `F5` and select the **"Run Extension"** debug configuration. This compiles the extension and launches it in a new VS Code window.
 1. In the new window, open the Flowsheet Inspector sidebar and use the Python interpreter selector to pick the conda env you created above. You do not need to activate the env in a terminal.
-1. After changing code, reload the webview in the debug window with `Cmd+Shift+R` (Mac) or `Ctrl+Shift+R` (Windows/Linux)
+1. Save changes normally. In development mode, changes under `webview_ui/src` are rebuilt and active webviews reload automatically. Changes under `extension/src` are compiled and restart only the Extension Host process; the debug window stays open.
+
+Build failures are written to the **Flowsheet Inspector Dev Reload** output channel. The manual **Flowsheet Inspector: Reload Webview (Dev)** command remains available if a webview needs to be refreshed explicitly.
 
 ### Releasing and building a package
 1. Update the package version number in `package.json` and record your changes in `/extension/CHANGELOG.md`

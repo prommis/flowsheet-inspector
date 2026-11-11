@@ -22,7 +22,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const [isLoading, setIsLoading] = useState(true);
     const [idaesRunInfo, setidaesRunInfo] = useState<idaesRunInfo>({
         classname: "",
-        steps: []
+        steps: {}
     });
     const [selectedSteps, setSelectedSteps] = useState<FlowsheetSteps>([]);
     const [isRunningFlowsheet, setIsRunningFlowsheet] = useState(false);

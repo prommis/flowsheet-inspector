@@ -1,14 +1,24 @@
 import * as fs from 'fs';
 
 /**
- * Returns true if the file at filePath is a wrapped flowsheet
- * (i.e. contains the @FS.step("build") decorator required by flowsheet-inspector-lib).
+ * Returns an array of FlowsheetRunner instance names found in the file at filePath.
+ * If no FlowsheetRunner instances are found, returns an empty array.
  */
-export function isWrappedFlowsheet(filePath: string): boolean {
+export function getFlowsheetRunners(filePath: string): string[] {
+    const runners: string[] = [];
+    console.debug(`Looking for FlowsheetRunner instances in ${filePath}...`);
     try {
         const content = fs.readFileSync(filePath, 'utf-8');
-        return content.includes('@FS.step("build")');
+        // Look for FlowsheetRunner instance creation at global scope
+        const regexp = /^\s*(\w+)\s*=\s*FlowsheetRunner\s*\(/gm;
+        const matches = content.matchAll(regexp);
+        for (const match of matches) {
+            if (match[1]) {
+                runners.push(match[1]);
+            }
+        }
     } catch {
-        return false;
+        console.warn(`While looking for FlowsheetRunner objects: failed to read file at ${filePath}`);
     }
+    return runners;
 }

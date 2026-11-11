@@ -8,6 +8,7 @@
 import * as vscode from 'vscode';
 import * as cp from 'child_process';
 import { getActivePythonEnv, activatedProcessEnv } from './python_env';
+import { getIfiPythonArgs } from './run_terminal_command';
 
 export interface IFiStepsResult {
     classname: string;
@@ -35,16 +36,18 @@ const NO_INTERPRETER_MSG =
  *         error includes stderr/stdout details), or if no JSON array can be
  *         found in the output.
  */
-export async function runFiSteps(fileName: string): Promise<IFiStepsResult> {
+export async function getFlowsheetSteps(fileName: string): Promise<IFiStepsResult> {
     const env = await getActivePythonEnv(fileName ? vscode.Uri.file(fileName) : undefined);
     if (!env) {
         throw new Error(NO_INTERPRETER_MSG);
     }
 
     return new Promise<IFiStepsResult>((resolve, reject) => {
+        const ifiArgs = ['--json', 'flowsheet', 'steps', '-f', fileName]
+        const args = getIfiPythonArgs(ifiArgs);
         const child = cp.spawn(
             env.interpreterPath,
-            ['-m', 'idaes_fi.structfs.common', '--fs', fileName, '-t', 'json'],
+            args,
             {
                 stdio: 'pipe',
                 windowsHide: true,
@@ -54,28 +57,38 @@ export async function runFiSteps(fileName: string): Promise<IFiStepsResult> {
 
         let stdout = '';
         let stderr = '';
+        const trim_output = (o: string) => o.trim().slice(0, 500);
         child.stdout.on('data', (d) => { stdout += d.toString(); });
         child.stderr.on('data', (d) => { stderr += d.toString(); });
         child.on('error', reject);
         child.on('close', (code) => {
             if (code !== 0) {
                 const errDetail = stderr.trim() || stdout.trim() || '(no output)';
-                reject(new Error(`fi-steps failed (exit ${code}): ${errDetail}`));
+                reject(new Error(`Getting flowsheet steps failed (exit ${code}) python-args=[[ ${args} ]]: ${errDetail}`));
                 return;
             }
-            try {
-                // fi-steps outputs a JSON array; any leading log lines are skipped
-                // by scanning from the end for the line that starts with '['.
-                const lines = stdout.trim().split('\n');
-                const jsonLine = lines.reverse().find((l) => l.trim().startsWith('['));
-                if (!jsonLine) {
-                    reject(new Error(`No JSON array found in fi-steps output.\nSTDOUT: ${stdout.trim().slice(0, 500)}\nSTDERR: ${stderr.trim().slice(0, 500)}`));
-                    return;
-                }
-                resolve({ classname: 'FlowsheetRunner', steps: JSON.parse(jsonLine.trim()) });
-            } catch (e) {
-                reject(new Error(`Failed to parse fi-steps output: ${e}`));
+            // Parse JSON output of the `flowsheet steps` command
+            let errMessage = '';
+            let parsedSteps: string[] = [];
+            const lines = stdout.trim().split('\n');
+            const jsonLine = lines.reverse().find((s) => s.trim().startsWith('{'));
+            if (!jsonLine) {
+                errMessage = `No JSON object found in output python-args=[[ ${args} ]] to get flowsheet steps.`;
             }
+            else {
+                try {
+                    parsedSteps = JSON.parse(jsonLine.trim());
+                } catch (e) {
+                    errMessage = `Failed to parse JSON object from output python-args=[[ ${args} ]] to get flowsheet steps.`;
+                }
+            }
+            if (errMessage != '') {
+                reject(new Error([errMessage, 
+                `STDOUT: ${trim_output(stdout)}`, 
+                `STDERR: ${trim_output(stderr)}`].join('\n')));
+                return;
+            }
+            resolve({ classname: 'FlowsheetRunner', steps: parsedSteps });
         });
     });
 }

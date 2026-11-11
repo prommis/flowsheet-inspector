@@ -3,7 +3,7 @@
     "publisher": "idaes-team",
     "displayName": "Flowsheet-inspector",
     "description": "",
-    "version": "0.0.15",
+    "version": "0.0.20",
     "engines": {
         "vscode": "^1.106.0"
     },
@@ -110,5 +110,9 @@
     },
     "dependencies": {
         "node-sqlite3-wasm": "^0.8.58"
+    },
+    "allowScripts": {
+        "@vscode/vsce-sign@2.1.0": true,
+        "keytar@7.9.0": true
     }
 }

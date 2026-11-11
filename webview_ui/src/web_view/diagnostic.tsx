@@ -354,7 +354,7 @@ function NumericalIssueTab({ diagnostics }: { diagnostics: Diagnostics }) {
 export default function Diagnostic() {
     const { flowsheetRunnerResult } = useContext(AppContext);
     const diagnostics = flowsheetRunnerResult?.actions
-        ?.diagnostics as Diagnostics | undefined;
+        ?.Diagnostics as Diagnostics | undefined;
     const [activeTab, setActiveTab] = useState<"structure" | "numerical">(
         "structure"
     );
@@ -362,10 +362,9 @@ export default function Diagnostic() {
     if (!diagnostics) {
         return (
             <div className={css.container}>
-                <h2>Diagnostic:</h2>
+                {/* <h2>Diagnostics</h2> */}
                 <p className={css.empty_msg}>
-                    Please select a flowsheet and run it with IDAES Extension
-                    first.
+                    Select and run a flowsheet to see diagnostic information.
                 </p>
             </div>
         );
@@ -375,7 +374,7 @@ export default function Diagnostic() {
         const lastRun = flowsheetRunnerResult?.last_run ?? [];
         return (
             <div className={css.container}>
-                <h2>Diagnostic:</h2>
+                {/* <h2>Diagnostic:</h2> */}
                 <div className={css.run_error}>
                     <p className={css.run_error_title}>
                         fi-run has issues: Diagnostics Unavailable
@@ -392,20 +391,20 @@ export default function Diagnostic() {
 
     return (
         <div className={css.container}>
-            <h2 className="page-title">Diagnostic:</h2>
+            {/* <h2 className="page-title">Diagnostics</h2> */}
 
             <div className={css.tabs}>
                 <span
                     className={`${css.tab} ${activeTab === "structure" ? css.tab_active : ""}`}
                     onClick={() => setActiveTab("structure")}
                 >
-                    Structure Issue
+                    Structural Issues
                 </span>
                 <span
                     className={`${css.tab} ${activeTab === "numerical" ? css.tab_active : ""}`}
                     onClick={() => setActiveTab("numerical")}
                 >
-                    Numerical Issue
+                    Numerical Issues
                 </span>
             </div>
 

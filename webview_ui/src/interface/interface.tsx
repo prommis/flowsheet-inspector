@@ -3,7 +3,7 @@ import type { FlowsheetRunnerResult } from "./flowsheet_result_interface";
 
 export type FlowsheetSteps = Array<string>;
 export type SetFlowsheetSteps = Dispatch<SetStateAction<FlowsheetSteps>>;
-export type idaesRunInfo = { classname: string, steps: Array<string> };
+export type idaesRunInfo = { classname: string, steps: Record<string, string[]> };
 export type SetidaesRunInfo = Dispatch<SetStateAction<idaesRunInfo>>;
 export type IsRunningFlowsheet = boolean;
 export type SetIsRunningFlowsheet = Dispatch<SetStateAction<IsRunningFlowsheet>>;

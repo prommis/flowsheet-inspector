@@ -10,7 +10,7 @@ import * as vscode from 'vscode';
 import { activateWebviews, brodcastMessage, setResultsPanelTitle } from './webview_handler';
 import openWebView from '../web_view/web_view_panel';
 import { queryLatestReport, queryStatusTableExists } from './sqlite_reader';
-import runTerminalCommand from './run_terminal_command';
+import { runTerminalCommand, getIfiPythonArgs } from './run_terminal_command';
 import { getActivePythonEnv, activatedProcessEnv } from './python_env';
 import { getMaxReportId, startStepStatusPolling, stopStepStatusPolling, broadcastFinalStepStatus } from './step_status_polling';
 
@@ -54,10 +54,21 @@ export default async function runFlowsheet(
             return;
         }
 
-        const args: string[] = ['-m', 'idaes_fi.structfs.fsrunner', activateFileName];
+        // Build args to run flowsheet
+        const flowsheetVarName = null; // TODO: Get from user
+        const args = ["flowsheet", "run", "-f", activateFileName];
         if (selectedStep) {
-            args.push('--last', selectedStep);
+            args.push("-l", selectedStep);
         }
+        if (flowsheetVarName) {
+            args.push("-n", flowsheetVarName);
+        }
+        const ipArgs = getIfiPythonArgs(args);
+        console.info("Running flowsheet: [python]", ipArgs.join(' '));
+        // const args: string[] = ['-m', 'idaes_fi.structfs.fsrunner', activateFileName];
+        // if (selectedStep) {
+        //     args.push('--last', selectedStep);
+        // }
 
         const childEnv: NodeJS.ProcessEnv = {
             ...activatedProcessEnv(env),
@@ -88,7 +99,7 @@ export default async function runFlowsheet(
         let finalStepStatusCount = 0;
         try {
             stepStatusPoller = startStepStatusPolling(baselineReportId);
-            await runTerminalCommand(env.interpreterPath, args, childEnv);
+            await runTerminalCommand(env.interpreterPath, ipArgs, childEnv);
         } finally {
             stopStepStatusPolling(stepStatusPoller);
             // The interval can miss the very last step row written as fi-run
@@ -96,7 +107,8 @@ export default async function runFlowsheet(
             finalStepStatusCount = await broadcastFinalStepStatus(baselineReportId);
         }
 
-        console.log('fi-run completed. Reading latest report from SQLite...');
+        console.info('Flowsheet run completed.');
+        console.info('Reading latest report from SQLite...');
 
         // The run completed but no per-step status rows exist for it. That
         // means the installed flowsheet-inspector-lib is too old to write the

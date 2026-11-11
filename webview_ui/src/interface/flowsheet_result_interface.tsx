@@ -1,9 +1,10 @@
-// Variable value entry: [index, value, fixed?, stale?, lb?, ub?]
+// Variable value entry: [index, value, fixed?, stale?, lb?, ub?, domain?]
 // index can be null, string, number, or string[] (for multi-indexed like ["Liq","benzene"])
-// Short form: [index, value]  or  Full form: [index, value, fixed, stale, lb, ub]
+// Short form: [index, value]  or  Full form: [index, value, fixed, stale, lb, ub, domain]
 export type VariableValueEntry =
     | [unknown, number]
-    | [unknown, number, boolean, boolean, number | null, number | null];
+    | [unknown, number, boolean, boolean, number | null, number | null]
+    | [unknown, number, boolean, boolean, number | null, number | null, string];
 
 // A single variable: [type, indexed, values]
 // type: "V" = Variable, "P" = Parameter
@@ -24,28 +25,6 @@ export interface DOFSteps {
 export interface DegreesOfFreedom {
     steps: DOFSteps;
     model: number;
-}
-
-// Timings
-export interface FlowsheetTimings {
-    timings: {
-        [stepName: string]: number;
-    };
-}
-
-// Solver logs
-export interface SolverOutput {
-    output?: {
-        [stepName: string]: string;
-    };
-    solver_logs?: {
-        [stepName: string]: string;
-    };
-}
-
-// Model variables
-export interface ModelVariables {
-    variables: VariableNode;
 }
 
 // ─── Stream Table Types ───
@@ -91,17 +70,93 @@ export interface ModelReports {
     last_step: string;
 }
 
+// Timings
+export interface FlowsheetTimings {
+    timings: {
+        [stepName: string]: number;
+    };
+    run_time?: number;
+}
+
+// Solver logs
+export interface SolverOutput {
+    output?: {
+        [stepName: string]: string;
+    };
+    solver_logs?: {
+        [stepName: string]: string;
+    };
+}
+
+// Model variables
+export interface ModelVariables {
+    variables: VariableNode;
+}
+
+// Progress tracking for flowsheet steps
+export interface ProgressStep {
+    name: string;
+    number: number;
+    status: string;
+    start: number;
+    dur: number;
+    err: string | null;
+    tb: string | null;
+    env: string | null;
+    solve_ok: boolean;
+}
+
+export interface Progress {
+    steps: ProgressStep[];
+}
+
+// Solver result statistics
+export interface SolverResultStatistics {
+    [key: string]: string | number;
+}
+
+// Solver result for a single solve step
+export interface SolverStepResult {
+    name: string;
+    message: string;
+    termination_condition: string;
+    statistics: string;
+    error_rc: number;
+    time: number;
+    values: Record<string, unknown>;
+    optimal: boolean;
+}
+
+// GetSolverResults: keyed by step name, value is array of result objects
+export interface GetSolverResults {
+    results: {
+        [stepName: string]: SolverStepResult[][];
+    };
+}
+
+// Git hash info
+export interface GitHashInfo {
+    hash: string;
+}
+
+// Mermaid diagram
+export interface MermaidDiagram {
+    diagram: string[] | string;
+}
+
 // Actions collected from the flowsheet run
 export interface FlowsheetActions {
-    degrees_of_freedom?: DegreesOfFreedom;
-    timings?: FlowsheetTimings;
-    capture_solver_output?: SolverOutput;
-    solver_output?: SolverOutput;
-    model_variables?: ModelVariables;
-    mermaid_diagram?: { diagram: string[] | string };
-    diagnostics?: Diagnostics;
-    stream_table?: FlowsheetStreamTable;
-    model_reports?: ModelReports;
+    CaptureSolverOutput?: SolverOutput;
+    Diagnostics?: Diagnostics;
+    GetSolverResults?: GetSolverResults;
+    GitHash?: GitHashInfo;
+    MermaidDiagram?: MermaidDiagram;
+    ModelVariables?: ModelVariables;
+    Progress?: Progress;
+    StreamTable?: FlowsheetStreamTable;
+    Timer?: FlowsheetTimings;
+    UnitDofChecker?: DegreesOfFreedom;
+    UnitModelReport?: ModelReports;
 }
 
 // ─── Diagnostics Types ───
@@ -161,5 +216,4 @@ export interface Diagnostics {
 export interface FlowsheetRunnerResult {
     actions: FlowsheetActions;
     last_run: string[];
-    status: number;
 }

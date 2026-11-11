@@ -1,6 +1,6 @@
 import { useState, useContext, useEffect, useRef } from "react";
 import { AppContext } from "../context";
-import Mermaid from "./meraid";
+import Mermaid from "./mermaid";
 import Ipopt from "./ipopt";
 import Diagnostic from "./diagnostic";
 import Variable from "../variable_view/flowsheet_variable_display";
@@ -14,7 +14,7 @@ export default function WebView() {
     const { flowsheetRunnerResult } = useContext(AppContext);
 
     // total model dof
-    const totalDof = flowsheetRunnerResult?.actions?.degrees_of_freedom?.model;
+    const totalDof = flowsheetRunnerResult?.actions?.UnitDofChecker?.model;
 
     useEffect(() => {
         const handleMessage = (event: MessageEvent) => {

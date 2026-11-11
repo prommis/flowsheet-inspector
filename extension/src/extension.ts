@@ -1,7 +1,8 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
-import { reloadCurrentWebview } from './util/reload_window';
+import { reloadAllWebviews } from './util/reload_window';
+import { startDevHotReload } from './util/dev_hot_reload';
 import { brodcastMessage } from './util/webview_handler';
 import openWebView from './web_view/web_view_panel';
 import treeview from './tree_view/treeview';
@@ -116,8 +117,12 @@ export function activate(context: vscode.ExtensionContext) {
 	 * with this command you have no need to open and close the debug mode every time you change the webview code.
 	 */
 	const reloadWebviewCommand = vscode.commands.registerCommand('flowsheet-inspector.reloadWebview', () => {
-		reloadCurrentWebview();
-		vscode.window.showInformationMessage('🔄 Webview reloaded!');
+		const reloadCount = reloadAllWebviews(context);
+		vscode.window.showInformationMessage(
+			reloadCount > 0
+				? `Reloaded ${reloadCount} Flowsheet Inspector webview${reloadCount === 1 ? '' : 's'}.`
+				: 'No active Flowsheet Inspector webviews to reload.'
+		);
 	});
 
 	/**
@@ -135,7 +140,9 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 
 
-	context.subscriptions.push(initialExtensionCommand, registerWebView, treeView, reloadWebviewCommand, logPythonEnvCommand);
+	const devHotReload = startDevHotReload(context);
+
+	context.subscriptions.push(initialExtensionCommand, registerWebView, treeView, reloadWebviewCommand, logPythonEnvCommand, devHotReload);
 }
 
 // This method is called when your extension is deactivated

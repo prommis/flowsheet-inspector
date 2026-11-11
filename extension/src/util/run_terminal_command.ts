@@ -27,7 +27,7 @@ import { getSpawnOptions } from './platform_config';
  * @returns Promise that resolves on exit code 0, rejects on non-zero exit,
  *          spawn error, or user cancellation (CANCELED_BY_USER:<pid>).
  */
-export default function runTerminalCommand(
+function runTerminalCommand(
     executable: string,
     args: string[],
     childEnv: NodeJS.ProcessEnv,
@@ -94,3 +94,22 @@ export default function runTerminalCommand(
         });
     });
 }
+
+/**
+ * Get args for running the 'ifi' command, which is the flowsheet inspector lib's CLI 
+ * interface, through the Python interpreter with 'python -c'.
+ * 
+ * The args should be a list of values as would be passed directly to 'ifi' on the console.
+ * 
+ * For example, if you want to run `ifi flowsheet run -f myfile.py`, you would pass
+ * ["flowsheet", "run", "-f", "myfile.py"] as the `args` array.
+ */
+const getIfiPythonArgs = (args: string[]) => {
+    const cmd =
+        `import sys; from idaes_fi.commands import main; ` +
+        `sys.exit(main(${JSON.stringify(args)}))`;
+
+    return ['-c', cmd];
+};
+
+export { getIfiPythonArgs, runTerminalCommand };

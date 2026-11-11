@@ -1,12 +1,12 @@
 import * as vscode from 'vscode';
-import { isWrappedFlowsheet } from '../util/validate_flowsheet';
+import { getFlowsheetRunners } from '../util/validate_flowsheet';
 import { getReactTemplate } from '../util/get_webview_template';
 import { registerWebview } from '../util/webview_handler';
 import { trimFileName } from '../util/trim_file_name';
 import webviewReceiveMessageHandler from "../util/webview_receive_message_handler";
 import { checkActivePythonEnv } from '../util/extension_initial_check';
 import { checkRequiredPackages } from '../util/check_required_packages';
-import { runFiSteps } from '../util/run_fi_steps';
+import { getFlowsheetSteps } from '../util/get_flowsheet_steps';
 import { getActivePythonEnv, broadcastCurrentPythonEnv } from '../util/python_env';
 import { getPlatform } from '../util/platform_config';
 
@@ -69,12 +69,13 @@ export default function treeview(context: vscode.ExtensionContext) {
                     return;
                 }
 
-                if (!isWrappedFlowsheet(fileName)) {
+                const runners = getFlowsheetRunners(fileName);
+                if (!runners.length) {
                     webviewView.webview.postMessage({
                         type: 'switch_tab',
                         activate_tab_name: trimFileName(fileName),
                         idaesRunInfo: null,
-                        initError: `"${trimFileName(fileName)}" is not a wrapped flowsheet file.\nFlowsheet Inspector requires @FS.step("build") to be present in the file.`,
+                        initError: `"${trimFileName(fileName)}" does not appear to have a FlowsheetRunner defined`,
                         isLoading: false,
                         time: new Date().toISOString(),
                     });
@@ -114,10 +115,10 @@ export default function treeview(context: vscode.ExtensionContext) {
                 // 6. Run fi-steps with the selected interpreter to get step info
                 let resolvedStepsData: any = null;
                 try {
-                    resolvedStepsData = await runFiSteps(fileName);
+                    resolvedStepsData = await getFlowsheetSteps(fileName);
                     console.log(resolvedStepsData);
                 } catch (err: any) {
-                    console.error(`Error running fi-steps during tree view load: ${err.message}`);
+                    console.error(`Error running getting flowsheet stepsduring tree view load: ${err.message}`);
                     webviewView.webview.postMessage({
                         type: 'switch_tab',
                         activate_tab_name: trimFileName(fileName),

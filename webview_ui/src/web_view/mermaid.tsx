@@ -15,7 +15,7 @@ export default function Mermaid() {
     const mermaidRef = useRef<HTMLDivElement>(null);
     const renderIdCounter = useRef(0);
 
-    const diagnostics = flowsheetRunnerResult?.actions?.diagnostics as Diagnostics | undefined;
+    const diagnostics = flowsheetRunnerResult?.actions?.Diagnostics as Diagnostics | undefined;
     const runFailed = !!flowsheetRunnerResult && diagnostics?.valid === false;
 
     useEffect(() => {
@@ -38,7 +38,7 @@ export default function Mermaid() {
         }
 
         // 2. Run failed — diagram is empty because after_run() was not called
-        if (runFailed && (!flowsheetRunnerResult.actions.mermaid_diagram || !flowsheetRunnerResult.actions.mermaid_diagram.diagram)) {
+        if (runFailed && (!flowsheetRunnerResult.actions.MermaidDiagram || !flowsheetRunnerResult.actions.MermaidDiagram.diagram)) {
             const lastRun = flowsheetRunnerResult.last_run ?? [];
             mermaidRef.current.innerHTML = `
             <div style="color: var(--vscode-editorError-foreground, #f88); padding: 10px; border: 1px solid var(--vscode-editorError-foreground, #f88); border-radius: 4px; margin-top: 10px; background-color: var(--vscode-editorError-background, transparent);">
@@ -55,8 +55,8 @@ export default function Mermaid() {
 
         // 3. Ran successfully, but no diagram found in result (e.g. idaes-connectivity not installed)
         if (
-            !flowsheetRunnerResult.actions.mermaid_diagram ||
-            !flowsheetRunnerResult.actions.mermaid_diagram.diagram
+            !flowsheetRunnerResult.actions.MermaidDiagram ||
+            !flowsheetRunnerResult.actions.MermaidDiagram.diagram
         ) {
             mermaidRef.current.innerHTML = `
             <div style="color: var(--vscode-editorError-foreground, #f88); padding: 10px; border: 1px solid var(--vscode-editorError-foreground, #f88); border-radius: 4px; margin-top: 10px; background-color: var(--vscode-editorError-background, transparent);">
@@ -76,7 +76,7 @@ export default function Mermaid() {
         }
 
         // get diagram from flowsheet runner result
-        const mermaidDiagram = flowsheetRunnerResult.actions.mermaid_diagram.diagram;
+        const mermaidDiagram = flowsheetRunnerResult.actions.MermaidDiagram.diagram;
 
         // Normalize: handle both array and string
         let lines: string[] = [];
@@ -161,4 +161,3 @@ export default function Mermaid() {
         </div>
     );
 }
-

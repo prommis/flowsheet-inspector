@@ -4,7 +4,7 @@ import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { trimFileName } from '../util/trim_file_name';
-import { isWrappedFlowsheet } from '../util/validate_flowsheet';
+import { getFlowsheetRunners } from '../util/validate_flowsheet';
 import { getPlatform, isWindows } from '../util/platform_config';
 
 suite('Extension', () => {
@@ -35,7 +35,7 @@ suite('trimFileName', () => {
     });
 });
 
-suite('isWrappedFlowsheet', () => {
+suite('getFlowsheetRunners', () => {
     let tmpFile: string;
 
     setup(() => {
@@ -48,18 +48,18 @@ suite('isWrappedFlowsheet', () => {
         }
     });
 
-    test('returns true for a valid wrapped flowsheet', () => {
-        fs.writeFileSync(tmpFile, '@FS.step("build")\ndef build():\n    pass\n');
-        assert.strictEqual(isWrappedFlowsheet(tmpFile), true);
+    test('returns non-empty array for a valid wrapped flowsheet', () => {
+        fs.writeFileSync(tmpFile, 'runner = FlowsheetRunner(steps=["build"])');
+        assert.ok(getFlowsheetRunners(tmpFile).length > 0);
     });
 
     test('returns false for a plain Python file', () => {
-        fs.writeFileSync(tmpFile, 'def build():\n    pass\n');
-        assert.strictEqual(isWrappedFlowsheet(tmpFile), false);
+        fs.writeFileSync(tmpFile, 'def build():\n    pass\n');  
+        assert.strictEqual(getFlowsheetRunners(tmpFile).length, 0);
     });
 
     test('returns false for a non-existent file', () => {
-        assert.strictEqual(isWrappedFlowsheet('/non/existent/path.py'), false);
+        assert.strictEqual(getFlowsheetRunners('/non/existent/path.py').length, 0);
     });
 });
 

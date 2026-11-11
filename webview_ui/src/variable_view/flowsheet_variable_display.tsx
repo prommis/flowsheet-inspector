@@ -9,8 +9,8 @@ export default function FlowsheetVariableDisplay() {
     // Controls which layout the variable view renders: true = collapsible
     // variable tree, false = stream table view (the default).
     const [treeLayout, setTreeLayout] = useState(false);
-    const diagnostics = flowsheetRunnerResult?.actions?.diagnostics as Diagnostics | undefined;
-    const variables = flowsheetRunnerResult?.actions?.model_variables?.variables;
+    const diagnostics = flowsheetRunnerResult?.actions?.Diagnostics as Diagnostics | undefined;
+    const variables = flowsheetRunnerResult?.actions?.ModelVariables?.variables;
     const runFailed = !!flowsheetRunnerResult && diagnostics?.valid === false;
 
     if (!flowsheetRunnerResult) {
@@ -37,9 +37,9 @@ export default function FlowsheetVariableDisplay() {
         return <p>No flowsheet variable data available</p>;
     }
 
-    const dofSteps = flowsheetRunnerResult.actions?.degrees_of_freedom?.steps;
+    const dofSteps = flowsheetRunnerResult.actions?.UnitDofChecker?.steps;
     // Whole-model degrees of freedom, shown in the badge above the toolbar
-    const totalDof = flowsheetRunnerResult.actions?.degrees_of_freedom?.model;
+    const totalDof = flowsheetRunnerResult.actions?.UnitDofChecker?.model;
 
     return (
         <section>

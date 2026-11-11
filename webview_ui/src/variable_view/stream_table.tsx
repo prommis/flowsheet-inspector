@@ -166,10 +166,10 @@ function countMatches(
 export default function StreamTable({ highlight }: { highlight?: string }) {
     const { flowsheetRunnerResult } = useContext(AppContext);
     const actions = flowsheetRunnerResult?.actions;
-    const flowsheetTable = actions?.stream_table;
+    const flowsheetTable = actions?.StreamTable;
 
     // Unit reports from the last completed step, e.g. "solve_initial"
-    const modelReports = actions?.model_reports;
+    const modelReports = actions?.UnitModelReport;
     const unitReports = modelReports?.step_reports?.[modelReports.last_step]?.reports ?? {};
 
     // [display name, stream table] pairs; "fs.M101" → "M101"

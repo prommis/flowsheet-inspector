@@ -5,9 +5,96 @@ import { vscode } from '../vscode';
 import TreeNavBar from "./treeviewNav";
 import css from "../css/tree_app.module.css";
 
+/**
+ * Encapsulates the structure of idaesRunInfo.steps, mapping flowsheet variables
+ * to their associated lists of step names. Provides methods to manage the active
+ * flowsheet variable and retrieve its steps.
+ */
+class FlowsheetStepsMap {
+    private stepsMap: Record<string, string[]>;
+    private activeFlowsheet: string | null;
+
+    constructor(stepsMap: Record<string, string[]> = {}) {
+        this.stepsMap = stepsMap;
+        this.activeFlowsheet = Object.keys(stepsMap)[0] || null;
+    }
+
+    /**
+     * Gets the current active flowsheet variable.
+     * @returns The name of the active flowsheet variable, or null if none is set.
+     */
+    getActiveFlowsheet(): string | null {
+        return this.activeFlowsheet;
+    }
+
+    /**
+     * Sets the active flowsheet variable.
+     * @param flowsheetName - The name of the flowsheet variable to activate.
+     * @throws Error if the flowsheet variable does not exist in the steps map.
+     */
+    setActiveFlowsheet(flowsheetName: string): void {
+        if (!this.stepsMap.hasOwnProperty(flowsheetName)) {
+            throw new Error(`Flowsheet variable '${flowsheetName}' not found in steps map`);
+        }
+        this.activeFlowsheet = flowsheetName;
+    }
+
+    /**
+     * Gets the list of steps associated with the active flowsheet variable.
+     * @returns An array of step names, or an empty array if no flowsheet is active.
+     */
+    getActiveSteps(): string[] {
+        if (!this.activeFlowsheet) {
+            return [];
+        }
+        return this.stepsMap[this.activeFlowsheet] || [];
+    }
+
+    /**
+     * Gets all available flowsheet variables.
+     * @returns An array of flowsheet variable names.
+     */
+    getAllFlowsheets(): string[] {
+        return Object.keys(this.stepsMap);
+    }
+
+    /**
+     * Gets the steps for a specific flowsheet variable.
+     * @param flowsheetName - The name of the flowsheet variable.
+     * @returns An array of step names, or null if the flowsheet does not exist.
+     */
+    getStepsForFlowsheet(flowsheetName: string): string[] | null {
+        if (!this.stepsMap.hasOwnProperty(flowsheetName)) {
+            return null;
+        }
+        return this.stepsMap[flowsheetName];
+    }
+
+    /**
+     * Updates the entire steps map.
+     * @param newStepsMap - The new steps map to replace the current one.
+     */
+    updateStepsMap(newStepsMap: Record<string, string[]>): void {
+        this.stepsMap = newStepsMap;
+        // Reset active flowsheet if it no longer exists
+        if (this.activeFlowsheet && !this.stepsMap.hasOwnProperty(this.activeFlowsheet)) {
+            this.activeFlowsheet = Object.keys(this.stepsMap)[0] || null;
+        }
+    }
+
+    getKey(): string {
+        return this.getActiveSteps().join('@');
+    }
+}
+
 export default function FlowsheetSteps({ idaesRunInfo }: { idaesRunInfo: idaesRunInfo }) {
     const { setSelectedSteps, isLoading, initError, packageWarnings, openPythonFiles, activateFileName, currentPythonEnv, stepStatuses, isRunningFlowsheet } = useContext(AppContext);
     const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
+    const [activeFlowsheet, setActiveFlowsheet] = useState<string | null>(null);
+
+    console.log("idaesRunInfo", idaesRunInfo);
+    const stepsMap = useRef(new FlowsheetStepsMap(idaesRunInfo?.steps || {}));
+    console.log("stepsMap", stepsMap.current);
 
     // DOM refs to each timeline row, used to map a pointer's clientY to a step
     // index while dragging along the rail.
@@ -86,6 +173,19 @@ export default function FlowsheetSteps({ idaesRunInfo }: { idaesRunInfo: idaesRu
         });
     };
 
+    const handleSelectFlowsheet = (flowsheetName: string) => {
+        try {
+            stepsMap.current.setActiveFlowsheet(flowsheetName);
+            console.log("Changed active flowsheet to:", stepsMap.current.getActiveFlowsheet());
+            // Update the selected steps to the active flowsheet's steps
+            const activeSteps = stepsMap.current.getActiveSteps();
+            setSelectedSteps(activeSteps);
+        } catch (error) {
+            console.error('Error selecting flowsheet:', error);
+        }
+    };
+
+
     /**
      * Selects the first `count` steps (indices 0..count-1) and writes both the
      * indices (local state, drives the timeline visuals) and the corresponding
@@ -100,7 +200,8 @@ export default function FlowsheetSteps({ idaesRunInfo }: { idaesRunInfo: idaesRu
         const newSteps = Array.from({ length: count }, (_, i) => i);
         setSelectedIndices(newSteps);
         // Write selected step NAMES to context
-        const stepNames = newSteps.map(i => idaesRunInfo.steps[i]).filter(Boolean);
+        const activeSteps = stepsMap.current.getActiveSteps();
+        const stepNames = newSteps.map(i => activeSteps[i]).filter(Boolean);
         setSelectedSteps(stepNames);
     };
 
@@ -240,19 +341,34 @@ export default function FlowsheetSteps({ idaesRunInfo }: { idaesRunInfo: idaesRu
         selectedCountRef.current = selectedIndices.length;
     }, [selectedIndices]);
 
+    // Update stepsMap when idaesRunInfo changes
+    useEffect(() => {
+        if (idaesRunInfo?.steps) {
+            stepsMap.current.updateStepsMap(idaesRunInfo.steps);
+            // Set initial active flowsheet if not already set
+            if (!activeFlowsheet) {
+                const firstFlowsheet = stepsMap.current.getAllFlowsheets()[0];
+                if (firstFlowsheet) {
+                    stepsMap.current.setActiveFlowsheet(firstFlowsheet);
+                    setActiveFlowsheet(firstFlowsheet);
+                }
+            }
+        }
+    }, [idaesRunInfo?.steps]);
+
     // Content fingerprint of the step list. Extension messages recreate the
     // steps array on every post, so comparing joined names (rather than array
     // identity) ensures the default-selection effect below only fires when the
     // steps actually change, not on every re-broadcast.
-    const stepsKey = idaesRunInfo?.steps?.join(' ') ?? '';
-
+    const stepsKey = stepsMap.current.getKey();
+    
     // Default to selecting every step whenever a new step list arrives
     // (initial load or switching to another flowsheet). An empty selection is
     // treated by the runner as "run all steps", so the UI must show all steps
     // selected to match what an untouched Run button actually does.
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot sync of selection state to a new step list pushed from the extension host
-        applyPrefixSelection(idaesRunInfo?.steps?.length ?? 0);
+        applyPrefixSelection(stepsMap.current.getActiveSteps().length ?? 0);
     }, [stepsKey]);
 
     // Make sure no window listeners leak if the component unmounts mid-drag.
@@ -261,6 +377,7 @@ export default function FlowsheetSteps({ idaesRunInfo }: { idaesRunInfo: idaesRu
     }, []);
 
     // generate flowsheet steps
+    const steps_title = "Steps Display";
     const stepDisplay = () => {
         if (isLoading) {
             console.log('loading idaes-extension-steps');
@@ -293,7 +410,7 @@ export default function FlowsheetSteps({ idaesRunInfo }: { idaesRunInfo: idaesRu
         if (!configDataSteps.includes("steps")) {
             return (
                 <div>
-                    <h2>Steps Display</h2>
+                    <h2>{steps_title}</h2>
                     <p>Config data loaded successfully, but no steps in config data</p>
                 </div>
             )
@@ -303,66 +420,65 @@ export default function FlowsheetSteps({ idaesRunInfo }: { idaesRunInfo: idaesRu
         if (configDataSteps.includes("steps") && configDataSteps.length === 0) {
             return (
                 <div>
-                    <h2>Step Display</h2>
+                    <h2>{steps_title}</h2>
                     <p>Config data loaded successfully, has steps but steps is empty</p>
                 </div>
             )
         }
 
         // build step displays
-        if (configDataSteps.includes("steps") && idaesRunInfo.steps && idaesRunInfo.steps.length > 0) {
-            // The currently-running step is the first one (in sequence) that has
-            // no recorded status yet, provided a run is in progress and no earlier
-            // step has failed. Steps run as a contiguous prefix, so this is the
-            // step being executed right now.
-            const firstPendingIndex = idaesRunInfo.steps.findIndex(s => !stepStatuses[s]);
-            const anyFailed = idaesRunInfo.steps.some(s => {
-                const st = stepStatuses[s]?.state;
-                return st === 'error' || st === 'solver_failed';
-            });
-            const runningIndex = isRunningFlowsheet && !anyFailed ? firstPendingIndex : -1;
+        const stepsList = stepsMap.current.getActiveSteps();
+        // The currently-running step is the first one (in sequence) that has
+        // no recorded status yet, provided a run is in progress and no earlier
+        // step has failed. Steps run as a contiguous prefix, so this is the
+        // step being executed right now.
+        const firstPendingIndex = stepsList.findIndex(s => !stepStatuses[s]);
+        const anyFailed = stepsList.some(s => {
+            const st = stepStatuses[s]?.state;
+            return st === 'error' || st === 'solver_failed';
+        });
+        const runningIndex = isRunningFlowsheet && !anyFailed ? firstPendingIndex : -1;
 
-            // The selection is always a contiguous prefix, so the highest
-            // selected index fully describes it. It marks the "thumb" dot and
-            // where the blue portion of the rail ends.
-            const lastSelectedIndex = selectedIndices.length - 1;
-            const lastRowIndex = idaesRunInfo.steps.length - 1;
+        // The selection is always a contiguous prefix, so the highest
+        // selected index fully describes it. It marks the "thumb" dot and
+        // where the blue portion of the rail ends.
+        const lastSelectedIndex = selectedIndices.length - 1;
+        const lastRowIndex = stepsList.length - 1;
 
-            const stepDisplays = idaesRunInfo.steps.map((step: string, index: number) => {
-                const isSelected = index <= lastSelectedIndex;
-                const rowClasses = [
-                    css.step_row,
-                    isSelected ? css.step_row_selected : '',
-                    index === 0 && isSelected ? css.step_row_selected_first : '',
-                    index === lastSelectedIndex ? css.step_row_selected_last : '',
-                ].filter(Boolean).join(' ');
+        const stepDisplays = stepsList.map((step: string, index: number) => {
+            const isSelected = index <= lastSelectedIndex;
+            const rowClasses = [
+                css.step_row,
+                isSelected ? css.step_row_selected : '',
+                index === 0 && isSelected ? css.step_row_selected_first : '',
+                index === lastSelectedIndex ? css.step_row_selected_last : '',
+            ].filter(Boolean).join(' ');
 
-                return (
-                    <div key={step + index}
-                        ref={(el) => { rowRefs.current[index] = el; }}
-                        className={rowClasses}
-                        role="checkbox"
-                        aria-checked={isSelected}
-                        tabIndex={0}
-                        onPointerDown={(e) => handleRowPointerDown(e, index)}
-                        onKeyDown={(e) => handleRowKeyDown(e, index)}
-                    >
-                        <span className={css.step_rail}>
-                            {index > 0 && (
-                                <span className={`${css.rail_segment} ${css.rail_segment_top} ${isSelected ? css.rail_segment_active : ''}`} />
-                            )}
-                            {index < lastRowIndex && (
-                                <span className={`${css.rail_segment} ${css.rail_segment_bottom} ${index < lastSelectedIndex ? css.rail_segment_active : ''}`} />
-                            )}
-                            <span className={`${css.step_dot} ${isSelected ? css.step_dot_selected : ''} ${index === lastSelectedIndex ? css.step_dot_thumb : ''}`} />
-                        </span>
-                        <span className={css.step_label}>{step}</span>
-                        {renderStepIcon(step, index === runningIndex)}
-                    </div>
-                )
-            })
-            return <div className={css.steps_timeline}>{stepDisplays}</div>;
-        }
+            return (
+                <div key={step + index}
+                    ref={(el) => { rowRefs.current[index] = el; }}
+                    className={rowClasses}
+                    role="checkbox"
+                    aria-checked={isSelected}
+                    tabIndex={0}
+                    onPointerDown={(e) => handleRowPointerDown(e, index)}
+                    onKeyDown={(e) => handleRowKeyDown(e, index)}
+                >
+                    <span className={css.step_rail}>
+                        {index > 0 && (
+                            <span className={`${css.rail_segment} ${css.rail_segment_top} ${isSelected ? css.rail_segment_active : ''}`} />
+                        )}
+                        {index < lastRowIndex && (
+                            <span className={`${css.rail_segment} ${css.rail_segment_bottom} ${index < lastSelectedIndex ? css.rail_segment_active : ''}`} />
+                        )}
+                        <span className={`${css.step_dot} ${isSelected ? css.step_dot_selected : ''} ${index === lastSelectedIndex ? css.step_dot_thumb : ''}`} />
+                    </span>
+                    <span className={css.step_label}>{step}</span>
+                    {renderStepIcon(step, index === runningIndex)}
+                </div>
+            )
+        })
+        return <div className={css.steps_timeline}>{stepDisplays}</div>;
     }
 
     useEffect(() => {
@@ -432,6 +548,21 @@ export default function FlowsheetSteps({ idaesRunInfo }: { idaesRunInfo: idaesRu
                 )}
             </div>
 
+            <div className={css.flowsheet_selection_section}>
+                <label className={css.section_label}>
+                    Select Flowsheet Variable:
+                </label>
+                <select
+                    className={css.dropdown_select}
+                    onChange={(e) => handleSelectFlowsheet(e.target.value)}
+                    value={stepsMap.current.getActiveFlowsheet() || ""}
+                >
+                    <option value="" disabled>Select a flowsheet variable...</option>
+                    {stepsMap.current.getAllFlowsheets().map((flowsheet) => (
+                        <option key={flowsheet} value={flowsheet}>{flowsheet}</option>
+                    ))}
+                </select>
+            </div>
             <p className={css.section_label}>
                 Select Steps to Run:
             </p>

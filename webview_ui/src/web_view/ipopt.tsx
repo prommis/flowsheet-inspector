@@ -153,11 +153,11 @@ function SolverOutput({ text }: { text: string | null | undefined }) {
 export default function Ipopt() {
     const { flowsheetRunnerResult } = useContext(AppContext);
     const [activeTab, setActiveTab] = useState<"initial" | "optimization">("initial");
-    const diagnostics = flowsheetRunnerResult?.actions?.diagnostics as Diagnostics | undefined;
+    const diagnostics = flowsheetRunnerResult?.actions?.Diagnostics as Diagnostics | undefined;
     const runFailed = !!flowsheetRunnerResult && diagnostics?.valid === false;
 
-    const solverLogs = flowsheetRunnerResult?.actions?.solver_output?.output
-        || flowsheetRunnerResult?.actions?.capture_solver_output?.solver_logs;
+    const solverLogs = flowsheetRunnerResult?.actions?.CaptureSolverOutput?.output
+        || flowsheetRunnerResult?.actions?.CaptureSolverOutput?.solver_logs;
 
     if (!flowsheetRunnerResult) {
         return (

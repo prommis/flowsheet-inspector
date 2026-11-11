@@ -1,25 +1,19 @@
 import * as vscode from 'vscode';
-import * as path from 'path';
 import { getReactTemplate } from './get_webview_template';
+import { activateWebviews } from './webview_handler';
 
-// Store active panel globally so we can reload it
-let currentPanel: vscode.WebviewPanel | undefined;
-let currentContext: vscode.ExtensionContext | undefined;
+/** Reload every currently registered sidebar/editor webview from the latest bundle. */
+export function reloadAllWebviews(context: vscode.ExtensionContext): number {
+    let reloadCount = 0;
 
-// Export function to reload webview manually (for development)
-export function reloadCurrentWebview() {
-    if (currentPanel && currentContext) {
-        const editor = vscode.window.activeTextEditor;
-        if (editor) {
-            currentPanel.webview.html = getReactTemplate(
-                currentContext,
-                currentPanel.webview,
-                editor.document.getText(),
-                editor.document.fileName
-            );
-            console.log('🔄 Webview manually reloaded!');
+    for (const [name, view] of activateWebviews) {
+        try {
+            view.webview.html = getReactTemplate(context, view.webview, '', '');
+            reloadCount += 1;
+        } catch (error) {
+            console.error(`Failed to reload webview ${name}: ${error instanceof Error ? error.message : String(error)}`);
         }
-    } else {
-        console.log('⚠️ No active webview to reload');
     }
+
+    return reloadCount;
 }
