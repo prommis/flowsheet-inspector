@@ -107,10 +107,14 @@ try {
     check((await state()).id === beforeZoom.id, 'Zoom regenerates the SVG');
 
     const saved = await state();
-    await page.locator('li').filter({ hasText: /^FLOWSHEET VARIABLES/ }).click();
-    await page.locator('li').filter({ hasText: /^DIAGRAM$/ }).click();
-    await viewport.locator('svg').waitFor();
-    check(sameView(await state(), saved), 'Tab switch loses zoom or pan');
+    for (const tab of [/^FLOWSHEET VARIABLES/, /^IPOPT$/, /^LOGS/]) {
+        await page.locator('li').filter({ hasText: tab }).click();
+        check(!await viewport.isVisible(), `Diagram remains visible on ${tab}`);
+        check(await viewport.count() === 0, `Switching to ${tab} keeps the diagram mounted`);
+        await page.locator('li').filter({ hasText: /^DIAGRAM$/ }).click();
+        await viewport.locator('svg').waitFor();
+        check(sameView(await state(), saved), `Switching from ${tab} loses zoom or pan`);
+    }
 
     const beforeWheel = await state();
     await viewport.evaluate(element => element.dispatchEvent(new WheelEvent('wheel', {
