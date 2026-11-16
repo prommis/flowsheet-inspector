@@ -5,6 +5,8 @@ import mermaid from "mermaid";
 import { postReloadMermaidDone } from '../util/post_message';
 import css from '../css/mermaid.module.css';
 import type { Diagnostics } from "../interface/flowsheet_result_interface";
+import { prepareMermaidImages } from "../util/mermaid_images";
+import { renderFlowsheet } from "../util/flowsheet_layout";
 
 export default function Mermaid() {
     const {
@@ -13,7 +15,6 @@ export default function Mermaid() {
         setDiagramDirection
     } = useContext(AppContext);
     const mermaidRef = useRef<HTMLDivElement>(null);
-    const renderIdCounter = useRef(0);
 
     const diagnostics = flowsheetRunnerResult?.actions?.diagnostics as Diagnostics | undefined;
     const runFailed = !!flowsheetRunnerResult && diagnostics?.valid === false;
@@ -116,23 +117,37 @@ export default function Mermaid() {
         // when the component is re-mounted after tab switches
         const renderDiagram = async () => {
             try {
-                renderIdCounter.current += 1;
-                const uniqueId = `mermaid-diagram-${renderIdCounter.current}`;
-                const { svg } = await mermaid.render(uniqueId, diagramText);
-                if (mermaidRef.current) {
-                    mermaidRef.current.innerHTML = svg;
+                const prepared = await prepareMermaidImages(diagramText);
+                if (cancelled) return;
+                const element = await renderFlowsheet(prepared.diagram, css.diagram);
+                if (!cancelled && mermaidRef.current) {
+                    mermaidRef.current.replaceChildren(element);
+                    if (prepared.missingImages) {
+                        const notice = document.createElement('p');
+                        notice.className = css.image_notice;
+                        notice.textContent = 'Some unit images are unavailable. Showing unit names instead. Run the flowsheet again to reload images.';
+                        mermaidRef.current.prepend(notice);
+                    }
                 }
             } catch (error) {
                 console.error('mermaid render error:', error);
-                if (mermaidRef.current) {
-                    mermaidRef.current.innerHTML = `
-                    <p style="color: #f88;">Mermaid render error: ${error}</p>
-                    <pre style="color: #888; font-size: 12px;">${diagramText}</pre>`;
+                if (!cancelled && mermaidRef.current) {
+                    const message = document.createElement('p');
+                    message.style.color = '#f88';
+                    message.textContent = `Mermaid render error: ${error}`;
+                    const source = document.createElement('pre');
+                    source.textContent = diagramText;
+                    mermaidRef.current.replaceChildren(message, source);
                 }
+            } finally {
+                if (!cancelled) postReloadMermaidDone({ reload_mermaid: 'done' });
             }
         };
+        // Image loading makes rendering asynchronous; ignore results from an
+        // old run, direction, or tab after this effect has been replaced.
+        let cancelled = false;
         renderDiagram();
-        postReloadMermaidDone({ reload_mermaid: 'done' });
+        return () => { cancelled = true; };
 
     }, [flowsheetRunnerResult, diagramDirection]);
 
