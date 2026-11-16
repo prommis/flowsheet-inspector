@@ -33,6 +33,35 @@
     height: 100%;
 }
 
+/* The supplied process symbols have black strokes on transparent backgrounds. */
+:global(body.vscode-dark) .diagram :global(.image-shape) image,
+:global(body.vscode-high-contrast) .diagram :global(.image-shape) image {
+    filter: invert(1);
+}
+
+/* Mermaid adds rectangular backdrops around image nodes. Hide only those
+   generated shapes; keep the image, label and layout bounds for stream edges. */
+.diagram :global(.image-shape > g:not(.label)) {
+    visibility: hidden;
+}
+
+.diagram :global(.image-shape .label rect) {
+    fill: transparent !important;
+    stroke: none !important;
+}
+
+.diagram :global(.image-shape .label div),
+.diagram :global(.image-shape .label span),
+.diagram :global(.image-shape .label p) {
+    background-color: transparent !important;
+}
+
+.image_notice {
+    color: var(--vscode-descriptionForeground, #888);
+    font-size: 12px;
+    margin-bottom: 12px;
+}
+
 .direction_control {
     display: flex;
     align-items: center;
