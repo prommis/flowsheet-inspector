@@ -154,3 +154,5 @@ test-results/
 # e2e harness artifacts (local run data + screenshots)
 e2e/sample_report.json
 e2e/vsc_ipopt.png
+
+note.md
